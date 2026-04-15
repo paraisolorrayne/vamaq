@@ -1,0 +1,447 @@
+/* ============================================
+   ACERVO — Catálogo de veículos
+   Avantgarde-inspired filter sidebar + card grid
+   ============================================ */
+
+.page {
+  padding-top: 100px;
+  padding-bottom: var(--space-3xl);
+  background: var(--bg-primary);
+}
+
+/* --- Breadcrumb --- */
+
+.breadcrumb {
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-md);
+}
+
+.breadcrumb a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color var(--ease-fast);
+}
+
+.breadcrumb a:hover {
+  color: var(--color-accent);
+}
+
+/* --- Page header --- */
+
+.header {
+  margin-bottom: var(--space-xl);
+}
+
+.title {
+  font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
+  font-size: var(--text-2xl);
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.02em;
+  color: var(--color-ink);
+  line-height: 1.05;
+  margin-bottom: 6px;
+}
+
+.subtitle {
+  font-size: var(--text-md);
+  color: var(--text-secondary);
+  max-width: 560px;
+}
+
+/* --- Layout --- */
+
+.layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-lg);
+}
+
+.results {
+  min-width: 0;
+}
+
+/* --- Toolbar (top of results) --- */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-lg);
+  padding-bottom: var(--space-md);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.filterToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 22px;
+  font-size: var(--text-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--color-ink);
+  background: #FFFFFF;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all var(--ease-fast);
+}
+
+.filterToggle:hover {
+  border-color: var(--color-ink);
+}
+
+.sortWrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.sortLabel {
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+.sort {
+  padding: 10px 36px 10px 16px;
+  font-size: var(--text-sm);
+  font-weight: var(--fw-medium);
+  color: var(--color-ink);
+  background: #FFFFFF;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230A0A0A' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 14px;
+  transition: border-color var(--ease-fast);
+}
+
+.sort:focus-visible,
+.sort:hover {
+  border-color: var(--color-ink);
+  outline: none;
+}
+
+/* --- Sidebar (mobile = overlay) --- */
+
+.sidebar {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.sidebarOpen {
+  display: block;
+}
+
+.sidebarInner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 320px;
+  max-width: 88vw;
+  height: 100%;
+  background: var(--bg-primary);
+  padding: var(--space-lg);
+  overflow-y: auto;
+  box-shadow: var(--shadow-elevated);
+}
+
+.sidebarHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-md);
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.sidebarTitle {
+  font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
+  font-size: var(--text-lg);
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.01em;
+  color: var(--color-ink);
+}
+
+.sidebarClose {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--text-secondary);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+/* --- Filter groups --- */
+
+.filterGroup {
+  padding: var(--space-md) 0;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.filterGroup:last-of-type {
+  border-bottom: none;
+}
+
+.filterLabel {
+  font-size: var(--text-xs);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-ink);
+  margin-bottom: 12px;
+}
+
+.checkList,
+.radioRow {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.radioRow {
+  flex-direction: row;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.checkItem,
+.radioItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color var(--ease-fast);
+}
+
+.checkItem:hover,
+.radioItem:hover {
+  color: var(--color-ink);
+}
+
+.checkItem input[type="checkbox"],
+.radioItem input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-ink);
+  cursor: pointer;
+}
+
+/* --- Input row (Ano / Quilometragem) --- */
+
+.inputRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-full);
+  transition: border-color var(--ease-fast);
+}
+
+.inputRow:focus-within {
+  border-color: var(--color-ink);
+}
+
+.inputPrefix,
+.inputSuffix {
+  font-size: var(--text-xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 0;
+  font-size: var(--text-sm);
+  color: var(--color-ink);
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: inherit;
+}
+
+.input::-webkit-outer-spin-button,
+.input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* --- Clear filters button --- */
+
+.clearBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-top: var(--space-md);
+  padding: 12px 22px;
+  font-size: var(--text-sm);
+  font-weight: var(--fw-semibold);
+  color: #FFFFFF;
+  background: var(--color-ink);
+  border: none;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: background var(--ease-fast);
+}
+
+.clearBtn:hover {
+  background: var(--color-accent);
+}
+
+/* --- Grid --- */
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+
+.empty {
+  padding: var(--space-2xl) var(--space-lg);
+  text-align: center;
+  background: var(--bg-soft);
+  border-radius: var(--radius-lg);
+  color: var(--text-secondary);
+}
+
+.empty p {
+  margin-bottom: var(--space-md);
+}
+
+.empty .clearBtn {
+  max-width: 220px;
+  margin: 0 auto;
+}
+
+/* --- Pagination --- */
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: var(--space-2xl);
+}
+
+.pageBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  height: 40px;
+  padding: 0 12px;
+  font-size: var(--text-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--color-ink);
+  background: #FFFFFF;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all var(--ease-fast);
+}
+
+.pageBtn:hover:not(:disabled) {
+  border-color: var(--color-ink);
+}
+
+.pageBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pageBtnActive {
+  color: #FFFFFF;
+  background: var(--color-ink);
+  border-color: var(--color-ink);
+}
+
+.pageInfo {
+  margin-left: 12px;
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+}
+
+/* --- Responsive --- */
+
+@media (min-width: 640px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .layout {
+    grid-template-columns: 288px 1fr;
+    gap: var(--space-2xl);
+  }
+
+  .sidebar {
+    display: block;
+    position: static;
+    background: none;
+  }
+
+  .sidebarInner {
+    position: static;
+    width: auto;
+    max-width: none;
+    height: auto;
+    padding: var(--space-md) 0 0;
+    overflow: visible;
+    box-shadow: none;
+    background: transparent;
+  }
+
+  .sidebarClose {
+    display: none;
+  }
+
+  .filterToggle {
+    display: none;
+  }
+
+  .sortWrap {
+    margin-left: auto;
+  }
+
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

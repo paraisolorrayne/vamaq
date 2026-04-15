@@ -1,0 +1,88 @@
+/* ============================================
+   VAMAQ MOTORS — Design Tokens
+   White Luxury Theme
+   ============================================ */
+
+:root {
+  /* Accent — CTAs, badges, destaques */
+  --color-accent: #FF6A00;
+  --color-accent-hover: #E55E00;
+  --color-accent-light: rgba(255, 106, 0, 0.08);
+  --color-accent-glow: rgba(255, 106, 0, 0.3);
+
+  /* Fundos */
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #F7F7F8;
+  --bg-tertiary: #F0F0F2;
+  --bg-card: #FFFFFF;
+  --bg-dark-section: #0A0A0A;
+
+  /* Textos */
+  --text-primary: #111111;
+  --text-secondary: #555555;
+  --text-tertiary: #888888;
+  --text-on-dark: #FFFFFF;
+  --text-on-accent: #FFFFFF;
+
+  /* Bordas */
+  --border-light: #E5E5E5;
+  --border-medium: #D0D0D0;
+
+  /* Sombras */
+  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.06);
+  --shadow-card-hover: 0 8px 30px rgba(0, 0, 0, 0.10);
+  --shadow-elevated: 0 12px 40px rgba(0, 0, 0, 0.12);
+
+  /* Dream Drive — surfaces & ink */
+  --color-ink: #0A0A0A;
+  --color-ink-hover: #1F1F1F;
+  --bg-soft: #F5F3EF;          /* warm off-white for hero/sections */
+  --bg-cream: #EFEAE1;         /* slightly deeper cream */
+
+  /* Tipografia */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-md: 1.125rem;
+  --text-lg: 1.5rem;
+  --text-xl: 2rem;
+  --text-2xl: 2.75rem;
+  --text-3xl: 3.5rem;
+  --text-4xl: 4.5rem;
+
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+
+  /* Spacing */
+  --space-xs: 0.5rem;
+  --space-sm: 1rem;
+  --space-md: 1.5rem;
+  --space-lg: 2rem;
+  --space-xl: 3rem;
+  --space-2xl: 5rem;
+  --space-3xl: 8rem;
+
+  /* Layout */
+  --container-max: 1280px;
+  --container-pad: 20px;
+
+  /* Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 100px;
+
+  /* Transitions */
+  --ease-fast: 0.2s ease;
+  --ease-base: 0.3s ease;
+  --ease-slow: 0.5s ease;
+}
+
+@media (min-width: 768px) {
+  :root { --container-pad: 32px; }
+}
+@media (min-width: 1024px) {
+  :root { --container-pad: 40px; }
+}

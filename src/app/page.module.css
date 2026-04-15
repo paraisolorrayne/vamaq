@@ -1,142 +1,265 @@
-.page {
-  --background: #fafafa;
-  --foreground: #fff;
+/* ============================================
+   VAMAQ MOTORS — Home Page Styles
+   ============================================ */
 
-  --text-primary: #000;
-  --text-secondary: #666;
+/* --- HERO --- */
+.hero {
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-soft);
+  padding: 140px 0 var(--space-2xl);
+}
 
-  --button-primary-hover: #383838;
-  --button-secondary-hover: #f2f2f2;
-  --button-secondary-border: #ebebeb;
+.heroBg {
+  display: none;
+}
 
-  display: flex;
-  flex: 1;
-  flex-direction: column;
+.heroBgGradient {
+  display: none;
+}
+
+.heroOverlay {
+  display: none;
+}
+
+.heroContent {
+  position: relative;
+  z-index: 2;
+  max-width: 860px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.heroEyebrow {
+  display: inline-flex;
   align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  margin-bottom: var(--space-md);
+  font-size: var(--text-xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-ink);
+  background: #FFFFFF;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-full);
+}
+
+.heroEyebrow::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-accent);
+}
+
+.heroTagline {
+  font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
+  font-size: var(--text-2xl);
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.02em;
+  color: var(--color-ink);
+  line-height: 1.05;
+  margin-bottom: var(--space-md);
+}
+
+.heroAccent {
+  color: var(--color-accent);
+  font-style: italic;
+}
+
+.heroSubtitle {
+  font-size: var(--text-md);
+  color: var(--text-secondary);
+  margin: 0 auto var(--space-lg);
+  line-height: 1.6;
+  max-width: 540px;
+}
+
+.heroActions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   justify-content: center;
-  font-family: var(--font-geist-sans);
-  background-color: var(--background);
+  align-items: center;
 }
 
-.main {
-  display: flex;
-  flex: 1;
+/* Hero visual — real photo from showroom */
+.heroVisual {
+  position: relative;
+  margin: var(--space-xl) auto 0;
+  aspect-ratio: 4 / 5;
+  max-width: 520px;
+  border-radius: 32px;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
+  overflow: hidden;
+  box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.35);
+}
+
+.heroVisualImg {
+  position: absolute;
+  inset: 0;
   width: 100%;
-  max-width: 800px;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: space-between;
-  background-color: var(--foreground);
-  padding: 120px 60px;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
 }
 
-.intro {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  text-align: left;
+@media (min-width: 768px) {
+  .heroVisual {
+    aspect-ratio: 16 / 10;
+    max-width: none;
+  }
+}
+
+@media (min-width: 1024px) {
+  .heroVisual {
+    aspect-ratio: 16 / 8;
+  }
+}
+
+.heroVisualCorner {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px 8px 8px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(12px);
+  color: #FFFFFF;
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.heroVisualCornerDot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  display: inline-block;
+}
+
+/* --- VEHICLES GRID --- */
+.vehiclesGrid {
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 24px;
 }
 
-.intro h1 {
-  max-width: 320px;
-  font-size: 40px;
-  font-weight: 600;
-  line-height: 48px;
-  letter-spacing: -2.4px;
-  text-wrap: balance;
-  color: var(--text-primary);
+.vehiclesMore {
+  text-align: center;
+  margin-top: var(--space-xl);
 }
 
-.intro p {
-  max-width: 440px;
-  font-size: 18px;
-  line-height: 32px;
-  text-wrap: balance;
-  color: var(--text-secondary);
-}
-
-.intro a {
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-.ctas {
-  display: flex;
-  flex-direction: row;
-  width: 100%;
-  max-width: 440px;
-  gap: 16px;
-  font-size: 14px;
-}
-
-.ctas a {
-  display: flex;
-  justify-content: center;
+/* --- ABOUT PREVIEW --- */
+.aboutPreview {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-xl);
   align-items: center;
-  height: 40px;
-  padding: 0 16px;
-  border-radius: 128px;
-  border: 1px solid transparent;
-  transition: 0.2s;
-  cursor: pointer;
-  width: fit-content;
-  font-weight: 500;
 }
 
-a.primary {
-  background: var(--text-primary);
-  color: var(--background);
-  gap: 8px;
+.aboutContent {
+  order: 2;
 }
 
-a.secondary {
-  border-color: var(--button-secondary-border);
+.aboutTitle {
+  font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
+  font-size: var(--text-xl);
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.01em;
+  color: var(--color-ink);
+  margin-bottom: var(--space-sm);
 }
 
-/* Enable hover only on non-touch devices */
-@media (hover: hover) and (pointer: fine) {
-  a.primary:hover {
-    background: var(--button-primary-hover);
-    border-color: transparent;
-  }
+.aboutText {
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+  line-height: 1.8;
+  margin-bottom: var(--space-lg);
+}
 
-  a.secondary:hover {
-    background: var(--button-secondary-hover);
-    border-color: transparent;
+.aboutImage {
+  order: 1;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  background: var(--bg-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  font-size: var(--text-sm);
+}
+
+/* --- CTA SECTION --- */
+.ctaSection {
+  padding: var(--space-xl) 0;
+}
+
+.ctaTitle {
+  font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
+  font-size: var(--text-xl);
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.01em;
+  color: var(--text-on-dark);
+  margin-bottom: var(--space-xs);
+}
+
+.ctaSubtitle {
+  font-size: var(--text-md);
+  color: rgba(255, 255, 255, 0.55);
+  margin-bottom: var(--space-lg);
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* --- RESPONSIVE --- */
+@media (min-width: 640px) {
+  .heroActions {
+    flex-direction: row;
+  }
+  .vehiclesGrid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
-@media (max-width: 600px) {
-  .main {
-    padding: 48px 24px;
+@media (min-width: 768px) {
+  .heroTagline {
+    font-size: var(--text-3xl);
   }
-
-  .intro {
-    gap: 16px;
+  .aboutTitle {
+    font-size: var(--text-2xl);
   }
-
-  .intro h1 {
-    font-size: 32px;
-    line-height: 40px;
-    letter-spacing: -1.92px;
+  .ctaTitle {
+    font-size: var(--text-2xl);
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  .logo {
-    filter: invert();
+@media (min-width: 1024px) {
+  .hero {
+    padding: 180px 0 var(--space-3xl);
   }
-
-  .page {
-    --background: #000;
-    --foreground: #000;
-
-    --text-primary: #ededed;
-    --text-secondary: #999;
-
-    --button-primary-hover: #ccc;
-    --button-secondary-hover: #1a1a1a;
-    --button-secondary-border: #1a1a1a;
+  .heroTagline {
+    font-size: var(--text-4xl);
+  }
+  .vehiclesGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .aboutPreview {
+    grid-template-columns: 6fr 4fr;
+  }
+  .aboutContent {
+    order: 1;
+  }
+  .aboutImage {
+    order: 2;
   }
 }

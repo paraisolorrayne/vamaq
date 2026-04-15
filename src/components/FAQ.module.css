@@ -1,0 +1,127 @@
+.section {
+  padding: var(--space-2xl) 0;
+}
+
+.container {
+  width: 100%;
+  max-width: 768px;
+  margin: 0 auto;
+  padding: 0 var(--container-pad);
+}
+
+.header {
+  text-align: center;
+  margin-bottom: var(--space-xl);
+}
+
+.title {
+  font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
+  font-size: var(--text-xl);
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.01em;
+  margin-bottom: var(--space-xs);
+  color: var(--color-ink);
+}
+
+.subtitle {
+  font-size: var(--text-md);
+  color: var(--text-secondary);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.item {
+  background: var(--bg-soft);
+  border: 1px solid var(--border-light);
+  border-radius: 18px;
+  overflow: hidden;
+  transition: background var(--ease-base), border-color var(--ease-base), color var(--ease-base);
+}
+
+.item:has(.panelOpen) {
+  background: var(--color-ink);
+  border-color: var(--color-ink);
+  color: #FFFFFF;
+}
+
+.trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  width: 100%;
+  padding: 18px 22px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-size: var(--text-base);
+  font-weight: var(--fw-semibold);
+  color: inherit;
+  line-height: 1.4;
+  transition: color var(--ease-fast);
+}
+
+.triggerIcon {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #FFFFFF;
+  border-radius: 50%;
+  transition: transform var(--ease-base), background var(--ease-base);
+  color: var(--color-ink);
+}
+
+.triggerIconOpen {
+  transform: rotate(45deg);
+  background: var(--color-accent);
+  color: #FFFFFF;
+}
+
+.iconSvg {
+  width: 16px;
+  height: 16px;
+}
+
+.panel {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height var(--ease-base);
+}
+
+.panelOpen {
+  max-height: 400px;
+}
+
+.answer {
+  padding: 0 22px 22px;
+  font-size: var(--text-sm);
+  color: rgba(255, 255, 255, 0.72);
+  line-height: 1.7;
+}
+
+@media (min-width: 768px) {
+  .section {
+    padding: var(--space-3xl) 0;
+  }
+
+  .title {
+    font-size: var(--text-2xl);
+  }
+
+  .trigger {
+    font-size: var(--text-md);
+    padding: var(--space-md) 0;
+  }
+
+  .answer {
+    font-size: var(--text-base);
+  }
+}

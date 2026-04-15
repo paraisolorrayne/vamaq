@@ -1,0 +1,76 @@
+/* ============================================
+   WHATSAPP FLOAT — Vamaq Motors
+   Fixed bottom-right floating button
+   ============================================ */
+
+.float {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-full);
+  background-color: #25D366;
+  color: #FFFFFF;
+  box-shadow: 0 4px 20px rgba(37, 211, 102, 0.4);
+  text-decoration: none;
+  transition: all var(--ease-fast);
+}
+
+.float:hover {
+  background-color: #1fb855;
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 6px 28px rgba(37, 211, 102, 0.5);
+}
+
+.float:active {
+  transform: translateY(-1px) scale(1);
+}
+
+.float__icon {
+  width: 28px;
+  height: 28px;
+}
+
+/* Pulse animation */
+
+.float::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: var(--radius-full);
+  background-color: rgba(37, 211, 102, 0.25);
+  animation: whatsappPulse 2.5s ease-in-out infinite;
+  z-index: -1;
+}
+
+@keyframes whatsappPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0;
+  }
+}
+
+/* Mobile adjustment */
+
+@media (max-width: 639px) {
+  .float {
+    bottom: 16px;
+    right: 16px;
+    width: 52px;
+    height: 52px;
+  }
+
+  .float__icon {
+    width: 26px;
+    height: 26px;
+  }
+}
