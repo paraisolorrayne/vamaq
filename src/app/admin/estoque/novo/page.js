@@ -756,13 +756,14 @@ function FipePriceLookup({ brand, onApplyPrice }) {
   useEffect(() => {
     if (!anoSel) { setResultado(null); return; }
     const ac = new AbortController();
+    let cancelled = false;
     setLoading(true); setResultado(null);
     fetch(`/api/admin/fipe?tipo=carros&marca=${marcaSel}&modelo=${modeloSel}&ano=${anoSel}`, { signal: ac.signal })
       .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
       .then(setResultado)
       .catch(() => {})
-      .finally(() => setLoading(false));
-    return () => ac.abort();
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; ac.abort(); };
   }, [anoSel, marcaSel, modeloSel]);
 
   if (!open) {

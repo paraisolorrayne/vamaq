@@ -58,6 +58,7 @@ export default function FipePage() {
       return;
     }
     const ac = new AbortController();
+    let cancelled = false;
     setModelos([]);
     setModeloSel("");
     setAnos([]);
@@ -68,8 +69,8 @@ export default function FipePage() {
     fetchFipe({ marca: marcaSel }, ac.signal)
       .then((data) => setModelos(data.modelos || []))
       .catch((e) => { if (e.name !== "AbortError") setError("Erro ao carregar modelos"); })
-      .finally(() => setLoading(false));
-    return () => ac.abort();
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; ac.abort(); };
   }, [marcaSel, fetchFipe]);
 
   useEffect(() => {
@@ -80,6 +81,7 @@ export default function FipePage() {
       return;
     }
     const ac = new AbortController();
+    let cancelled = false;
     setAnos([]);
     setAnoSel("");
     setResultado(null);
@@ -88,8 +90,8 @@ export default function FipePage() {
     fetchFipe({ marca: marcaSel, modelo: modeloSel }, ac.signal)
       .then((d) => setAnos(Array.isArray(d) ? d : []))
       .catch((e) => { if (e.name !== "AbortError") setError("Erro ao carregar anos"); })
-      .finally(() => setLoading(false));
-    return () => ac.abort();
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; ac.abort(); };
   }, [modeloSel, marcaSel, fetchFipe]);
 
   useEffect(() => {
@@ -98,6 +100,7 @@ export default function FipePage() {
       return;
     }
     const ac = new AbortController();
+    let cancelled = false;
     setResultado(null);
     setLoading(true);
     setError("");
@@ -114,8 +117,8 @@ export default function FipePage() {
         });
       })
       .catch((e) => { if (e.name !== "AbortError") setError("Erro ao consultar preço"); })
-      .finally(() => setLoading(false));
-    return () => ac.abort();
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; ac.abort(); };
   }, [anoSel, marcaSel, modeloSel, fetchFipe]);
 
   const marcaNome = marcas.find((m) => String(m.codigo) === marcaSel)?.nome || "";
