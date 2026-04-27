@@ -47,8 +47,8 @@
   text-transform: uppercase;
   letter-spacing: 0.25em;
   color: #FF6A00;
-  font-family: var(--font-heading), 'Rajdhani', sans-serif;
-  font-weight: 500;
+  font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
+  font-weight: 600;
 }
 
 .nav {
@@ -120,7 +120,7 @@
   font-weight: 700;
   color: #0A0A14;
   margin-bottom: 4px;
-  font-family: var(--font-heading), 'Rajdhani', sans-serif;
+  font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
   letter-spacing: 0.02em;
 }
 
@@ -158,14 +158,14 @@
   letter-spacing: 0.06em;
   color: #888888;
   margin-bottom: 4px;
-  font-family: var(--font-heading), 'Rajdhani', sans-serif;
+  font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
 }
 
 .statValue {
   font-size: 2rem;
   font-weight: 700;
   color: #0A0A14;
-  font-family: var(--font-heading), 'Rajdhani', sans-serif;
+  font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
 }
 
 .statAccent {
@@ -229,7 +229,7 @@
   cursor: pointer;
   transition: background 0.15s;
   text-decoration: none;
-  font-family: var(--font-heading), 'Rajdhani', sans-serif;
+  font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -302,7 +302,7 @@
   color: #555555;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  font-family: var(--font-heading), 'Rajdhani', sans-serif;
+  font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
 }
 
 .formInput {
