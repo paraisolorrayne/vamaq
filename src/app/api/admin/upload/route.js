@@ -3,6 +3,7 @@ import sharp from "sharp";
 import fs from "fs";
 import path from "path";
 import { v4 as uuidv4 } from "uuid";
+import { removeBackground } from "@imgly/background-removal-node";
 
 const UPLOAD_DIR = path.join(process.cwd(), "public", "images", "vehicles");
 const ICE_WHITE = { r: 245, g: 245, b: 240, alpha: 255 };
@@ -11,6 +12,56 @@ function ensureDir(dir) {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
+}
+
+async function createGradientBackground(w, h) {
+  const pixels = Buffer.alloc(w * h * 4);
+  for (let y = 0; y < h; y++) {
+    const t = y / h;
+    const r = Math.round(ICE_WHITE.r - t * 20);
+    const g = Math.round(ICE_WHITE.g - t * 20);
+    const b = Math.round(ICE_WHITE.b - t * 16);
+    for (let x = 0; x < w; x++) {
+      const idx = (y * w + x) * 4;
+      pixels[idx] = r;
+      pixels[idx + 1] = g;
+      pixels[idx + 2] = b;
+      pixels[idx + 3] = 255;
+    }
+  }
+  return sharp(pixels, { raw: { width: w, height: h, channels: 4 } })
+    .png()
+    .toBuffer();
+}
+
+async function createDropShadow(fgBuffer, w, h) {
+  const fgMeta = await sharp(fgBuffer).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const fgPixels = new Uint8Array(fgMeta.data);
+  const shadowPixels = Buffer.alloc(w * h * 4, 0);
+
+  const offsetY = Math.round(h * 0.02);
+  const blurRadius = Math.round(Math.min(w, h) * 0.015);
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const srcIdx = (y * w + x) * 4;
+      const alpha = fgPixels[srcIdx + 3];
+      if (alpha > 30) {
+        const dy = y + offsetY;
+        if (dy >= 0 && dy < h) {
+          const dstIdx = (dy * w + x) * 4;
+          shadowPixels[dstIdx + 3] = Math.max(shadowPixels[dstIdx + 3], Math.round(alpha * 0.3));
+        }
+      }
+    }
+  }
+
+  let blurred = await sharp(shadowPixels, { raw: { width: w, height: h, channels: 4 } })
+    .blur(blurRadius > 0 ? blurRadius + (blurRadius % 2 === 0 ? 1 : 0) : 1)
+    .png()
+    .toBuffer();
+
+  return blurred;
 }
 
 export async function POST(request) {
@@ -31,83 +82,26 @@ export async function POST(request) {
     const filepath = path.join(UPLOAD_DIR, filename);
 
     if (removeBg) {
-      const image = sharp(buffer);
-      const metadata = await image.metadata();
+      const mimeType = file.type || "image/png";
+      const blob = new Blob([buffer], { type: mimeType });
+      const resultBlob = await removeBackground(blob, {
+        output: { format: "image/png" },
+      });
+      const resultArrayBuffer = await resultBlob.arrayBuffer();
+      const fgPng = Buffer.from(resultArrayBuffer);
+
+      const metadata = await sharp(fgPng).metadata();
       const w = metadata.width;
       const h = metadata.height;
 
-      const { data, info } = await image
-        .ensureAlpha()
-        .raw()
-        .toBuffer({ resolveWithObject: true });
-
-      const pixels = new Uint8Array(data);
-      const channels = info.channels;
-
-      const cornerSamples = [];
-      const sampleSize = Math.max(1, Math.floor(Math.min(w, h) * 0.05));
-      for (let y = 0; y < sampleSize; y++) {
-        for (let x = 0; x < sampleSize; x++) {
-          const idx = (y * w + x) * channels;
-          cornerSamples.push({ r: pixels[idx], g: pixels[idx + 1], b: pixels[idx + 2] });
-        }
-      }
-      for (let y = 0; y < sampleSize; y++) {
-        for (let x = w - sampleSize; x < w; x++) {
-          const idx = (y * w + x) * channels;
-          cornerSamples.push({ r: pixels[idx], g: pixels[idx + 1], b: pixels[idx + 2] });
-        }
-      }
-      for (let y = h - sampleSize; y < h; y++) {
-        for (let x = 0; x < sampleSize; x++) {
-          const idx = (y * w + x) * channels;
-          cornerSamples.push({ r: pixels[idx], g: pixels[idx + 1], b: pixels[idx + 2] });
-        }
-      }
-      for (let y = h - sampleSize; y < h; y++) {
-        for (let x = w - sampleSize; x < w; x++) {
-          const idx = (y * w + x) * channels;
-          cornerSamples.push({ r: pixels[idx], g: pixels[idx + 1], b: pixels[idx + 2] });
-        }
-      }
-
-      const avgR = Math.round(cornerSamples.reduce((s, c) => s + c.r, 0) / cornerSamples.length);
-      const avgG = Math.round(cornerSamples.reduce((s, c) => s + c.g, 0) / cornerSamples.length);
-      const avgB = Math.round(cornerSamples.reduce((s, c) => s + c.b, 0) / cornerSamples.length);
-
-      const tolerance = 60;
-      for (let i = 0; i < pixels.length; i += channels) {
-        const dr = Math.abs(pixels[i] - avgR);
-        const dg = Math.abs(pixels[i + 1] - avgG);
-        const db = Math.abs(pixels[i + 2] - avgB);
-        const dist = Math.sqrt(dr * dr + dg * dg + db * db);
-        if (dist < tolerance) {
-          pixels[i + 3] = 0;
-        } else if (dist < tolerance + 30) {
-          const fade = (dist - tolerance) / 30;
-          pixels[i + 3] = Math.round(255 * fade);
-        }
-      }
-
-      const bgLayer = await sharp({
-        create: {
-          width: w,
-          height: h,
-          channels: 4,
-          background: ICE_WHITE,
-        },
-      })
-        .png()
-        .toBuffer();
-
-      const fgLayer = await sharp(Buffer.from(pixels.buffer), {
-        raw: { width: w, height: h, channels: 4 },
-      })
-        .png()
-        .toBuffer();
+      const bgLayer = await createGradientBackground(w, h);
+      const shadowLayer = await createDropShadow(fgPng, w, h);
 
       buffer = await sharp(bgLayer)
-        .composite([{ input: fgLayer, blend: "over" }])
+        .composite([
+          { input: shadowLayer, blend: "over" },
+          { input: fgPng, blend: "over" },
+        ])
         .webp({ quality: 90 })
         .toBuffer();
     } else {
