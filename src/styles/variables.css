@@ -15,7 +15,7 @@
   --bg-secondary: #F7F7F8;
   --bg-tertiary: #F0F0F2;
   --bg-card: #FFFFFF;
-  --bg-dark-section: #0A0A0A;
+  --bg-dark-section: #0A0A14;
 
   /* Textos */
   --text-primary: #111111;
@@ -34,7 +34,7 @@
   --shadow-elevated: 0 12px 40px rgba(0, 0, 0, 0.12);
 
   /* Dream Drive — surfaces & ink */
-  --color-ink: #0A0A0A;
+  --color-ink: #0A0A14;
   --color-ink-hover: #1F1F1F;
   --bg-soft: #F5F3EF;          /* warm off-white for hero/sections */
   --bg-cream: #EFEAE1;         /* slightly deeper cream */

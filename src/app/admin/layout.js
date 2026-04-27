@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import styles from "./admin.module.css";
@@ -18,10 +19,17 @@ export default function AdminLayout({ children }) {
     <div className={styles.layout}>
       <aside className={styles.sidebar}>
         <div className={styles.sidebarHeader}>
-          <Link href="/admin" className={styles.logo}>
-            VAMAQ
+          <Link href="/admin" className={styles.logoLink}>
+            <Image
+              src="/brand/VAMAQ-LOGO.svg"
+              alt="Vamaq Motors"
+              width={160}
+              height={107}
+              className={styles.logoImage}
+              priority
+            />
           </Link>
-          <span className={styles.logoSub}>Admin</span>
+          <span className={styles.logoSub}>Painel Administrativo</span>
         </div>
         <nav className={styles.nav}>
           {NAV_ITEMS.map((item) => {
