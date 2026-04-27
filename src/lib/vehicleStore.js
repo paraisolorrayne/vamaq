@@ -34,7 +34,8 @@ export function updateVehicle(id, data) {
     const vehicles = readVehicles();
     const idx = vehicles.findIndex((v) => v.id === id);
     if (idx === -1) return null;
-    vehicles[idx] = { ...vehicles[idx], ...data };
+    const { id: _id, slug: _slug, ...safeData } = data;
+    vehicles[idx] = { ...vehicles[idx], ...safeData };
     writeVehicles(vehicles);
     return vehicles[idx];
   });

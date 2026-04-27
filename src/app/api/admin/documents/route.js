@@ -14,7 +14,7 @@ export async function POST(request) {
     let filled = templateBody;
     for (const [key, value] of Object.entries(values)) {
       const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      filled = filled.replace(new RegExp(`\\{\\{${escaped}\\}\\}`, "g"), value || "_______________");
+      filled = filled.replace(new RegExp(`\\{\\{${escaped}\\}\\}`, "g"), () => value || "_______________");
     }
 
     return NextResponse.json({
