@@ -715,7 +715,8 @@ function FipePriceLookup({ brand, onApplyPrice }) {
 
   useEffect(() => {
     if (!open) return;
-    fetch("/api/admin/fipe?tipo=carros")
+    const ac = new AbortController();
+    fetch("/api/admin/fipe?tipo=carros", { signal: ac.signal })
       .then((r) => r.json())
       .then((data) => {
         setMarcas(Array.isArray(data) ? data : []);
@@ -727,34 +728,41 @@ function FipePriceLookup({ brand, onApplyPrice }) {
         }
       })
       .catch(() => {});
+    return () => ac.abort();
   }, [open, brand]);
 
   useEffect(() => {
     if (!marcaSel) { setModelos([]); setModeloSel(""); return; }
+    const ac = new AbortController();
     setModelos([]); setModeloSel(""); setAnos([]); setAnoSel(""); setResultado(null);
-    fetch(`/api/admin/fipe?tipo=carros&marca=${marcaSel}`)
+    fetch(`/api/admin/fipe?tipo=carros&marca=${marcaSel}`, { signal: ac.signal })
       .then((r) => r.json())
       .then((d) => setModelos(d.modelos || []))
       .catch(() => {});
+    return () => ac.abort();
   }, [marcaSel]);
 
   useEffect(() => {
     if (!modeloSel) { setAnos([]); setAnoSel(""); return; }
+    const ac = new AbortController();
     setAnos([]); setAnoSel(""); setResultado(null);
-    fetch(`/api/admin/fipe?tipo=carros&marca=${marcaSel}&modelo=${modeloSel}`)
+    fetch(`/api/admin/fipe?tipo=carros&marca=${marcaSel}&modelo=${modeloSel}`, { signal: ac.signal })
       .then((r) => r.json())
       .then((d) => setAnos(Array.isArray(d) ? d : []))
       .catch(() => {});
+    return () => ac.abort();
   }, [modeloSel, marcaSel]);
 
   useEffect(() => {
     if (!anoSel) { setResultado(null); return; }
+    const ac = new AbortController();
     setLoading(true); setResultado(null);
-    fetch(`/api/admin/fipe?tipo=carros&marca=${marcaSel}&modelo=${modeloSel}&ano=${anoSel}`)
+    fetch(`/api/admin/fipe?tipo=carros&marca=${marcaSel}&modelo=${modeloSel}&ano=${anoSel}`, { signal: ac.signal })
       .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
       .then(setResultado)
       .catch(() => {})
       .finally(() => setLoading(false));
+    return () => ac.abort();
   }, [anoSel, marcaSel, modeloSel]);
 
   if (!open) {

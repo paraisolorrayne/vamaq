@@ -24,14 +24,15 @@ export default function FipePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const fetchFipe = useCallback(async (params) => {
+  const fetchFipe = useCallback(async (params, signal) => {
     const qs = new URLSearchParams({ tipo, ...params }).toString();
-    const res = await fetch(`/api/admin/fipe?${qs}`);
+    const res = await fetch(`/api/admin/fipe?${qs}`, { signal });
     if (!res.ok) throw new Error("Erro ao consultar FIPE");
     return res.json();
   }, [tipo]);
 
   useEffect(() => {
+    const ac = new AbortController();
     setMarcas([]);
     setModelos([]);
     setAnos([]);
@@ -41,7 +42,10 @@ export default function FipePage() {
     setResultado(null);
     setError("");
 
-    fetchFipe({}).then(setMarcas).catch(() => setError("Erro ao carregar marcas"));
+    fetchFipe({}, ac.signal)
+      .then(setMarcas)
+      .catch((e) => { if (e.name !== "AbortError") setError("Erro ao carregar marcas"); });
+    return () => ac.abort();
   }, [tipo, fetchFipe]);
 
   useEffect(() => {
@@ -53,6 +57,7 @@ export default function FipePage() {
       setResultado(null);
       return;
     }
+    const ac = new AbortController();
     setModelos([]);
     setModeloSel("");
     setAnos([]);
@@ -60,10 +65,11 @@ export default function FipePage() {
     setResultado(null);
     setLoading(true);
 
-    fetchFipe({ marca: marcaSel })
+    fetchFipe({ marca: marcaSel }, ac.signal)
       .then((data) => setModelos(data.modelos || []))
-      .catch(() => setError("Erro ao carregar modelos"))
+      .catch((e) => { if (e.name !== "AbortError") setError("Erro ao carregar modelos"); })
       .finally(() => setLoading(false));
+    return () => ac.abort();
   }, [marcaSel, fetchFipe]);
 
   useEffect(() => {
@@ -73,15 +79,17 @@ export default function FipePage() {
       setResultado(null);
       return;
     }
+    const ac = new AbortController();
     setAnos([]);
     setAnoSel("");
     setResultado(null);
     setLoading(true);
 
-    fetchFipe({ marca: marcaSel, modelo: modeloSel })
-      .then(setAnos)
-      .catch(() => setError("Erro ao carregar anos"))
+    fetchFipe({ marca: marcaSel, modelo: modeloSel }, ac.signal)
+      .then((d) => setAnos(Array.isArray(d) ? d : []))
+      .catch((e) => { if (e.name !== "AbortError") setError("Erro ao carregar anos"); })
       .finally(() => setLoading(false));
+    return () => ac.abort();
   }, [modeloSel, marcaSel, fetchFipe]);
 
   useEffect(() => {
@@ -89,11 +97,12 @@ export default function FipePage() {
       setResultado(null);
       return;
     }
+    const ac = new AbortController();
     setResultado(null);
     setLoading(true);
     setError("");
 
-    fetchFipe({ marca: marcaSel, modelo: modeloSel, ano: anoSel })
+    fetchFipe({ marca: marcaSel, modelo: modeloSel, ano: anoSel }, ac.signal)
       .then((data) => {
         setResultado(data);
         setHistorico((prev) => {
@@ -104,8 +113,9 @@ export default function FipePage() {
           return [data, ...prev].slice(0, 10);
         });
       })
-      .catch(() => setError("Erro ao consultar preço"))
+      .catch((e) => { if (e.name !== "AbortError") setError("Erro ao consultar preço"); })
       .finally(() => setLoading(false));
+    return () => ac.abort();
   }, [anoSel, marcaSel, modeloSel, fetchFipe]);
 
   const marcaNome = marcas.find((m) => String(m.codigo) === marcaSel)?.nome || "";
