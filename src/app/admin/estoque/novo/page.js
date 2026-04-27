@@ -743,7 +743,7 @@ function FipePriceLookup({ brand, onApplyPrice }) {
     setAnos([]); setAnoSel(""); setResultado(null);
     fetch(`/api/admin/fipe?tipo=carros&marca=${marcaSel}&modelo=${modeloSel}`)
       .then((r) => r.json())
-      .then(setAnos)
+      .then((d) => setAnos(Array.isArray(d) ? d : []))
       .catch(() => {});
   }, [modeloSel, marcaSel]);
 
@@ -751,7 +751,7 @@ function FipePriceLookup({ brand, onApplyPrice }) {
     if (!anoSel) { setResultado(null); return; }
     setLoading(true); setResultado(null);
     fetch(`/api/admin/fipe?tipo=carros&marca=${marcaSel}&modelo=${modeloSel}&ano=${anoSel}`)
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
       .then(setResultado)
       .catch(() => {})
       .finally(() => setLoading(false));
