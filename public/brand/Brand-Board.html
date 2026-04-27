@@ -1,0 +1,1526 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vamaq Motors — Manual de Identidade Visual</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --orange:#FF6A00;
+    --orange-hover:#E55E00;
+    --orange-soft:rgba(255,106,0,.08);
+    --ink:#0A0A14;
+    --ink-2:#141422;
+    --white:#FFFFFF;
+    --g-50:#F7F7F8;
+    --g-100:#F0F0F2;
+    --g-200:#E5E5E5;
+    --g-300:#D0D0D0;
+    --g-500:#888888;
+    --g-700:#555555;
+    --g-900:#111111;
+    --wa:#25D366;
+    --font-sans:'Inter','Helvetica Neue',Arial,sans-serif;
+    --font-head:'Rajdhani','Inter',sans-serif;
+    --shadow-card:0 2px 12px rgba(0,0,0,.06);
+    --shadow-elev:0 20px 50px rgba(0,0,0,.18);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--g-50);color:var(--g-900);font-family:var(--font-sans);-webkit-font-smoothing:antialiased;line-height:1.5}
+  img{max-width:100%;display:block}
+
+  /* ───── layout ───── */
+  .wrap{max-width:1280px;margin:0 auto;padding:0 40px}
+  section{padding:96px 0;border-bottom:1px solid var(--g-200)}
+  section.dark{background:var(--ink);color:var(--white);border-bottom:none}
+  section.cream{background:var(--g-50)}
+  section.white{background:var(--white)}
+
+  h1,h2,h3,h4{font-family:var(--font-head);font-weight:600;letter-spacing:.02em;line-height:1.1}
+  h1{font-size:clamp(2.5rem,5vw,4.5rem);letter-spacing:.08em;text-transform:uppercase}
+  h2{font-size:clamp(1.8rem,3vw,2.75rem);margin-bottom:8px}
+  h3{font-size:1.25rem;text-transform:uppercase;letter-spacing:.12em;font-weight:500}
+  .eyebrow{font-family:var(--font-head);font-size:.8rem;letter-spacing:.35em;text-transform:uppercase;color:var(--orange);margin-bottom:16px;font-weight:500}
+  .lead{font-size:1.125rem;color:var(--g-700);max-width:64ch;margin-top:12px}
+  .mute{color:var(--g-500);font-size:.875rem}
+  .hairline{width:40px;height:2px;background:var(--orange);margin:18px 0 24px}
+
+  /* ───── cover ───── */
+  .cover{min-height:100vh;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 70% 30%,#1a1a2e 0%,var(--ink) 60%);color:#fff;border-bottom:none;position:relative;overflow:hidden}
+  .cover::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 20% 80%,rgba(255,106,0,.15),transparent 50%);pointer-events:none}
+  .cover-inner{text-align:center;z-index:1;padding:0 40px}
+  .cover .kicker{font-family:var(--font-head);letter-spacing:.4em;font-size:.85rem;color:var(--orange);text-transform:uppercase;margin-bottom:40px}
+  .cover h1{font-size:clamp(2rem,6vw,5rem);color:#fff;margin-bottom:20px}
+  .cover .sub{color:var(--g-300);font-weight:300;font-size:1.1rem;max-width:520px;margin:0 auto}
+  .cover .meta{margin-top:80px;display:flex;gap:48px;justify-content:center;flex-wrap:wrap;color:var(--g-500);font-size:.75rem;letter-spacing:.25em;text-transform:uppercase}
+  .cover .meta span b{color:#fff;font-weight:500;display:block;margin-top:6px;letter-spacing:.05em;font-size:.9rem;font-family:var(--font-head)}
+
+  /* ───── logo displays ───── */
+  .logo-stage{display:flex;align-items:center;justify-content:center;padding:80px 40px;border-radius:16px;min-height:380px}
+  .logo-stage img{width:min(560px,80%);height:auto}
+  .stage-dark{background:var(--ink)}
+  .stage-white{background:#fff;border:1px solid var(--g-200)}
+  .stage-orange{background:var(--orange)}
+  .stage-gray{background:var(--g-100)}
+
+  .logo-white img{filter:brightness(0) invert(1)}
+  .logo-black img{filter:brightness(0)}
+  .logo-orange-only img{filter:brightness(0) saturate(100%) invert(48%) sepia(92%) saturate(2300%) hue-rotate(2deg) brightness(104%) contrast(103%)}
+
+  .grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:32px}
+  .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+  .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+  @media(max-width:900px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr}}
+
+  .caption{margin-top:14px;display:flex;justify-content:space-between;align-items:baseline;color:var(--g-500);font-size:.8rem;letter-spacing:.15em;text-transform:uppercase}
+  .caption b{color:var(--g-900);font-weight:500}
+
+  /* ───── color palette ───── */
+  .swatch{border-radius:12px;overflow:hidden;box-shadow:var(--shadow-card);background:#fff}
+  .swatch .chip{height:180px}
+  .swatch .meta{padding:18px 20px}
+  .swatch .name{font-family:var(--font-head);font-weight:600;font-size:1rem;text-transform:uppercase;letter-spacing:.1em}
+  .swatch .codes{display:flex;justify-content:space-between;margin-top:8px;color:var(--g-500);font-size:.75rem;font-variant-numeric:tabular-nums}
+
+  /* ───── typography specimen ───── */
+  .type-card{background:#fff;border:1px solid var(--g-200);border-radius:12px;padding:40px}
+  .type-card .tname{font-family:var(--font-head);font-size:3rem;line-height:1;margin-bottom:4px}
+  .type-card .tuse{color:var(--g-500);font-size:.8rem;letter-spacing:.2em;text-transform:uppercase;margin-bottom:28px}
+  .type-card .ex{font-size:1.5rem;line-height:1.3;color:var(--g-900)}
+  .type-card .weights{margin-top:24px;display:flex;flex-wrap:wrap;gap:16px 24px;color:var(--g-700)}
+  .type-card .weights span{font-size:.95rem}
+
+  /* ───── construction grid ───── */
+  .construction{position:relative;background:var(--ink);padding:60px;border-radius:12px}
+  .construction::before{content:"";position:absolute;inset:40px;background-image:linear-gradient(rgba(255,106,0,.12) 1px,transparent 1px),linear-gradient(90deg,rgba(255,106,0,.12) 1px,transparent 1px);background-size:40px 40px;pointer-events:none}
+  .construction img{position:relative;width:80%;margin:0 auto}
+
+  /* ───── don'ts ───── */
+  .dont{background:#fff;border:1px solid var(--g-200);border-radius:12px;padding:32px;text-align:center}
+  .dont .box{height:120px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:var(--ink);margin-bottom:16px;position:relative;overflow:hidden}
+  .dont .box img{width:70%;height:auto}
+  .dont .label{font-size:.8rem;color:var(--g-700);display:flex;align-items:center;justify-content:center;gap:6px}
+  .dont .label::before{content:"✕";color:#E1242B;font-weight:700;font-size:1rem}
+
+  .stretch img{transform:scaleX(1.6)}
+  .rotate img{transform:rotate(18deg)}
+  .lowcontrast{background:#3a2a1a !important}
+  .gradientbg{background:linear-gradient(135deg,#ff00aa,#00ccff) !important}
+
+  /* ═══════════════════════════════════════════════════════ */
+  /* APPLICATIONS                                              */
+  /* ═══════════════════════════════════════════════════════ */
+
+  /* business card */
+  .bc-stage{background:linear-gradient(135deg,#1a1a2e 0%,#0a0a14 100%);padding:80px 40px;border-radius:16px;display:flex;gap:40px;justify-content:center;flex-wrap:wrap;perspective:1500px}
+  .bc{width:360px;height:206px;border-radius:10px;box-shadow:var(--shadow-elev);overflow:hidden;position:relative;transform:rotateY(-8deg) rotateX(4deg);transition:transform .4s}
+  .bc:hover{transform:rotateY(0) rotateX(0)}
+  .bc-front{background:var(--ink);color:#fff;padding:28px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:16px}
+  .bc-front img{width:220px}
+  .bc-front .cut{position:absolute;bottom:0;left:0;right:0;height:4px;background:var(--orange)}
+  .bc-back{background:var(--orange);color:#fff;padding:28px;display:flex;flex-direction:column;justify-content:space-between;transform:rotateY(8deg) rotateX(-4deg)}
+  .bc-back:hover{transform:rotateY(0) rotateX(0)}
+  .bc-back .name{font-family:var(--font-head);font-size:1.35rem;font-weight:600;letter-spacing:.02em}
+  .bc-back .role{font-size:.75rem;letter-spacing:.25em;text-transform:uppercase;opacity:.85;margin-top:4px}
+  .bc-back .info{font-size:.8rem;line-height:1.6;opacity:.95}
+  .bc-back .bar{height:1px;background:rgba(255,255,255,.3);margin:14px 0}
+  .bc-front .brandline{font-family:var(--font-head);font-size:.7rem;letter-spacing:.35em;color:var(--orange);text-transform:uppercase}
+
+  /* instagram */
+  .ig-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  @media(max-width:900px){.ig-grid{grid-template-columns:1fr}}
+  .ig-post{aspect-ratio:1;border-radius:12px;overflow:hidden;position:relative;box-shadow:var(--shadow-card)}
+  .ig-post.dark{background:radial-gradient(circle at 30% 30%,#1a1a2e,var(--ink))}
+  .ig-post.orange{background:var(--orange)}
+  .ig-post.photo{background:linear-gradient(180deg,#2a2a3e 0%,#0a0a14 100%)}
+  .ig-post .content{position:absolute;inset:0;padding:32px;display:flex;flex-direction:column;color:#fff}
+  .ig-post .logo{width:88px}
+  .ig-post .tag{margin-top:auto;font-family:var(--font-head);font-size:1.6rem;line-height:1;font-weight:600;letter-spacing:.01em}
+  .ig-post .tag small{display:block;font-size:.65rem;letter-spacing:.35em;margin-bottom:10px;opacity:.7;font-weight:400;text-transform:uppercase}
+  .ig-post .orange-bar{display:inline-block;width:32px;height:3px;background:var(--orange);margin-top:14px}
+  .ig-post.orange .logo{filter:brightness(0) invert(1)}
+  .ig-post.orange .tag{color:#fff}
+  .ig-post.orange .orange-bar{background:var(--ink)}
+  .ig-post.photo::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 30%,rgba(0,0,0,.7) 100%)}
+  .ig-post.photo .car{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:6rem;opacity:.15;color:#fff}
+
+  /* instagram story */
+  .story{width:240px;aspect-ratio:9/16;border-radius:16px;overflow:hidden;box-shadow:var(--shadow-elev);background:var(--ink);position:relative;margin:0 auto;background-size:cover;background-position:center}
+  .story.photo::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,10,20,.45) 0%,rgba(10,10,20,.25) 40%,rgba(10,10,20,.85) 100%);z-index:1}
+  .story .bars{position:absolute;top:12px;left:12px;right:12px;display:flex;gap:4px;z-index:3}
+  .story .bars i{flex:1;height:2px;background:rgba(255,255,255,.3);border-radius:2px;font-style:normal}
+  .story .bars i.on{background:#fff}
+  .story .inner{position:absolute;inset:0;padding:40px 24px;display:flex;flex-direction:column;color:#fff}
+  .story .inner img{width:90px}
+  .story.orange-bg .inner img{filter:brightness(0) invert(1)}
+  .story .inner h4{font-family:var(--font-head);font-size:1.8rem;margin-top:auto;line-height:1;font-weight:600}
+  .story .inner p{font-size:.8rem;opacity:.8;margin-top:8px}
+  .story .cta{margin-top:auto;background:var(--orange);color:#fff;padding:12px 20px;border-radius:100px;text-align:center;font-size:.75rem;letter-spacing:.2em;text-transform:uppercase;font-weight:600}
+  .story::after{content:"";position:absolute;right:-50px;bottom:-50px;width:200px;height:200px;background:radial-gradient(circle,rgba(255,106,0,.3),transparent 70%)}
+
+  /* browser / website */
+  .browser{background:#fff;border-radius:12px 12px 16px 16px;box-shadow:var(--shadow-elev);overflow:hidden}
+  .browser .bar{background:#f2f2f5;padding:12px 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--g-200)}
+  .browser .bar i{width:12px;height:12px;border-radius:50%;background:#ddd;font-style:normal}
+  .browser .bar i:nth-child(1){background:#ff5f57}
+  .browser .bar i:nth-child(2){background:#febc2e}
+  .browser .bar i:nth-child(3){background:#28c840}
+  .browser .url{flex:1;background:#fff;border-radius:6px;padding:6px 14px;font-size:.75rem;color:var(--g-500);margin-left:12px}
+  .browser .hero{background:linear-gradient(180deg,#0a0a14 0%,#1a1a2e 100%);padding:32px;min-height:380px;color:#fff;display:flex;flex-direction:column}
+  .browser .nav{display:flex;align-items:center;justify-content:space-between}
+  .browser .nav img{width:110px}
+  .browser .nav ul{display:flex;gap:24px;list-style:none;color:#fff;font-size:.8rem}
+  .browser .nav .cta{background:var(--orange);padding:8px 18px;border-radius:100px;font-size:.75rem;font-weight:600}
+  .browser .headline{margin-top:auto;max-width:440px}
+  .browser .headline h3{font-family:var(--font-head);font-size:2.4rem;color:#fff;line-height:1;margin-bottom:12px;text-transform:none;letter-spacing:0}
+  .browser .headline p{color:var(--g-300);font-size:.85rem;margin-bottom:20px}
+  .browser .headline .btns{display:flex;gap:10px}
+  .browser .headline .btn{padding:10px 20px;border-radius:100px;font-size:.75rem;font-weight:600}
+  .browser .headline .btn.p{background:var(--orange);color:#fff}
+  .browser .headline .btn.o{background:transparent;border:1px solid rgba(255,255,255,.3);color:#fff}
+
+  /* billboard */
+  .billboard{background:#1d1d28;padding:60px 40px;border-radius:12px;position:relative;box-shadow:var(--shadow-elev)}
+  .billboard::before{content:"";position:absolute;left:50%;bottom:-40px;width:8px;height:40px;background:#444;transform:translateX(-50%)}
+  .billboard::after{content:"";position:absolute;left:50%;bottom:-40px;width:60px;height:4px;background:#444;transform:translateX(-50%) translateY(40px)}
+  .bb-inner{background:var(--ink);padding:60px;border-radius:6px;color:#fff;position:relative;overflow:hidden;min-height:280px;display:flex;align-items:center;justify-content:space-between;gap:40px}
+  .bb-inner::before{content:"";position:absolute;right:-100px;top:-100px;width:400px;height:400px;background:radial-gradient(circle,rgba(255,106,0,.2),transparent 60%)}
+  .bb-inner .left{z-index:1}
+  .bb-inner .left img{width:260px;margin-bottom:20px}
+  .bb-inner .left h3{font-family:var(--font-head);font-size:2.6rem;line-height:.95;color:#fff;text-transform:none;letter-spacing:0;font-weight:600;max-width:380px}
+  .bb-inner .left h3 span{color:var(--orange)}
+  .bb-inner .right{z-index:1;text-align:right;border-left:1px solid rgba(255,255,255,.15);padding-left:40px}
+  .bb-inner .right .ph{font-family:var(--font-head);font-size:1.6rem;color:#fff;font-weight:600}
+  .bb-inner .right .url{color:var(--orange);font-size:.9rem;margin-top:6px;letter-spacing:.1em}
+  @media(max-width:700px){.bb-inner{flex-direction:column;text-align:center}.bb-inner .right{border:none;padding:0;text-align:center}}
+
+  /* showroom façade */
+  .facade{background:linear-gradient(180deg,#c4c8d0 0%,#8e949c 100%);padding:50px 40px;border-radius:12px 12px 6px 6px;position:relative;box-shadow:var(--shadow-elev)}
+  .facade .top{background:var(--ink);padding:40px;border-radius:6px;display:flex;align-items:center;justify-content:center;min-height:140px}
+  .facade .top img{width:min(420px,80%);filter:brightness(0) invert(1)}
+  .facade .glass{margin-top:20px;background:linear-gradient(180deg,rgba(255,255,255,.4) 0%,rgba(200,210,220,.6) 100%);height:90px;border-radius:4px;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:4px}
+  .facade .glass div{background:linear-gradient(180deg,rgba(255,255,255,.5) 0%,rgba(180,190,200,.6) 100%);border-radius:2px}
+
+  /* keychain */
+  .kc-stage{background:var(--g-100);padding:60px 40px;border-radius:12px;display:flex;gap:48px;justify-content:center;align-items:center;flex-wrap:wrap}
+  .keychain{position:relative;width:180px}
+  .keychain .ring{width:40px;height:40px;border:4px solid #b8b8b8;border-radius:50%;margin:0 auto -16px;position:relative;z-index:1;background:#f0f0f2}
+  .keychain .tag{width:180px;height:110px;background:var(--ink);border-radius:12px;display:flex;align-items:center;justify-content:center;padding:20px;box-shadow:var(--shadow-elev);position:relative}
+  .keychain .tag img{width:100%;filter:brightness(0) invert(1)}
+  .keychain .tag::before{content:"";position:absolute;top:16px;left:50%;transform:translateX(-50%);width:16px;height:16px;border-radius:50%;background:#0a0a14;border:3px solid #1f1f2e}
+  .keychain.orange .tag{background:var(--orange)}
+  .keychain.orange .tag img{filter:brightness(0) invert(1)}
+  .keychain.orange .tag::before{background:var(--orange);border-color:#d85800}
+
+  /* luxury photo mockups */
+  .lux-hero{background:linear-gradient(180deg,#f4f4f6,#e8e8ec);border-radius:16px;overflow:hidden;box-shadow:var(--shadow-elev);margin-bottom:40px}
+  .lux-hero img{width:100%;height:auto;display:block;aspect-ratio:1/1;object-fit:cover}
+  .lux-hero-wrap{display:grid;grid-template-columns:1.2fr 1fr;gap:0;align-items:stretch}
+  @media(max-width:900px){.lux-hero-wrap{grid-template-columns:1fr}}
+  .lux-hero-info{padding:48px;display:flex;flex-direction:column;justify-content:center;background:#fff}
+  .lux-hero-info .tag{font-family:var(--font-head);font-size:.7rem;letter-spacing:.35em;text-transform:uppercase;color:var(--orange);margin-bottom:16px;font-weight:500}
+  .lux-hero-info h4{font-family:var(--font-head);font-size:1.75rem;color:var(--ink);margin-bottom:16px;letter-spacing:.02em;text-transform:none;line-height:1.15}
+  .lux-hero-info p{color:var(--g-700);font-size:.95rem;line-height:1.65;margin-bottom:20px}
+  .lux-hero-info .specs{border-top:1px solid var(--g-200);padding-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:.78rem}
+  .lux-hero-info .specs div{display:flex;flex-direction:column}
+  .lux-hero-info .specs small{color:var(--g-500);letter-spacing:.18em;text-transform:uppercase;font-size:.65rem;margin-bottom:2px}
+  .lux-hero-info .specs b{color:var(--ink);font-family:var(--font-head);font-weight:500;font-size:.9rem;letter-spacing:.02em}
+  .variations-label{font-family:var(--font-head);font-size:.75rem;letter-spacing:.3em;text-transform:uppercase;color:var(--g-500);font-weight:500;margin:20px 0 16px;display:flex;align-items:center;gap:12px}
+  .variations-label::before,.variations-label::after{content:"";flex:1;height:1px;background:var(--g-200)}
+
+  /* uniforms */
+  .uniform-stage{background:linear-gradient(180deg,#fafafa,#efefef);padding:60px 40px;border-radius:12px;display:flex;gap:40px;justify-content:center;flex-wrap:wrap;align-items:flex-end}
+  .polo{width:260px;height:320px;position:relative;display:flex;align-items:flex-start;justify-content:center;padding-top:70px}
+  .polo svg{position:absolute;inset:0;width:100%;height:100%}
+  .polo .mark{position:relative;z-index:2;width:72px;filter:brightness(0) invert(1)}
+  .polo.black-shirt .mark{filter:brightness(0) invert(1)}
+  .polo.white-shirt .mark{filter:none}
+  .polo .piece{position:absolute;bottom:-32px;left:50%;transform:translateX(-50%);font-family:var(--font-head);font-size:.7rem;letter-spacing:.25em;text-transform:uppercase;color:var(--g-700);white-space:nowrap;font-weight:500}
+
+  /* long sleeve */
+  .longsleeve{width:300px;height:340px;position:relative;display:flex;align-items:flex-start;justify-content:center;padding-top:85px}
+  .longsleeve svg{position:absolute;inset:0;width:100%;height:100%}
+  .longsleeve .mark{position:relative;z-index:2;width:90px}
+  .longsleeve.black-shirt .mark{filter:brightness(0) invert(1)}
+  .longsleeve .piece{position:absolute;bottom:-32px;left:50%;transform:translateX(-50%);font-family:var(--font-head);font-size:.7rem;letter-spacing:.25em;text-transform:uppercase;color:var(--g-700);white-space:nowrap;font-weight:500}
+
+  /* cap */
+  .cap-stage{background:linear-gradient(180deg,#fafafa,#efefef);padding:60px 40px;border-radius:12px;display:flex;gap:50px;justify-content:center;flex-wrap:wrap;align-items:center}
+  .cap{width:240px;height:180px;position:relative}
+  .cap svg{width:100%;height:100%}
+  .cap .mark{position:absolute;top:46%;left:50%;transform:translate(-50%,-50%);width:110px;z-index:2}
+  .cap.black-cap .mark{filter:brightness(0) invert(1)}
+  .cap.white-cap .mark{filter:none}
+  .cap.orange-cap .mark{filter:brightness(0) invert(1)}
+  .cap .piece{position:absolute;bottom:-30px;left:50%;transform:translateX(-50%);font-family:var(--font-head);font-size:.7rem;letter-spacing:.25em;text-transform:uppercase;color:var(--g-700);white-space:nowrap;font-weight:500}
+
+  /* stationery / contract */
+  .paper-stage{background:linear-gradient(135deg,#ebebef,#d8d8de);padding:60px 40px;border-radius:12px;display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:start}
+  @media(max-width:900px){.paper-stage{grid-template-columns:1fr}}
+  .sheet{background:#fff;aspect-ratio:210/297;box-shadow:var(--shadow-elev);border-radius:2px;padding:48px;position:relative;overflow:hidden}
+  .sheet .head{display:flex;align-items:center;justify-content:space-between;padding-bottom:24px;border-bottom:2px solid var(--orange);margin-bottom:28px}
+  .sheet .head img{width:120px}
+  .sheet .head .meta{text-align:right;font-size:.6rem;color:var(--g-500);letter-spacing:.15em;text-transform:uppercase;line-height:1.7}
+  .sheet .head .meta b{color:var(--ink);font-family:var(--font-head);font-size:.75rem;font-weight:600;letter-spacing:.1em;display:block}
+  .sheet h4{font-family:var(--font-head);font-size:1.1rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink);margin-bottom:16px;font-weight:600}
+  .sheet p.block{font-size:.55rem;color:var(--g-700);line-height:1.8;margin-bottom:10px;text-align:justify}
+  .sheet p.block.short{width:85%}
+  .sheet .signature-line{margin-top:32px;border-top:1px solid var(--g-300);padding-top:8px;font-size:.55rem;color:var(--g-500);letter-spacing:.15em;text-transform:uppercase;text-align:center;width:60%}
+  .sheet .foot{position:absolute;left:48px;right:48px;bottom:24px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--g-200);padding-top:12px;font-size:.55rem;color:var(--g-500);letter-spacing:.12em;text-transform:uppercase}
+  .sheet .foot .orange-dot{width:6px;height:6px;background:var(--orange);border-radius:50%;display:inline-block;margin-right:6px;vertical-align:middle}
+
+  .envelope{background:#fff;aspect-ratio:2.2/1;box-shadow:var(--shadow-elev);border-radius:4px;padding:24px 32px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden;margin-top:20px}
+  .envelope::before{content:"";position:absolute;top:0;left:0;right:0;height:48%;background:linear-gradient(180deg,transparent 0%,transparent 98%,var(--g-200) 100%);clip-path:polygon(0 0,100% 0,50% 100%)}
+  .envelope img{width:110px}
+  .envelope .addr{font-size:.55rem;color:var(--g-500);letter-spacing:.1em;text-transform:uppercase;line-height:1.7}
+  .envelope .addr b{color:var(--ink);display:block;font-family:var(--font-head);letter-spacing:.08em}
+  .envelope .stripe{position:absolute;right:0;top:0;bottom:0;width:10px;background:var(--orange)}
+
+  /* svg files showcase */
+  .file-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+  @media(max-width:900px){.file-grid{grid-template-columns:1fr}}
+  .file-card{background:#fff;border:1px solid var(--g-200);border-radius:12px;overflow:hidden;transition:transform .3s,box-shadow .3s}
+  .file-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-elev)}
+  .file-preview{height:220px;display:flex;align-items:center;justify-content:center;padding:28px;position:relative;overflow:hidden}
+  .file-preview img{max-width:80%;max-height:100%;width:auto;height:auto}
+  .file-preview.bg-transparent{background:repeating-conic-gradient(#f3f3f5 0 25%,#fff 0 50%) 50% / 20px 20px}
+  .file-preview.bg-dark{background:var(--ink)}
+  .file-preview.bg-light{background:#fff;border-bottom:1px solid var(--g-100)}
+  .file-preview.bg-orange{background:var(--orange)}
+  .file-info{padding:20px 22px;border-top:1px solid var(--g-100)}
+  .file-info .filename{font-family:var(--font-head);font-weight:600;font-size:.9rem;color:var(--ink);letter-spacing:.05em;display:flex;align-items:center;gap:8px}
+  .file-info .filename::before{content:"◆";color:var(--orange);font-size:.7rem}
+  .file-info .purpose{font-size:.78rem;color:var(--g-700);margin-top:6px;line-height:1.5}
+  .file-info .dims{font-size:.7rem;color:var(--g-500);margin-top:8px;letter-spacing:.12em;text-transform:uppercase;font-variant-numeric:tabular-nums}
+
+  /* social avatars — WhatsApp and Instagram mockups */
+  .social-stage{background:linear-gradient(135deg,#e8e8ec,#d0d0d8);padding:60px 40px;border-radius:12px;display:flex;gap:40px;justify-content:center;flex-wrap:wrap;align-items:flex-start}
+
+  /* WhatsApp chat mock */
+  .wa-phone{width:280px;background:#111b21;border-radius:32px;padding:14px;box-shadow:var(--shadow-elev);position:relative}
+  .wa-phone::before{content:"";position:absolute;top:10px;left:50%;transform:translateX(-50%);width:80px;height:18px;background:#000;border-radius:12px}
+  .wa-inner{background:#0b141a;border-radius:22px;overflow:hidden;padding-top:40px}
+  .wa-header{background:#202c33;padding:12px 14px;display:flex;align-items:center;gap:10px}
+  .wa-avatar{width:40px;height:40px;border-radius:50%;overflow:hidden;flex-shrink:0;background:var(--ink)}
+  .wa-avatar img{width:100%;height:100%;object-fit:cover}
+  .wa-contact{flex:1;min-width:0}
+  .wa-contact .name{color:#e9edef;font-size:.85rem;font-weight:500}
+  .wa-contact .status{color:#8696a0;font-size:.7rem}
+  .wa-icons{color:#aebac1;display:flex;gap:10px;font-size:.9rem}
+  .wa-body{background:#0b141a;min-height:240px;padding:16px 12px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cpath d='M0 20 L20 0 L40 20 L20 40 Z' fill='%23182229' fill-opacity='.15'/%3E%3C/svg%3E")}
+  .wa-bubble{background:#005c4b;color:#e9edef;padding:8px 12px;border-radius:8px 2px 8px 8px;font-size:.72rem;max-width:200px;margin-left:auto;margin-bottom:6px;line-height:1.4}
+  .wa-bubble.in{background:#202c33;border-radius:2px 8px 8px 8px;margin-left:0;margin-right:auto}
+  .wa-bubble .time{font-size:.55rem;color:#8696a0;display:block;text-align:right;margin-top:2px}
+
+  /* Instagram profile mock */
+  .ig-phone{width:320px;background:#fff;border-radius:32px;padding:14px;box-shadow:var(--shadow-elev);position:relative;overflow:hidden}
+  .ig-phone::before{content:"";position:absolute;top:10px;left:50%;transform:translateX(-50%);width:80px;height:18px;background:#000;border-radius:12px;z-index:10}
+  .ig-inner{background:#fff;border-radius:22px;overflow:hidden;padding-top:40px}
+  .ig-topbar{padding:12px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #efefef}
+  .ig-topbar .handle{font-family:'Inter',sans-serif;font-weight:600;font-size:.85rem;color:#111;flex:1}
+  .ig-topbar .icons{color:#262626;font-size:.9rem}
+  .ig-profile{padding:20px 16px;display:flex;align-items:center;gap:20px}
+  .ig-avatar{width:72px;height:72px;border-radius:50%;overflow:hidden;padding:3px;background:linear-gradient(45deg,#f58529 0%,#dd2a7b 50%,#8134af 100%)}
+  .ig-avatar-inner{width:100%;height:100%;border-radius:50%;overflow:hidden;background:var(--ink);border:2px solid #fff}
+  .ig-avatar-inner img{width:100%;height:100%;object-fit:cover}
+  .ig-stats{flex:1;display:flex;justify-content:space-around;font-size:.72rem;color:#262626;text-align:center}
+  .ig-stats b{display:block;font-weight:600;font-size:.9rem}
+  .ig-bio{padding:0 16px 14px;font-size:.72rem;color:#262626;line-height:1.4}
+  .ig-bio .bname{font-weight:600;margin-bottom:2px}
+  .ig-bio .cat{color:#8e8e8e;font-size:.65rem}
+  .ig-btns{padding:0 16px 14px;display:flex;gap:6px}
+  .ig-btns .b{flex:1;padding:6px;border-radius:6px;background:#0095f6;color:#fff;font-size:.7rem;text-align:center;font-weight:600}
+  .ig-btns .b.sec{background:#efefef;color:#262626}
+  .ig-posts{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:0 2px}
+  .ig-posts div{aspect-ratio:1;background:var(--ink);display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .ig-posts div img{width:70%;filter:brightness(0) invert(1)}
+  .ig-posts div:nth-child(2){background:var(--orange)}
+  .ig-posts div:nth-child(5){background:var(--orange)}
+  .ig-posts div:nth-child(6){background:linear-gradient(135deg,#1a1a2e,#0a0a14)}
+
+  /* dealer plate (plate sign on car) */
+  .plate-stage{background:linear-gradient(180deg,#e8e8ec 0%,#c8c8d0 100%);padding:60px 40px;border-radius:12px;position:relative}
+  .plate-grille{background:linear-gradient(180deg,#2a2a2e 0%,#18181c 100%);padding:40px 30px;border-radius:8px;display:flex;justify-content:center;align-items:center;position:relative;min-height:220px;background-image:repeating-linear-gradient(180deg,transparent 0,transparent 6px,rgba(255,255,255,.04) 6px,rgba(255,255,255,.04) 7px);box-shadow:inset 0 2px 8px rgba(0,0,0,.5)}
+  .plate-grille::before{content:"";position:absolute;left:20px;top:50%;transform:translateY(-50%);width:40px;height:40px;border-radius:50%;background:radial-gradient(circle,#3a3a40,#1a1a1e);border:2px solid #45454a;box-shadow:0 2px 6px rgba(0,0,0,.5)}
+  .plate-grille::after{content:"";position:absolute;right:20px;top:50%;transform:translateY(-50%);width:40px;height:40px;border-radius:50%;background:radial-gradient(circle,#3a3a40,#1a1a1e);border:2px solid #45454a;box-shadow:0 2px 6px rgba(0,0,0,.5)}
+  .plate{background:var(--ink);color:#fff;padding:14px 36px;border-radius:4px;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 20px rgba(0,0,0,.4);position:relative;z-index:1;width:360px;aspect-ratio:3/1;outline:2px solid #fff;outline-offset:-6px}
+  .plate img{width:100%;max-width:240px;height:auto}
+  .plate .txt{display:none}
+
+  .plate-alt{background:#fff;color:var(--ink);padding:14px 36px;border-radius:4px;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 20px rgba(0,0,0,.4);position:relative;z-index:1;width:360px;aspect-ratio:3/1;border:1px solid var(--g-200);outline:2px solid var(--ink);outline-offset:-6px}
+  .plate-alt img{width:100%;max-width:240px;height:auto}
+  .plate-alt .txt{display:none}
+
+  /* email signature */
+  .email-stage{background:#fff;padding:40px;border-radius:12px;border:1px solid var(--g-200);box-shadow:var(--shadow-card)}
+  .email-head{border-bottom:1px solid var(--g-200);padding-bottom:16px;margin-bottom:20px;font-size:.85rem;color:var(--g-500)}
+  .email-head div{margin-bottom:4px}
+  .email-head b{color:var(--g-900);font-weight:500}
+  .email-body{font-size:.95rem;color:var(--g-700);line-height:1.7}
+  .email-body p{margin-bottom:12px}
+  .sig{margin-top:28px;padding-top:24px;border-top:2px solid var(--orange);display:flex;gap:20px;align-items:center}
+  .sig img{width:120px;filter:none}
+  .sig .info{font-size:.85rem;color:var(--g-700);line-height:1.5}
+  .sig .info b{color:var(--g-900);font-family:var(--font-head);font-size:1rem;font-weight:600;letter-spacing:.03em;display:block;margin-bottom:2px}
+  .sig .info small{color:var(--orange);letter-spacing:.2em;text-transform:uppercase;font-size:.65rem}
+
+  /* windshield sticker */
+  .car-stage{background:linear-gradient(180deg,#e8e8ec,#c8c8d0);padding:60px 40px;border-radius:12px;position:relative;box-shadow:var(--shadow-card)}
+  .windshield{background:linear-gradient(180deg,rgba(40,45,55,.85) 0%,rgba(20,25,35,.9) 100%);height:220px;border-radius:40px 40px 8px 8px;position:relative;display:flex;align-items:flex-end;justify-content:center;padding:24px;overflow:hidden}
+  .windshield::before{content:"";position:absolute;top:0;left:0;right:0;height:40%;background:linear-gradient(180deg,rgba(255,255,255,.12),transparent)}
+  .windshield .sticker{background:#fff;padding:8px 24px;border-radius:3px;box-shadow:0 4px 12px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;gap:14px;width:260px;aspect-ratio:4/1}
+  .windshield .sticker img{width:100px;height:auto}
+  .windshield .sticker span{font-family:var(--font-head);font-size:.62rem;letter-spacing:.22em;text-transform:uppercase;color:var(--g-700);border-left:1px solid var(--g-300);padding-left:12px;font-weight:500;line-height:1.2}
+
+  /* shopping bag */
+  .bag-stage{background:var(--g-100);padding:60px 40px;border-radius:12px;display:flex;gap:40px;justify-content:center;flex-wrap:wrap;align-items:flex-end}
+  .bag{width:200px;height:260px;background:var(--ink);border-radius:4px 4px 8px 8px;box-shadow:var(--shadow-elev);position:relative;display:flex;align-items:center;justify-content:center;padding:30px}
+  .bag::before,.bag::after{content:"";position:absolute;top:-14px;width:80px;height:20px;border:3px solid #2a2a3e;border-bottom:none;border-radius:60px 60px 0 0}
+  .bag::before{left:24px}
+  .bag::after{right:24px}
+  .bag img{width:100%;filter:brightness(0) invert(1)}
+  .bag.orange{background:var(--orange)}
+  .bag.orange::before,.bag.orange::after{border-color:#d85800}
+  .bag.white{background:#fff;border:1px solid var(--g-200)}
+  .bag.white::before,.bag.white::after{border-color:var(--g-300)}
+  .bag.white img{filter:none}
+
+  /* footer */
+  footer{background:var(--ink);color:var(--g-300);padding:60px 0 40px;text-align:center}
+  footer img{width:180px;filter:brightness(0) invert(1);margin:0 auto 24px}
+  footer p{font-size:.8rem;letter-spacing:.15em;text-transform:uppercase}
+  footer .orange-line{width:60px;height:2px;background:var(--orange);margin:24px auto}
+
+  /* ═══════════════════════════════════════════════════════ */
+  /* PRINT / PDF EXPORT                                       */
+  /* ═══════════════════════════════════════════════════════ */
+  @page{size:A4 portrait;margin:0}
+
+  @media print{
+    *,*::before,*::after{
+      -webkit-print-color-adjust:exact !important;
+      print-color-adjust:exact !important;
+      color-adjust:exact !important;
+    }
+    html{width:210mm !important;max-width:210mm !important;margin:0 !important;padding:0 !important}
+    body{width:210mm !important;max-width:210mm !important;background:#fff !important;font-size:13px;margin:0 !important;padding:0 !important}
+    img{image-rendering:-webkit-optimize-contrast}
+
+    /* one section per page — use full vertical space */
+    section{
+      page-break-before:always;
+      page-break-after:always;
+      page-break-inside:avoid;
+      break-before:page;
+      break-after:page;
+      break-inside:avoid;
+      padding:14mm 0 !important;
+      min-height:auto !important;
+      border:none !important;
+      box-sizing:border-box !important;
+    }
+    section:first-of-type{page-break-before:auto;break-before:auto}
+    section:last-of-type{page-break-after:auto;break-after:auto}
+
+    .wrap{max-width:100% !important;padding:0 14mm !important}
+
+    /* cover sizing — ocupa exatamente A4 portrait 210×297mm */
+    .cover{
+      width:100% !important;
+      height:297mm !important;
+      min-height:297mm !important;
+      max-height:297mm !important;
+      padding:0 !important;
+      margin:0 !important;
+      box-sizing:border-box !important;
+      display:flex !important;
+      align-items:center !important;
+      justify-content:center !important;
+      overflow:hidden !important;
+      page-break-after:always !important;
+      break-after:page !important;
+    }
+    .cover-inner{
+      width:100% !important;
+      padding:30mm 20mm !important;
+      text-align:center !important;
+      box-sizing:border-box !important;
+    }
+    .cover h1{font-size:3.5rem !important}
+    .cover .kicker{font-size:1rem !important;margin-bottom:40px !important}
+    .cover .sub{font-size:1.15rem !important;max-width:480px !important;margin:0 auto}
+    .cover img{width:min(140mm,80%) !important;margin:0 auto 28px !important}
+    .cover .meta{margin-top:56px !important;gap:32px !important;justify-content:center}
+    .cover .meta span{font-size:.8rem !important}
+    .cover .meta span b{font-size:1rem !important}
+
+    /* typographic scale-down */
+    h1{font-size:3rem !important}
+    h2{font-size:2rem !important}
+    h3{font-size:1.1rem !important}
+    .lead{font-size:1.05rem !important;max-width:100% !important;margin-top:14px !important}
+    .eyebrow{font-size:.78rem !important;margin-bottom:12px !important}
+    .hairline{margin:20px 0 28px !important}
+
+    /* disable hover/3D transforms */
+    .bc,.bc-back,.mockup-card,.file-card,
+    .bc:hover,.bc-back:hover,.mockup-card:hover,.file-card:hover{
+      transform:none !important;
+      transition:none !important;
+      box-shadow:0 2px 8px rgba(0,0,0,.1) !important;
+    }
+
+    /* keep composed blocks together */
+    .lux-hero,.file-card,.swatch,.type-card,.dont,
+    .bc-stage,.bc,.ig-grid,.ig-post,.social-stage,.wa-phone,.ig-phone,
+    .browser,.billboard,.facade,.kc-stage,.keychain,
+    .uniform-stage,.polo,.longsleeve,.cap-stage,.cap,
+    .paper-stage,.sheet,.envelope,.plate-stage,.plate-grille,
+    .car-stage,.bag-stage,.bag,.email-stage,.mockup-card,
+    .construction{
+      page-break-inside:avoid !important;
+      break-inside:avoid !important;
+    }
+
+    /* fit wide items (portrait 186mm) */
+    .grid-4{grid-template-columns:repeat(4,1fr) !important;gap:10px !important}
+    .grid-3{grid-template-columns:repeat(3,1fr) !important;gap:10px !important}
+    .grid-2{grid-template-columns:repeat(2,1fr) !important;gap:14px !important}
+    .file-grid{grid-template-columns:repeat(2,1fr) !important;gap:14px !important}
+    .ig-grid{grid-template-columns:repeat(3,1fr) !important;gap:8px !important}
+
+    /* reduce tall stages */
+    .logo-stage{min-height:auto !important;padding:50px 24px !important}
+    .bc-stage{padding:40px 24px !important;gap:30px !important}
+    .bc{width:330px !important;height:190px !important}
+    .bc-front img{width:220px !important}
+    .bc-back .name{font-size:1.25rem !important}
+    .bc-back .info{font-size:.8rem !important}
+    .bc-back .role{font-size:.7rem !important}
+    .bc-front .brandline{font-size:.65rem !important}
+
+    /* ensure images don't overflow */
+    img{max-width:100%;max-height:90vh;height:auto}
+
+    /* ─── Construção / Malha ─── */
+    .construction{padding:20px !important}
+    .construction::before{inset:16px !important;background-size:28px 28px !important}
+    .construction img{max-height:140mm !important;width:auto !important;max-width:90% !important;margin:0 auto !important}
+
+    /* ─── Perfis WhatsApp & Instagram ─── */
+    .social-stage{padding:30px !important;gap:30px !important}
+    .wa-phone,.ig-phone{width:240px !important;padding:12px !important}
+    .wa-phone::before,.ig-phone::before{width:70px !important;height:16px !important}
+    .wa-inner,.ig-inner{padding-top:36px !important}
+    .wa-header{padding:10px 12px !important}
+    .wa-avatar{width:40px !important;height:40px !important}
+    .wa-contact .name{font-size:.85rem !important}
+    .wa-contact .status{font-size:.7rem !important}
+    .wa-body{min-height:220px !important;padding:12px 10px !important}
+    .wa-bubble{font-size:.7rem !important;padding:6px 10px !important;max-width:180px !important}
+    .wa-bubble .time{font-size:.55rem !important}
+    /* fix IG profile avatar (broken circle in print) */
+    .ig-avatar{width:68px !important;height:68px !important;padding:3px !important;box-sizing:border-box !important;flex-shrink:0 !important}
+    .ig-avatar-inner{border-width:2px !important;box-sizing:border-box !important}
+    .ig-avatar-inner img{width:100% !important;height:100% !important;object-fit:cover !important;display:block !important}
+    .ig-profile{padding:18px 14px !important;gap:16px !important}
+    .ig-stats{font-size:.7rem !important}
+    .ig-stats b{font-size:.9rem !important}
+    .ig-bio{padding:0 14px 12px !important;font-size:.7rem !important}
+    .ig-btns{padding:0 14px 12px !important}
+    .ig-btns .b{padding:6px !important;font-size:.7rem !important}
+    .ig-posts div img{width:65% !important}
+    /* hide the 3 avatar variations row to fit perfis on single page */
+    #avatar-variations{display:none !important}
+
+    /* ─── Instagram Stories — maiores para aproveitar espaço ─── */
+    .story{width:210px !important}
+    .story .inner{padding:28px 18px !important}
+    .story .inner img{width:80px !important}
+    .story .inner h4{font-size:1.35rem !important}
+    .story .inner p{font-size:.75rem !important;margin-top:8px !important}
+    .story .cta{padding:9px 14px !important;font-size:.65rem !important;letter-spacing:.18em !important;margin-top:auto !important;position:absolute !important;bottom:18px !important;left:18px !important;right:18px !important}
+    .story .bars{top:10px !important;left:10px !important;right:10px !important}
+
+    /* ─── Mídia Exterior · Outdoor ─── */
+    .billboard{padding:26px !important;margin-top:14px !important}
+    .billboard::before,.billboard::after{display:none !important}
+    .bb-inner{padding:38px !important;min-height:auto !important;gap:28px !important}
+    .bb-inner .left img{width:220px !important;margin-bottom:14px !important}
+    .bb-inner .left h3{font-size:1.6rem !important}
+    .bb-inner .right{padding-left:26px !important}
+    .bb-inner .right .ph{font-size:1.3rem !important}
+    .bb-inner .right .url{font-size:.85rem !important}
+
+    /* ─── Fachada · Showroom ─── */
+    .lux-hero img{max-height:115mm !important;height:auto !important;object-fit:cover}
+    .facade{padding:28px !important;margin-top:14px !important}
+    .facade .top{padding:32px !important;min-height:auto !important}
+    .facade .top img{width:360px !important}
+    .facade .glass{height:70px !important;margin-top:14px !important}
+
+    /* ─── Chaveiro ─── */
+    .kc-stage{padding:30px !important;gap:32px !important;margin-top:14px !important}
+    .keychain{width:180px !important}
+    .keychain .ring{width:36px !important;height:36px !important}
+    .keychain .tag{width:180px !important;height:108px !important;padding:20px !important}
+
+    /* ─── Uniforme Polo + Manga Longa + Boné ─── */
+    .uniform-stage{padding:28px !important;gap:22px !important;margin-top:14px !important}
+    .polo{width:200px !important;height:250px !important;padding-top:52px !important}
+    .polo .mark{width:64px !important}
+    .polo .piece{font-size:.68rem !important;bottom:-24px !important}
+    .longsleeve{width:220px !important;height:270px !important;padding-top:66px !important}
+    .longsleeve .mark{width:74px !important}
+    .cap-stage{padding:30px !important;gap:36px !important;margin-top:14px !important}
+    .cap{width:210px !important;height:160px !important}
+    .cap .mark{width:98px !important}
+    .variations-label{margin:18px 0 14px !important;font-size:.72rem !important}
+
+    /* ─── Lux-hero blocks (polo, boné, fachada, chaveiro) ─── */
+    .lux-hero{margin-bottom:14px !important}
+    .lux-hero-wrap{grid-template-columns:1.1fr 1fr !important}
+    .lux-hero-info{padding:20px !important}
+    .lux-hero-info .tag{font-size:.6rem !important;margin-bottom:10px !important}
+    .lux-hero-info h4{font-size:1.1rem !important;margin-bottom:10px !important}
+    .lux-hero-info p{font-size:.75rem !important;margin-bottom:10px !important;line-height:1.5 !important}
+    .lux-hero-info .specs{padding-top:10px !important;gap:8px !important}
+    .lux-hero-info .specs small{font-size:.55rem !important}
+    .lux-hero-info .specs b{font-size:.72rem !important}
+
+    /* ─── Universo da Marca ─── */
+    #universo-img{max-height:175mm !important;width:auto !important;max-width:100% !important;margin:0 auto !important;object-fit:contain}
+
+    /* ─── Papelaria · Contrato & Letterhead ─── */
+    .paper-stage{padding:14px !important;gap:12px !important;margin-top:10px !important;grid-template-columns:1fr 1fr !important}
+    .sheet{padding:16px !important;aspect-ratio:210/297 !important;max-height:none !important;overflow:hidden !important}
+    .sheet .head{padding-bottom:14px !important;margin-bottom:14px !important}
+    .sheet .head img{width:70px !important}
+    .sheet .head .meta{font-size:.5rem !important}
+    .sheet .head .meta b{font-size:.62rem !important}
+    .sheet h4{font-size:.8rem !important;margin-bottom:8px !important}
+    .sheet p.block{font-size:.5rem !important;margin-bottom:5px !important;line-height:1.6 !important}
+    .sheet .signature-line{margin-top:14px !important;font-size:.5rem !important}
+    .sheet .foot{position:static !important;margin-top:auto !important;padding-top:10px !important;font-size:.48rem !important}
+    .envelope{padding:12px 16px !important;margin-top:10px !important;aspect-ratio:2.4/1 !important}
+    .envelope img{width:70px !important}
+    .envelope .addr{font-size:.48rem !important}
+
+    /* ─── Placa · Veículos (retangular 3:1) ─── */
+    .plate-stage{padding:32px !important;margin-top:14px !important}
+    .plate-grille{padding:40px 30px !important;min-height:200px !important}
+    .plate-grille::before,.plate-grille::after{width:40px !important;height:40px !important}
+    .plate,.plate-alt{width:380px !important;padding:14px 34px !important;outline-offset:-6px !important}
+    .plate img,.plate-alt img{max-width:240px !important;width:100% !important}
+
+    /* ─── Adesivo · Parabrisa (retangular 4:1) ─── */
+    .car-stage .windshield{height:220px !important}
+    .windshield .sticker{width:320px !important;padding:10px 22px !important;gap:14px !important}
+    .windshield .sticker img{width:120px !important}
+    .windshield .sticker span{font-size:.7rem !important;padding-left:12px !important}
+
+    /* ─── E-mail · Assinatura ─── */
+    .email-stage{padding:22px !important}
+    .email-head{font-size:.7rem !important;padding-bottom:10px !important;margin-bottom:14px !important}
+    .email-body{font-size:.8rem !important;line-height:1.55 !important}
+    .email-body p{margin-bottom:8px !important}
+    .sig{margin-top:18px !important;padding-top:14px !important}
+    .sig img{width:90px !important}
+    .sig .info{font-size:.7rem !important}
+    .sig .info b{font-size:.85rem !important}
+    .sig .info small{font-size:.55rem !important}
+
+    /* ─── Adesivo · Parabrisa ─── */
+    .car-stage{padding:24px !important;margin-top:10px !important}
+    .windshield{height:160px !important}
+
+    /* ─── Sacola ─── */
+    .bag-stage{padding:34px !important;gap:40px !important;margin-top:14px !important}
+    .bag{width:190px !important;height:260px !important;padding:30px !important}
+
+    /* ─── Site Institucional (browser) ─── */
+    .browser{max-width:100% !important;margin:0 auto}
+    .browser .hero{min-height:260px !important;padding:28px !important}
+    .browser .nav img{width:110px !important}
+    .browser .nav ul{gap:20px !important;font-size:.75rem !important}
+    .browser .nav .cta{padding:7px 16px !important;font-size:.7rem !important}
+    .browser .headline h3{font-size:1.9rem !important}
+    .browser .headline p{font-size:.88rem !important;margin-bottom:18px !important}
+    .browser .headline .btn{padding:9px 18px !important;font-size:.72rem !important}
+
+    /* footer clean */
+    footer{padding:30px 0 !important}
+    footer img{width:140px !important;margin-bottom:14px !important}
+  }
+
+</style>
+</head>
+<body>
+
+<!-- ══════════════════ COVER ══════════════════ -->
+<section class="cover">
+  <div class="cover-inner">
+    <p class="kicker">Manual de Identidade Visual</p>
+    <img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776701654/untitled-2_owhakm.svg" alt="Vamaq Motors" style="width:min(520px,80%);margin:0 auto 20px">
+    <p class="sub">Galeria automotiva de altíssimo padrão · Especializada em veículos premium, esportivos e superesportivos</p>
+    <div class="meta">
+      <span>Versão<b>1.0</b></span>
+      <span>Abril<b>2026</b></span>
+      <span>Arquivo-mestre<b>VAMAQ-LOGO.pdf</b></span>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ LOGO PRIMÁRIA ══════════════════ -->
+<section class="white">
+  <div class="wrap">
+    <p class="eyebrow">01 · Logotipo</p>
+    <h2>Marca Principal</h2>
+    <div class="hairline"></div>
+    <p class="lead">A marca Vamaq Motors combina um letreiro robusto em laranja — com o "Q" estilizado como um velocímetro — à linha de apoio "MOTORS" em tipografia geométrica. É a expressão máxima da identidade. Use-a sempre que possível.</p>
+
+    <div class="logo-stage stage-dark" style="margin-top:48px">
+      <img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776701654/untitled-2_owhakm.svg" alt="Vamaq Motors — versão principal">
+    </div>
+    <div class="caption">
+      <span>Versão primária · Fundo escuro</span>
+      <b>#0A0A14 + #FF6A00</b>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ VARIAÇÕES DA LOGO ══════════════════ -->
+<section class="cream">
+  <div class="wrap">
+    <p class="eyebrow">02 · Variações</p>
+    <h2>Sistema de Versões</h2>
+    <div class="hairline"></div>
+    <p class="lead">A marca possui variações para garantir leitura e equilíbrio em todas as aplicações. Escolha a versão de acordo com o contraste do fundo.</p>
+
+    <div class="grid-2" style="margin-top:48px">
+      <div>
+        <div class="logo-stage stage-dark">
+          <img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776701654/untitled-2_owhakm.svg" alt="">
+        </div>
+        <div class="caption"><span>Primária</span><b>Sobre fundo escuro</b></div>
+      </div>
+      <div>
+        <div class="logo-stage stage-white logo-black">
+          <img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776701654/untitled-2_owhakm.svg" alt="">
+        </div>
+        <div class="caption"><span>Monocromática · Preta</span><b>Sobre fundos claros</b></div>
+      </div>
+      <div>
+        <div class="logo-stage stage-orange logo-white">
+          <img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776701654/untitled-2_owhakm.svg" alt="">
+        </div>
+        <div class="caption"><span>Monocromática · Branca</span><b>Sobre o laranja oficial</b></div>
+      </div>
+      <div>
+        <div class="logo-stage stage-gray logo-orange-only">
+          <img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776701654/untitled-2_owhakm.svg" alt="">
+        </div>
+        <div class="caption"><span>Laranja sólida</span><b>Aplicações gráficas</b></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ ARQUIVOS SVG ══════════════════ -->
+<section class="white">
+  <div class="wrap">
+    <p class="eyebrow">03 · Assets</p>
+    <h2>Arquivos da Marca</h2>
+    <div class="hairline"></div>
+    <p class="lead">Conjunto completo de arquivos SVG vetoriais. Cada variação foi otimizada para um contexto de uso específico — use o arquivo correto para evitar retrabalho ou perda de qualidade.</p>
+
+    <div class="file-grid" style="margin-top:48px">
+      <div class="file-card">
+        <div class="file-preview bg-transparent">
+          <img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776701654/untitled-2_owhakm.svg" alt="">
+        </div>
+        <div class="file-info">
+          <div class="filename">VAMAQ-LOGO.svg</div>
+          <div class="purpose">Logo primária oficial · fundo transparente, VAMAQ em laranja institucional e MOTORS em branco gelo (#F7F7F8). Use sempre que o fundo for escuro.</div>
+          <div class="dims">1920 × 1280 · Transparente</div>
+        </div>
+      </div>
+
+      <div class="file-card">
+        <div class="file-preview bg-dark" style="padding:0">
+          <img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776701654/untitled-2_owhakm.svg" alt="" style="max-width:100%;max-height:100%">
+        </div>
+        <div class="file-info">
+          <div class="filename">VAMAQ-LOGO-dark.svg</div>
+          <div class="purpose">Logo sobre fundo escuro institucional — <b>arquivo mestre hospedado em CDN</b>. Uso em apresentações, mídia externa e peças dark mode.</div>
+          <div class="dims">1920 × 1280 · #0A0A14 · CDN Cloudinary</div>
+        </div>
+      </div>
+
+      <div class="file-card">
+        <div class="file-preview bg-light" style="padding:0">
+          <img src="Logo/VAMAQ-LOGO-light.svg" alt="" style="max-width:100%;max-height:100%">
+        </div>
+        <div class="file-info">
+          <div class="filename">VAMAQ-LOGO-light.svg</div>
+          <div class="purpose">Variação oficial sem fundo, com "MOTORS" em preto (#030307). Ideal para documentos, papelaria e peças sobre fundos claros — preserva contraste onde o original ficaria ilegível.</div>
+          <div class="dims">1920 × 1280 · Transparente</div>
+        </div>
+      </div>
+
+      <div class="file-card">
+        <div class="file-preview bg-transparent">
+          <img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776711372/image-removebg-preview_a0eujn.png" alt="">
+        </div>
+        <div class="file-info">
+          <div class="filename">VAMAQ-SYMBOL.svg</div>
+          <div class="purpose">Apenas o símbolo "Q" — use em espaços reduzidos, favicons, ícones de app, selos e assinaturas curtas.</div>
+          <div class="dims">400 × 340 · Transparente</div>
+        </div>
+      </div>
+
+      <div class="file-card">
+        <div class="file-preview bg-dark" style="padding:0">
+          <img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776701654/untitled-2_owhakm.svg" alt="" style="max-width:100%;max-height:100%">
+        </div>
+        <div class="file-info">
+          <div class="filename">VAMAQ-AVATAR-dark.svg</div>
+          <div class="purpose">Avatar quadrado institucional para perfis em redes sociais. Formato 1:1 pronto para upload.</div>
+          <div class="dims">1000 × 1000 · #0A0A14</div>
+        </div>
+      </div>
+
+      <div class="file-card">
+        <div class="file-preview bg-orange" style="padding:0">
+          <img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776712262/VAMAQ-SYMBOL-LIGHT_uuqipj.png" alt="" style="max-width:100%;max-height:100%">
+        </div>
+        <div class="file-info">
+          <div class="filename">VAMAQ-AVATAR-orange.svg</div>
+          <div class="purpose">Avatar em laranja institucional para destaque em campanhas ou perfis de eventos.</div>
+          <div class="dims">1000 × 1000 · #FF6A00</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ CONSTRUÇÃO / GRID ══════════════════ -->
+<section class="white">
+  <div class="wrap">
+    <p class="eyebrow">04 · Construção</p>
+    <h2>Malha e Proporção</h2>
+    <div class="hairline"></div>
+    <p class="lead">A marca foi construída sobre uma malha modular. Respeite as proporções originais — nunca redesenhe, distorça ou altere os espaços internos.</p>
+
+    <div class="construction" style="margin-top:48px">
+      <img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776701654/untitled-2_owhakm.svg" alt="">
+    </div>
+    <div class="caption"><span>Área de proteção · 1 módulo</span><b>Mantenha afastamento mínimo em todos os lados</b></div>
+  </div>
+</section>
+
+<!-- ══════════════════ O QUE NÃO FAZER ══════════════════ -->
+<section class="cream">
+  <div class="wrap">
+    <p class="eyebrow">05 · Uso Incorreto</p>
+    <h2>O que não fazer</h2>
+    <div class="hairline"></div>
+    <p class="lead">Preservar a integridade da marca é fundamental. Os usos abaixo estão proibidos em qualquer peça.</p>
+
+    <div class="grid-4" style="margin-top:48px">
+      <div class="dont">
+        <div class="box stretch"><img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776701654/untitled-2_owhakm.svg" alt=""></div>
+        <p class="label">Não distorça</p>
+      </div>
+      <div class="dont">
+        <div class="box rotate"><img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776701654/untitled-2_owhakm.svg" alt=""></div>
+        <p class="label">Não rotacione</p>
+      </div>
+      <div class="dont">
+        <div class="box lowcontrast"><img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776701654/untitled-2_owhakm.svg" alt=""></div>
+        <p class="label">Não aplique em baixo contraste</p>
+      </div>
+      <div class="dont">
+        <div class="box gradientbg"><img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776701654/untitled-2_owhakm.svg" alt=""></div>
+        <p class="label">Não use fundos conflitantes</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ PALETA DE CORES ══════════════════ -->
+<section class="white">
+  <div class="wrap">
+    <p class="eyebrow">06 · Cores</p>
+    <h2>Paleta Institucional</h2>
+    <div class="hairline"></div>
+    <p class="lead">O branco é o protagonista — expressa sofisticação, limpeza e espaço respirável. O laranja aparece apenas nos momentos de destaque, como um toque esportivo premium.</p>
+
+    <div class="grid-4" style="margin-top:48px">
+      <div class="swatch">
+        <div class="chip" style="background:#FF6A00"></div>
+        <div class="meta">
+          <div class="name">Laranja Vamaq</div>
+          <div class="codes"><span>HEX #FF6A00</span><span>RGB 255·106·0</span></div>
+          <div class="codes"><span>CMYK 0·70·100·0</span><span>PMS 165 C</span></div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="chip" style="background:#0A0A14"></div>
+        <div class="meta">
+          <div class="name">Ink Deep</div>
+          <div class="codes"><span>HEX #0A0A14</span><span>RGB 10·10·20</span></div>
+          <div class="codes"><span>CMYK 80·75·60·95</span><span>PMS Black 6 C</span></div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="chip" style="background:#FFFFFF;border:1px solid var(--g-200)"></div>
+        <div class="meta">
+          <div class="name">Branco Puro</div>
+          <div class="codes"><span>HEX #FFFFFF</span><span>RGB 255·255·255</span></div>
+          <div class="codes"><span>CMYK 0·0·0·0</span><span>—</span></div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="chip" style="background:#F7F7F8"></div>
+        <div class="meta">
+          <div class="name">Cinza Neve</div>
+          <div class="codes"><span>HEX #F7F7F8</span><span>RGB 247·247·248</span></div>
+          <div class="codes"><span>CMYK 0·0·0·3</span><span>Cool Gray 1 C</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-4" style="margin-top:24px">
+      <div class="swatch">
+        <div class="chip" style="background:#E55E00"></div>
+        <div class="meta"><div class="name">Laranja Hover</div><div class="codes"><span>HEX #E55E00</span></div></div>
+      </div>
+      <div class="swatch">
+        <div class="chip" style="background:#555555"></div>
+        <div class="meta"><div class="name">Grafite</div><div class="codes"><span>HEX #555555</span></div></div>
+      </div>
+      <div class="swatch">
+        <div class="chip" style="background:#888888"></div>
+        <div class="meta"><div class="name">Cinza Médio</div><div class="codes"><span>HEX #888888</span></div></div>
+      </div>
+      <div class="swatch">
+        <div class="chip" style="background:#E5E5E5"></div>
+        <div class="meta"><div class="name">Cinza Claro</div><div class="codes"><span>HEX #E5E5E5</span></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ TIPOGRAFIA ══════════════════ -->
+<section class="cream">
+  <div class="wrap">
+    <p class="eyebrow">07 · Tipografia</p>
+    <h2>Sistema Tipográfico</h2>
+    <div class="hairline"></div>
+    <p class="lead">A dupla Rajdhani + Inter constrói uma voz moderna e técnica, com personalidade esportiva sem perder a clareza institucional.</p>
+
+    <div class="grid-2" style="margin-top:48px">
+      <div class="type-card">
+        <div class="tname" style="font-family:'Rajdhani',sans-serif">Rajdhani</div>
+        <div class="tuse">Títulos · Headlines · Displays</div>
+        <div class="ex" style="font-family:'Rajdhani',sans-serif;font-weight:600;font-size:2.5rem;line-height:1">SEU PRÓXIMO CARRO ESTÁ AQUI</div>
+        <div class="weights" style="font-family:'Rajdhani',sans-serif">
+          <span style="font-weight:400">Regular 400</span>
+          <span style="font-weight:500">Medium 500</span>
+          <span style="font-weight:600">SemiBold 600</span>
+          <span style="font-weight:700">Bold 700</span>
+        </div>
+      </div>
+      <div class="type-card">
+        <div class="tname">Inter</div>
+        <div class="tuse">Corpo · Interface · Leitura</div>
+        <div class="ex" style="font-family:'Inter',sans-serif;font-weight:400">Curadoria rigorosa. Procedência garantida. Cada veículo passa por uma inspeção criteriosa antes de compor o nosso acervo selecionado.</div>
+        <div class="weights">
+          <span style="font-weight:300">Light 300</span>
+          <span style="font-weight:400">Regular 400</span>
+          <span style="font-weight:500">Medium 500</span>
+          <span style="font-weight:600">SemiBold 600</span>
+          <span style="font-weight:700">Bold 700</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ APLICAÇÕES — CARTÃO DE VISITA ══════════════════ -->
+<section class="white">
+  <div class="wrap">
+    <p class="eyebrow">08 · Aplicação</p>
+    <h2>Cartão de Visita</h2>
+    <div class="hairline"></div>
+    <p class="lead">Acabamento sugerido: papel couchê fosco 300g com verniz localizado no símbolo. Frente em preto institucional, verso em laranja de impacto.</p>
+
+    <div class="bc-stage" style="margin-top:48px">
+      <div class="bc bc-front">
+        <img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776701654/untitled-2_owhakm.svg" alt="">
+        <div>
+          <div class="brandline">Galeria Automotiva</div>
+          <div style="font-family:var(--font-head);font-size:.75rem;letter-spacing:.3em;margin-top:6px;color:#aaa">SINCE 2012</div>
+        </div>
+        <div class="cut"></div>
+      </div>
+      <div class="bc bc-back">
+        <div>
+          <div class="name">Mateus Parreira</div>
+          <div class="role">Diretor — Sócio Fundador</div>
+        </div>
+        <div>
+          <div class="bar"></div>
+          <div class="info">
+            <div>+55 34 98414·3315</div>
+            <div>mateus@vamaqmotors.com.br</div>
+            <div>vamaqmotors.com.br</div>
+            <div style="margin-top:6px;opacity:.85">Uberlândia · MG</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="caption"><span>Frente · Verso</span><b>85 × 54 mm · couchê fosco 300g</b></div>
+  </div>
+</section>
+
+<!-- ══════════════════ APLICAÇÕES — PERFIS REDES SOCIAIS ══════════════════ -->
+<section class="cream">
+  <div class="wrap">
+    <p class="eyebrow">09 · Aplicação</p>
+    <h2>Perfis · WhatsApp & Instagram</h2>
+    <div class="hairline"></div>
+    <p class="lead">Foto de perfil padronizada nas redes sociais usando apenas o símbolo "Q" sobre fundo institucional escuro. Em formato circular, o símbolo se mantém legível e reconhecível mesmo em tamanhos reduzidos.</p>
+
+    <div class="social-stage" style="margin-top:48px">
+
+      <!-- WhatsApp Business mockup -->
+      <div>
+        <div class="wa-phone">
+          <div class="wa-inner">
+            <div class="wa-header">
+              <div class="wa-avatar"><img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776700390/VAMAQ-LOGO_sjmgem.svg" alt=""></div>
+              <div class="wa-contact">
+                <div class="name">Vamaq Motors</div>
+                <div class="status">on-line · digitando…</div>
+              </div>
+              <div class="wa-icons">📹  ⋮</div>
+            </div>
+            <div class="wa-body">
+              <div class="wa-bubble in">Olá! Vi o Porsche 911 Carrera GTS no site de vocês. Ainda está disponível?<span class="time">14:32</span></div>
+              <div class="wa-bubble">Boa tarde! Sim, está disponível. Posso agendar uma visita exclusiva para você conhecer o veículo.<span class="time">14:33 ✓✓</span></div>
+              <div class="wa-bubble">Fica livre amanhã às 15h na nossa galeria em Uberlândia?<span class="time">14:33 ✓✓</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="caption" style="margin-top:24px"><span>WhatsApp Business</span><b>Uso: perfil oficial</b></div>
+      </div>
+
+      <!-- Instagram profile mockup -->
+      <div>
+        <div class="ig-phone">
+          <div class="ig-inner">
+            <div class="ig-topbar">
+              <div class="handle">@vamaqmotors</div>
+              <div class="icons">＋ ☰</div>
+            </div>
+            <div class="ig-profile">
+              <div class="ig-avatar"><div class="ig-avatar-inner"><img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776701654/untitled-2_owhakm.svg" alt=""></div></div>
+              <div class="ig-stats">
+                <div><b>248</b>posts</div>
+                <div><b>18.4k</b>seguidores</div>
+                <div><b>312</b>seguindo</div>
+              </div>
+            </div>
+            <div class="ig-bio">
+              <div class="bname">Vamaq Motors</div>
+              <div class="cat">Concessionária de automóveis</div>
+              <div>Galeria automotiva premium · Uberlândia/MG<br>Curadoria rigorosa · Procedência garantida<br><span style="color:#00376b">↗ vamaqmotors.com.br</span></div>
+            </div>
+            <div class="ig-btns">
+              <div class="b">Seguir</div>
+              <div class="b sec">Mensagem</div>
+              <div class="b sec" style="flex:0;padding:6px 12px">▾</div>
+            </div>
+            <div class="ig-posts">
+              <div><img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776701654/untitled-2_owhakm.svg" alt=""></div>
+              <div><img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776701654/untitled-2_owhakm.svg" alt=""></div>
+              <div><img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776701654/untitled-2_owhakm.svg" alt=""></div>
+              <div><img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776701654/untitled-2_owhakm.svg" alt=""></div>
+              <div><img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776701654/untitled-2_owhakm.svg" alt=""></div>
+              <div><img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776701654/untitled-2_owhakm.svg" alt=""></div>
+            </div>
+          </div>
+        </div>
+        <div class="caption" style="margin-top:24px"><span>Instagram · @vamaqmotors</span><b>Uso: perfil oficial</b></div>
+      </div>
+
+    </div>
+</section>
+
+<!-- ══════════════════ APLICAÇÕES — INSTAGRAM FEED ══════════════════ -->
+<section class="cream">
+  <div class="wrap">
+    <p class="eyebrow">10 · Aplicação</p>
+    <h2>Redes Sociais · Feed Instagram</h2>
+    <div class="hairline"></div>
+    <p class="lead">Sistema modular de posts 1:1 alternando fundo escuro, laranja sólido e foto de veículo com gradiente. Mantém ritmo visual consistente no grid.</p>
+
+    <div class="ig-grid" style="margin-top:48px">
+      <div class="ig-post photo" style="background-image:url('https://s3.ecompletocarros.dev/images/lojas/285/veiculos/265716/veiculoInfoVeiculoImagesMobile/vehicle_image_1764010158_d41d8cd98f00b204e9800998ecf8427e.jpeg');background-size:cover;background-position:center">
+        <div class="content">
+          <img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776701654/untitled-2_owhakm.svg" alt="" class="logo">
+          <div class="tag">
+            <small>Novidade</small>
+            Porsche 911<br>Carrera GTS
+            <div class="orange-bar"></div>
+          </div>
+        </div>
+      </div>
+      <div class="ig-post photo" style="background-image:url('https://images-porsche.imgix.net/-/media/C42AF398785E4150BDE3518459B3E6F7_CF6FBBC8DAEB4312B142CF9BF57C5FCF_PS22PWSID0001-analysis?w=1299&q=85&auto=format');background-size:cover;background-position:center">
+        <div class="content">
+          <img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776701654/untitled-2_owhakm.svg" alt="" class="logo">
+          <div class="tag">
+            <small>Em destaque</small>
+            Curadoria<br>rigorosa.
+            <div class="orange-bar"></div>
+          </div>
+        </div>
+      </div>
+      <div class="ig-post photo" style="background-image:url('https://www.exoticus.com.br/essential/uploads/2023/09/ferrari-roma-3-9-v8-vermelha-2021-01-1.jpeg');background-size:cover;background-position:center">
+        <div class="content">
+          <img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776701654/untitled-2_owhakm.svg" alt="" class="logo">
+          <div class="tag">
+            <small>Acervo</small>
+            Ferrari<br>Roma
+            <div class="orange-bar"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="caption"><span>1080 × 1080 px</span><b>Sistema modular em grid</b></div>
+  </div>
+</section>
+
+<!-- ══════════════════ APLICAÇÕES — STORY ══════════════════ -->
+<section class="white">
+  <div class="wrap">
+    <p class="eyebrow">11 · Aplicação</p>
+    <h2>Instagram Stories</h2>
+    <div class="hairline"></div>
+    <p class="lead">Formato 9:16 para comunicação rápida. Logo no topo, informação no centro, CTA em laranja no rodapé.</p>
+
+    <div class="grid-3" style="margin-top:48px">
+      <div class="story photo" style="background-image:url('https://s3.ecompletocarros.dev/images/lojas/285/veiculos/265716/veiculoInfoVeiculoImagesMobile/vehicle_image_1764010158_d41d8cd98f00b204e9800998ecf8427e.jpeg')">
+        <div class="bars"><i class="on"></i><i></i><i></i></div>
+        <div class="inner" style="position:relative;z-index:2">
+          <img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776701654/untitled-2_owhakm.svg" alt="">
+          <h4>Novo<br>no acervo.</h4>
+          <p>Porsche 911 Carrera GTS 2024 · 3.200 km</p>
+        </div>
+      </div>
+      <div class="story photo" style="background-image:url('https://images-porsche.imgix.net/-/media/C42AF398785E4150BDE3518459B3E6F7_CF6FBBC8DAEB4312B142CF9BF57C5FCF_PS22PWSID0001-analysis?w=1299&q=85&auto=format')">
+        <div class="bars"><i></i><i class="on"></i><i></i></div>
+        <div class="inner" style="position:relative;z-index:2">
+          <img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776701654/untitled-2_owhakm.svg" alt="">
+          <h4>Seu próximo<br>carro<br>está aqui.</h4>
+          <p>Curadoria rigorosa · Procedência garantida</p>
+        </div>
+      </div>
+      <div class="story photo" style="background-image:url('https://www.exoticus.com.br/essential/uploads/2023/09/ferrari-roma-3-9-v8-vermelha-2021-01-1.jpeg')">
+        <div class="bars"><i></i><i></i><i class="on"></i></div>
+        <div class="inner" style="position:relative;z-index:2">
+          <img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776701654/untitled-2_owhakm.svg" alt="">
+          <h4>13 anos<br>de mercado.</h4>
+          <p>Mais de 500 veículos negociados</p>
+        </div>
+      </div>
+    </div>
+    <div class="caption"><span>1080 × 1920 px</span><b>Sistema de 3 templates</b></div>
+  </div>
+</section>
+
+<!-- ══════════════════ APLICAÇÕES — WEBSITE ══════════════════ -->
+<section class="cream">
+  <div class="wrap">
+    <p class="eyebrow">12 · Aplicação</p>
+    <h2>Site Institucional</h2>
+    <div class="hairline"></div>
+    <p class="lead">A página inicial comunica posicionamento imediato: tagline forte, CTA primário em laranja e navegação clara.</p>
+
+    <div class="browser" style="margin-top:48px">
+      <div class="bar"><i></i><i></i><i></i><div class="url">vamaqmotors.com.br</div></div>
+      <div class="hero">
+        <div class="nav">
+          <img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776701654/untitled-2_owhakm.svg" alt="">
+          <ul>
+            <li>Início</li><li>Acervo</li><li>Sobre</li><li>Contato</li>
+          </ul>
+          <div class="cta">Fale Conosco</div>
+        </div>
+        <div class="headline">
+          <h3>Seu próximo carro está aqui.</h3>
+          <p>Curadoria rigorosa. Procedência garantida.</p>
+          <div class="btns">
+            <div class="btn p">Ver Acervo</div>
+            <div class="btn o">WhatsApp</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="caption"><span>Hero · Desktop 1280 px</span><b>vamaqmotors.com.br</b></div>
+  </div>
+</section>
+
+<!-- ══════════════════ APLICAÇÕES — OUTDOOR ══════════════════ -->
+<section class="white">
+  <div class="wrap">
+    <p class="eyebrow">13 · Aplicação</p>
+    <h2>Mídia Exterior · Outdoor</h2>
+    <div class="hairline"></div>
+    <p class="lead">Mensagem direta, hierarquia clara e logo em escala dominante. Legibilidade à distância é a métrica que importa.</p>
+
+    <div style="padding:80px 40px 60px;margin-top:48px">
+      <div class="billboard">
+        <div class="bb-inner">
+          <div class="left">
+            <img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776701654/untitled-2_owhakm.svg" alt="">
+            <h3>Seu próximo <span>carro</span> está aqui.</h3>
+          </div>
+          <div class="right">
+            <div class="ph">34 98414·3315</div>
+            <div class="url">vamaqmotors.com.br</div>
+            <div style="color:#aaa;font-size:.75rem;margin-top:8px;letter-spacing:.15em;text-transform:uppercase">Uberlândia · MG</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="caption"><span>Front-light 9 × 3 m</span><b>Composição institucional</b></div>
+  </div>
+</section>
+
+<!-- ══════════════════ APLICAÇÕES — FACHADA ══════════════════ -->
+<section class="cream">
+  <div class="wrap">
+    <p class="eyebrow">14 · Aplicação</p>
+    <h2>Fachada · Showroom</h2>
+    <div class="hairline"></div>
+    <p class="lead">Letra caixa em chapa de aço com acabamento matte. Iluminação de fundo discreta (halo) para visibilidade noturna sem poluir.</p>
+
+    <div class="lux-hero" style="margin-top:48px">
+      <div class="lux-hero-wrap">
+        <img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776713541/Gemini_Generated_Image_q4e31mq4e31mq4e3_dfru4l.png" alt="Fachada Vamaq Motors com logo em letra caixa iluminada">
+        <div class="lux-hero-info">
+          <div class="tag">Mockup Fotorrealista</div>
+          <h4>Sinalização de fachada · letra caixa</h4>
+          <p>Marca aplicada em letra caixa com iluminação halo (back-lit) para presença noturna discreta. O relevo garante identificação à distância e eleva a percepção premium do showroom.</p>
+          <div class="specs">
+            <div><small>Material</small><b>Chapa de aço 3mm · matte</b></div>
+            <div><small>Iluminação</small><b>LED halo · 3000K</b></div>
+            <div><small>Acabamento</small><b>Pintura automotiva</b></div>
+            <div><small>Fixação</small><b>Afastador oculto 40mm</b></div>
+          </div>
+        </div>
+      </div>
+    </div>
+</section>
+
+<!-- ══════════════════ APLICAÇÕES — CHAVEIRO ══════════════════ -->
+<section class="white">
+  <div class="wrap">
+    <p class="eyebrow">15 · Aplicação</p>
+    <h2>Chaveiro Exclusivo · Entrega do Veículo</h2>
+    <div class="hairline"></div>
+    <p class="lead">Peça de metal escovado com logo em alto-relevo. Entregue a cada cliente junto ao veículo — um símbolo tangível da experiência Vamaq.</p>
+
+    <div class="lux-hero" style="margin-top:48px">
+      <div class="lux-hero-wrap">
+        <img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776713540/Gemini_Generated_Image_outt4voutt4voutt_kwpabm.png" alt="Chaveiro Vamaq Motors em aço inox com logo em relevo">
+        <div class="lux-hero-info">
+          <div class="tag">Mockup Fotorrealista</div>
+          <h4>Chaveiro · Aço inox com logo em relevo</h4>
+          <p>Peça tangível que acompanha o cliente após cada entrega — pequeno, pesado e preciso. O logo aplicado em alto-relevo garante durabilidade e a sensação premium ao toque, reforçando a marca em um gesto cotidiano.</p>
+          <div class="specs">
+            <div><small>Material</small><b>Aço inox 316 escovado</b></div>
+            <div><small>Dimensão</small><b>70 × 40 × 4 mm</b></div>
+            <div><small>Acabamento</small><b>Logo em alto-relevo</b></div>
+            <div><small>Embalagem</small><b>Caixa preta com interior laranja</b></div>
+          </div>
+        </div>
+      </div>
+    </div>
+</section>
+
+<!-- ══════════════════ APLICAÇÕES — UNIFORME POLO ══════════════════ -->
+<section class="cream">
+  <div class="wrap">
+    <p class="eyebrow">16 · Aplicação</p>
+    <h2>Uniforme · Camisa Polo</h2>
+    <div class="hairline"></div>
+    <p class="lead">Polo premium em malha piquet, com logo bordado no peito esquerdo. Versão preta é o padrão do atendimento; laranja para gerência; branca para eventos.</p>
+
+    <div class="lux-hero" style="margin-top:48px">
+      <div class="lux-hero-wrap">
+        <img src="https://files.manuscdn.com/user_upload_by_module/session_file/310419663028972136/GsTnYYCChmOvkVeh.png" alt="Camisa Polo Vamaq Motors com logo bordado">
+        <div class="lux-hero-info">
+          <div class="tag">Mockup Fotorrealista</div>
+          <h4>Polo Premium · Bordado oficial</h4>
+          <p>Logo oficial bordada diretamente na fibra do tecido, com textura de linha e sombras naturais. O acabamento em relevo garante profundidade e legibilidade do símbolo à distância.</p>
+          <div class="specs">
+            <div><small>Material</small><b>Piquet 100% algodão</b></div>
+            <div><small>Bordado</small><b>60 × 25 mm · peito esquerdo</b></div>
+            <div><small>Cor base</small><b>Preto institucional</b></div>
+            <div><small>Fio</small><b>Polyester · laranja #FF6A00</b></div>
+          </div>
+        </div>
+      </div>
+    </div>
+</section>
+
+<!-- ══════════════════ APLICAÇÕES — SHOWCASE GERAL ══════════════════ -->
+<section class="white">
+  <div class="wrap">
+    <p class="eyebrow">17 · Aplicações</p>
+    <h2>Universo da Marca</h2>
+    <div class="hairline"></div>
+    <p class="lead">Composição fotográfica reunindo múltiplas aplicações da identidade — de vestuário a papelaria, passando por brindes e ambientação — mostrando a consistência visual da marca em toda a jornada do cliente.</p>
+
+    <div style="margin-top:48px;border-radius:16px;overflow:hidden;box-shadow:var(--shadow-elev);background:#f4f4f6">
+      <img id="universo-img" src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776707420/Gemini_Generated_Image_kbgmvhkbgmvhkbgm_f3atep.png" alt="Universo Vamaq Motors — composição de aplicações da marca" style="width:100%;height:auto;display:block">
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ APLICAÇÕES — PAPELARIA ══════════════════ -->
+<section class="white">
+  <div class="wrap">
+    <p class="eyebrow">18 · Aplicação</p>
+    <h2>Papelaria · Contrato & Letterhead</h2>
+    <div class="hairline"></div>
+    <p class="lead">Papel timbrado A4 para contratos de compra/venda, termos e documentos institucionais. Envelope carta em papel offset 180g com faixa laranja lateral.</p>
+
+    <div class="paper-stage" style="margin-top:48px">
+      <div class="sheet">
+        <div class="head">
+          <img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776701654/untitled-2_owhakm.svg" alt="" style="background:var(--ink);padding:8px 12px;border-radius:4px">
+          <div class="meta">
+            <b>Contrato nº 2026·042</b>
+            Uberlândia · MG<br>
+            20 · Abril · 2026
+          </div>
+        </div>
+
+        <h4>Contrato de Compra e Venda</h4>
+        <p class="block">Por este instrumento particular de compra e venda de veículo automotor, de um lado <b style="color:var(--ink)">VAMAQ MOTORS COMÉRCIO DE VEÍCULOS LTDA.</b>, pessoa jurídica de direito privado, estabelecida em Uberlândia, Estado de Minas Gerais, doravante denominada VENDEDORA; e de outro lado o(a) CONTRATANTE qualificado(a) no Anexo I deste instrumento, doravante denominado(a) COMPRADOR(A), têm entre si, justo e contratado, o seguinte:</p>
+        <p class="block">CLÁUSULA PRIMEIRA — Do Objeto. O presente contrato tem por objeto a venda do veículo automotor descrito no Anexo I, o qual a VENDEDORA declara ser de sua legítima propriedade, livre e desembaraçado de quaisquer ônus.</p>
+        <p class="block short">CLÁUSULA SEGUNDA — Do Preço e Forma de Pagamento. O valor total da presente transação é aquele estabelecido no Anexo I, a ser pago pelo(a) COMPRADOR(A) à VENDEDORA na forma ali descrita.</p>
+
+        <div class="signature-line">Assinatura · Comprador(a)</div>
+
+        <div class="foot">
+          <span><span class="orange-dot"></span>vamaqmotors.com.br</span>
+          <span>34 · 98414·3315</span>
+          <span>Página 01 · 04</span>
+        </div>
+      </div>
+
+      <div>
+        <div class="sheet">
+          <div class="head">
+            <img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776701654/untitled-2_owhakm.svg" alt="" style="background:var(--ink);padding:8px 12px;border-radius:4px">
+            <div class="meta">
+              <b>Papel Timbrado</b>
+              Uberlândia · MG<br>
+              vamaqmotors.com.br
+            </div>
+          </div>
+
+          <div style="margin-top:60px">
+            <div style="font-size:.6rem;color:var(--g-500);letter-spacing:.15em;text-transform:uppercase;margin-bottom:24px">Ao sr(a)</div>
+            <div style="font-family:var(--font-head);color:var(--ink);font-size:.9rem;font-weight:600;margin-bottom:2px">Cliente Prezado</div>
+            <div style="font-size:.55rem;color:var(--g-500);letter-spacing:.1em">Uberlândia · Minas Gerais</div>
+          </div>
+
+          <p class="block" style="margin-top:40px">Prezado cliente,</p>
+          <p class="block">É com satisfação que apresentamos formalmente a seleção de veículos que atenderam aos critérios estabelecidos em nossa conversa anterior. Cada exemplar passou por inspeção completa da nossa equipe técnica, com procedência verificada e histórico integral.</p>
+          <p class="block short">Estamos à disposição para agendar uma visita exclusiva à nossa galeria em Uberlândia.</p>
+
+          <div style="margin-top:60px;font-family:var(--font-head);color:var(--ink);font-size:.85rem;font-weight:600">Mateus Parreira</div>
+          <div style="font-size:.55rem;color:var(--g-500);letter-spacing:.2em;text-transform:uppercase;margin-top:2px">Diretor · Sócio Fundador</div>
+
+          <div class="foot">
+            <span><span class="orange-dot"></span>34 · 98414·3315</span>
+            <span>mateus@vamaqmotors.com.br</span>
+          </div>
+        </div>
+
+        <div class="envelope">
+          <img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776701654/untitled-2_owhakm.svg" alt="" style="background:var(--ink);padding:6px 10px;border-radius:3px;align-self:flex-start">
+          <div class="addr">
+            <b>Vamaq Motors</b>
+            Uberlândia · Minas Gerais<br>
+            34 · 98414·3315 · vamaqmotors.com.br
+          </div>
+          <div class="stripe"></div>
+        </div>
+      </div>
+    </div>
+    <div class="caption"><span>A4 · 210 × 297 mm · offset 120g</span><b>Envelope carta DL · 220 × 110 mm · offset 180g</b></div>
+  </div>
+</section>
+
+<!-- ══════════════════ APLICAÇÕES — PLACA DO VEÍCULO ══════════════════ -->
+<section class="cream">
+  <div class="wrap">
+    <p class="eyebrow">19 · Aplicação</p>
+    <h2>Placa · Veículos Anunciados</h2>
+    <div class="hairline"></div>
+    <p class="lead">Placa identificadora aplicada na grade frontal de todos os veículos do acervo — no lugar da placa oficial durante a exposição. Marca a procedência Vamaq em cada anúncio fotográfico e no showroom.</p>
+
+    <div class="plate-stage" style="margin-top:48px">
+      <div class="plate-grille">
+        <div class="plate">
+          <img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776701654/untitled-2_owhakm.svg" alt="Placa Vamaq Motors">
+        </div>
+      </div>
+    </div>
+    <div class="caption"><span>Placa institucional · aplicada na grade</span><b>Versão padrão · proporção 3:1</b></div>
+
+    <div class="grid-3" style="margin-top:32px">
+      <div>
+        <div class="plate-stage" style="padding:40px 24px">
+          <div style="background:#d8d8de;padding:30px 16px;border-radius:8px;display:flex;justify-content:center">
+            <div class="plate" style="width:260px">
+              <img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776701654/untitled-2_owhakm.svg" alt="">
+            </div>
+          </div>
+        </div>
+        <div class="caption"><span>Variação A</span><b>Padrão preto</b></div>
+      </div>
+      <div>
+        <div class="plate-stage" style="padding:40px 24px">
+          <div style="background:#d8d8de;padding:30px 16px;border-radius:8px;display:flex;justify-content:center">
+            <div class="plate-alt" style="width:260px">
+              <img src="Logo/VAMAQ-LOGO-light.svg" alt="">
+            </div>
+          </div>
+        </div>
+        <div class="caption"><span>Variação B</span><b>Fundo branco</b></div>
+      </div>
+      <div>
+        <div class="plate-stage" style="padding:40px 24px">
+          <div style="background:#d8d8de;padding:30px 16px;border-radius:8px;display:flex;justify-content:center">
+            <div class="plate-alt" style="width:260px;background:var(--orange);border:none;outline-color:#fff">
+              <img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776701654/untitled-2_owhakm.svg" alt="" style="filter:brightness(0) invert(1)">
+            </div>
+          </div>
+        </div>
+        <div class="caption"><span>Variação C</span><b>Fundo laranja</b></div>
+      </div>
+    </div>
+
+    <p class="lead" style="margin-top:32px;font-size:.95rem">A placa substitui temporariamente a placa oficial durante sessões fotográficas do acervo — garantindo que cada imagem publicada carregue a assinatura da marca. Produzida em acrílico de 3mm com fixação por imã oculto, sem danificar o veículo.</p>
+    <div class="caption" style="margin-top:24px"><span>130 × 40 mm · acrílico 3mm</span><b>Impressão UV digital · fixação magnética</b></div>
+  </div>
+</section>
+
+<!-- ══════════════════ APLICAÇÕES — E-MAIL ══════════════════ -->
+<section class="white">
+  <div class="wrap">
+    <p class="eyebrow">20 · Aplicação</p>
+    <h2>Assinatura de E-mail</h2>
+    <div class="hairline"></div>
+    <p class="lead">Modelo padrão para comunicação institucional. Usa a logo em formato PNG com fundo claro e linha laranja de apoio.</p>
+
+    <div class="email-stage" style="margin-top:48px">
+      <div class="email-head">
+        <div><b>De:</b> Mateus Parreira &lt;mateus@vamaqmotors.com.br&gt;</div>
+        <div><b>Para:</b> Cliente</div>
+        <div><b>Assunto:</b> Novo acervo disponível · Vamaq Motors</div>
+      </div>
+      <div class="email-body">
+        <p>Prezado cliente,</p>
+        <p>É com prazer que compartilhamos as novidades do nosso acervo selecionado deste mês. Dois exemplares raros acabam de chegar à nossa galeria — agendamos uma visita exclusiva para você.</p>
+        <p>Permanecemos à disposição.</p>
+      </div>
+      <div class="sig">
+        <img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776701654/untitled-2_owhakm.svg" alt="" style="background:var(--ink);padding:12px;border-radius:6px">
+        <div class="info">
+          <b>Mateus Parreira</b>
+          <small>Diretor · Sócio Fundador</small>
+          <div style="margin-top:10px">+55 34 98414·3315 · mateus@vamaqmotors.com.br<br>vamaqmotors.com.br · Uberlândia · MG</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ APLICAÇÕES — ADESIVO VEÍCULO ══════════════════ -->
+<section class="white">
+  <div class="wrap">
+    <p class="eyebrow">21 · Aplicação</p>
+    <h2>Adesivo · Parabrisa</h2>
+    <div class="hairline"></div>
+    <p class="lead">Selo discreto aplicado no canto inferior do parabrisa de todos os veículos do acervo — identifica a procedência e a curadoria Vamaq.</p>
+
+    <div class="car-stage" style="margin-top:48px">
+      <div class="windshield">
+        <div class="sticker">
+          <img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776701654/untitled-2_owhakm.svg" alt="" style="filter:none">
+          <span>Curadoria<br>Vamaq</span>
+        </div>
+      </div>
+    </div>
+    <div class="caption"><span>80 × 30 mm</span><b>Vinil adesivo translúcido</b></div>
+  </div>
+</section>
+
+<!-- ══════════════════ APLICAÇÕES — SACOLA ══════════════════ -->
+<section class="cream">
+  <div class="wrap">
+    <p class="eyebrow">22 · Aplicação</p>
+    <h2>Sacola · Brinde Institucional</h2>
+    <div class="hairline"></div>
+    <p class="lead">Sacola de papel kraft laminada em três acabamentos. Entregue junto ao kit de boas-vindas ou em eventos exclusivos para clientes.</p>
+
+    <div class="bag-stage" style="margin-top:48px">
+      <div class="bag">
+        <img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776701654/untitled-2_owhakm.svg" alt="">
+      </div>
+      <div class="bag orange">
+        <img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776701654/untitled-2_owhakm.svg" alt="">
+      </div>
+      <div class="bag white">
+        <img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776701654/untitled-2_owhakm.svg" alt="">
+      </div>
+    </div>
+    <div class="caption"><span>25 × 32 × 10 cm</span><b>Papel kraft 250g · laminação fosca</b></div>
+  </div>
+</section>
+
+<!-- ══════════════════ FOOTER ══════════════════ -->
+<footer>
+  <img src="https://res.cloudinary.com/dwedjsnn9/image/upload/v1776701654/untitled-2_owhakm.svg" alt="Vamaq Motors">
+  <div class="orange-line"></div>
+  <p>Manual de Identidade Visual · V1.0 · Abril 2026</p>
+  <p style="margin-top:10px;opacity:.5">© 2026 Vamaq Motors · Todos os direitos reservados</p>
+</footer>
+
+<script>
+  /* Safari viewport fix — sem isso o Safari escala o documento para ~55%
+     porque usa device-width (1440px) e encolhe para caber no A4 (794px).
+     Trocar o viewport para 794px antes de imprimir elimina o scale-down. */
+  var vp = document.querySelector('meta[name="viewport"]');
+  window.addEventListener('beforeprint', function () {
+    vp.setAttribute('content', 'width=794');
+  });
+  window.addEventListener('afterprint', function () {
+    vp.setAttribute('content', 'width=device-width, initial-scale=1.0');
+  });
+</script>
+</body>
+</html>

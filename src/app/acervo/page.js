@@ -21,8 +21,8 @@ const SORT_OPTIONS = [
   { value: "recent", label: "Mais recentes" },
   { value: "brand", label: "Marca (A-Z)" },
   { value: "brandDesc", label: "Marca (Z-A)" },
-  { value: "mileage", label: "Menor quilometragem" },
-  { value: "mileageDesc", label: "Maior quilometragem" },
+  { value: "quilometragem", label: "Menor quilometragem" },
+  { value: "quilometragemDesc", label: "Maior quilometragem" },
   { value: "yearAsc", label: "Ano (mais antigo)" },
   { value: "yearDesc", label: "Ano (mais novo)" },
 ];
@@ -32,7 +32,7 @@ export default function AcervoPage() {
   const [selectedTypes, setSelectedTypes] = useState([]);
   const [selectedFuels, setSelectedFuels] = useState([]);
   const [maxYear, setMaxYear] = useState("");
-  const [maxMileage, setMaxMileage] = useState("");
+  const [maxQuilometragem, setMaxQuilometragem] = useState("");
   const [armored, setArmored] = useState("todos");
   const [sortBy, setSortBy] = useState("recent");
   const [page, setPage] = useState(1);
@@ -48,7 +48,7 @@ export default function AcervoPage() {
     if (selectedTypes.length) filters.bodyType = selectedTypes;
     if (selectedFuels.length) filters.fuel = selectedFuels;
     if (maxYear) filters.maxYear = Number(maxYear);
-    if (maxMileage) filters.maxMileage = Number(maxMileage);
+    if (maxQuilometragem) filters.maxQuilometragem = Number(maxQuilometragem);
 
     let result = getAllVehicles(filters);
 
@@ -65,8 +65,8 @@ export default function AcervoPage() {
       sorted = [...result].sort((a, b) => a.year - b.year);
     } else if (sortBy === "yearDesc" || sortBy === "recent") {
       sorted = [...result].sort((a, b) => b.year - a.year);
-    } else if (sortKey === "mileage") {
-      sorted = [...result].sort((a, b) => (desc ? b.mileage - a.mileage : a.mileage - b.mileage));
+    } else if (sortKey === "quilometragem") {
+      sorted = [...result].sort((a, b) => (desc ? b.quilometragem - a.quilometragem : a.quilometragem - b.quilometragem));
     } else if (sortKey === "brand") {
       sorted = [...result].sort((a, b) =>
         desc ? b.brand.localeCompare(a.brand) : a.brand.localeCompare(b.brand)
@@ -76,7 +76,7 @@ export default function AcervoPage() {
     }
 
     return sorted;
-  }, [selectedBrands, selectedTypes, selectedFuels, maxYear, maxMileage, armored, sortBy]);
+  }, [selectedBrands, selectedTypes, selectedFuels, maxYear, maxQuilometragem, armored, sortBy]);
 
   const totalPages = Math.max(1, Math.ceil(filteredVehicles.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -95,7 +95,7 @@ export default function AcervoPage() {
     setSelectedTypes([]);
     setSelectedFuels([]);
     setMaxYear("");
-    setMaxMileage("");
+    setMaxQuilometragem("");
     setArmored("todos");
     setPage(1);
   };
@@ -172,9 +172,9 @@ export default function AcervoPage() {
             placeholder="50.000"
             min="0"
             step="1000"
-            value={maxMileage}
+            value={maxQuilometragem}
             onChange={(e) => {
-              setMaxMileage(e.target.value);
+              setMaxQuilometragem(e.target.value);
               setPage(1);
             }}
             className={styles.input}
