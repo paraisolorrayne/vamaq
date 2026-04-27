@@ -64,6 +64,7 @@ export default function FipePage() {
     setAnos([]);
     setAnoSel("");
     setResultado(null);
+    setError("");
     setLoading(true);
 
     fetchFipe({ marca: marcaSel }, ac.signal)
@@ -85,6 +86,7 @@ export default function FipePage() {
     setAnos([]);
     setAnoSel("");
     setResultado(null);
+    setError("");
     setLoading(true);
 
     fetchFipe({ marca: marcaSel, modelo: modeloSel }, ac.signal)

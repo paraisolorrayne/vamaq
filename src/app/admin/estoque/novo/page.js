@@ -719,9 +719,10 @@ function FipePriceLookup({ brand, onApplyPrice }) {
     fetch("/api/admin/fipe?tipo=carros", { signal: ac.signal })
       .then((r) => r.json())
       .then((data) => {
-        setMarcas(Array.isArray(data) ? data : []);
+        const arr = Array.isArray(data) ? data : [];
+        setMarcas(arr);
         if (brand) {
-          const match = data.find(
+          const match = arr.find(
             (m) => m.nome.toLowerCase() === brand.toLowerCase()
           );
           if (match) setMarcaSel(String(match.codigo));
