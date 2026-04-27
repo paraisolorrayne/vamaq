@@ -381,6 +381,10 @@ function NovoVeiculoForm() {
                 className={styles.formInput}
                 placeholder="Deixe vazio para 'Sob Consulta'"
               />
+              <FipePriceLookup
+                brand={form.brand}
+                onApplyPrice={(price) => handleChange("price", price)}
+              />
             </div>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Quilometragem</label>
@@ -695,5 +699,138 @@ function NovoVeiculoForm() {
         </div>
       </form>
     </>
+  );
+}
+
+function FipePriceLookup({ brand, onApplyPrice }) {
+  const [open, setOpen] = useState(false);
+  const [marcas, setMarcas] = useState([]);
+  const [modelos, setModelos] = useState([]);
+  const [anos, setAnos] = useState([]);
+  const [marcaSel, setMarcaSel] = useState("");
+  const [modeloSel, setModeloSel] = useState("");
+  const [anoSel, setAnoSel] = useState("");
+  const [resultado, setResultado] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    fetch("/api/admin/fipe?tipo=carros")
+      .then((r) => r.json())
+      .then((data) => {
+        setMarcas(Array.isArray(data) ? data : []);
+        if (brand) {
+          const match = data.find(
+            (m) => m.nome.toLowerCase() === brand.toLowerCase()
+          );
+          if (match) setMarcaSel(String(match.codigo));
+        }
+      })
+      .catch(() => {});
+  }, [open, brand]);
+
+  useEffect(() => {
+    if (!marcaSel) { setModelos([]); setModeloSel(""); return; }
+    setModelos([]); setModeloSel(""); setAnos([]); setAnoSel(""); setResultado(null);
+    fetch(`/api/admin/fipe?tipo=carros&marca=${marcaSel}`)
+      .then((r) => r.json())
+      .then((d) => setModelos(d.modelos || []))
+      .catch(() => {});
+  }, [marcaSel]);
+
+  useEffect(() => {
+    if (!modeloSel) { setAnos([]); setAnoSel(""); return; }
+    setAnos([]); setAnoSel(""); setResultado(null);
+    fetch(`/api/admin/fipe?tipo=carros&marca=${marcaSel}&modelo=${modeloSel}`)
+      .then((r) => r.json())
+      .then(setAnos)
+      .catch(() => {});
+  }, [modeloSel, marcaSel]);
+
+  useEffect(() => {
+    if (!anoSel) { setResultado(null); return; }
+    setLoading(true); setResultado(null);
+    fetch(`/api/admin/fipe?tipo=carros&marca=${marcaSel}&modelo=${modeloSel}&ano=${anoSel}`)
+      .then((r) => r.json())
+      .then(setResultado)
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [anoSel, marcaSel, modeloSel]);
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        style={{ fontSize: "0.8rem", color: "#ff6a00", background: "none", border: "none", cursor: "pointer", padding: "4px 0", textDecoration: "underline" }}
+      >
+        Consultar preço FIPE
+      </button>
+    );
+  }
+
+  function applyPrice() {
+    if (!resultado) return;
+    const raw = resultado.Valor.replace(/[^\d]/g, "");
+    const num = parseInt(raw, 10) / 100;
+    onApplyPrice(String(num));
+    setOpen(false);
+  }
+
+  return (
+    <div style={{ marginTop: 8, padding: 12, background: "#f8f9fa", borderRadius: 8, border: "1px solid #e5e7eb" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+        <span style={{ fontSize: "0.8rem", fontWeight: 600, color: "#555" }}>Consulta FIPE</span>
+        <button type="button" onClick={() => setOpen(false)} style={{ fontSize: "0.75rem", color: "#888", background: "none", border: "none", cursor: "pointer" }}>Fechar</button>
+      </div>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <select
+          value={marcaSel}
+          onChange={(e) => setMarcaSel(e.target.value)}
+          style={{ flex: 1, minWidth: 120, padding: "6px 8px", fontSize: "0.8rem", borderRadius: 6, border: "1px solid #d0d0d0" }}
+        >
+          <option value="">Marca</option>
+          {marcas.map((m) => (
+            <option key={m.codigo} value={m.codigo}>{m.nome}</option>
+          ))}
+        </select>
+        <select
+          value={modeloSel}
+          onChange={(e) => setModeloSel(e.target.value)}
+          disabled={!modelos.length}
+          style={{ flex: 2, minWidth: 140, padding: "6px 8px", fontSize: "0.8rem", borderRadius: 6, border: "1px solid #d0d0d0" }}
+        >
+          <option value="">Modelo</option>
+          {modelos.map((m) => (
+            <option key={m.codigo} value={m.codigo}>{m.nome}</option>
+          ))}
+        </select>
+        <select
+          value={anoSel}
+          onChange={(e) => setAnoSel(e.target.value)}
+          disabled={!anos.length}
+          style={{ flex: 1, minWidth: 120, padding: "6px 8px", fontSize: "0.8rem", borderRadius: 6, border: "1px solid #d0d0d0" }}
+        >
+          <option value="">Ano</option>
+          {anos.map((a) => (
+            <option key={a.codigo} value={a.codigo}>{a.nome}</option>
+          ))}
+        </select>
+      </div>
+      {loading && <p style={{ fontSize: "0.8rem", color: "#888", marginTop: 8 }}>Consultando...</p>}
+      {resultado && (
+        <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 12 }}>
+          <span style={{ fontSize: "1rem", fontWeight: 700, color: "#ff6a00" }}>{resultado.Valor}</span>
+          <span style={{ fontSize: "0.75rem", color: "#888" }}>{resultado.MesReferencia}</span>
+          <button
+            type="button"
+            onClick={applyPrice}
+            style={{ marginLeft: "auto", padding: "4px 12px", fontSize: "0.8rem", background: "#ff6a00", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer" }}
+          >
+            Usar este preço
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

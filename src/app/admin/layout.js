@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { href: "/admin", label: "Dashboard", icon: "📊" },
   { href: "/admin/estoque", label: "Estoque", icon: "🚗" },
   { href: "/admin/documentos", label: "Documentos", icon: "📄" },
+  { href: "/admin/fipe", label: "Tabela FIPE", icon: "💰" },
 ];
 
 export default function AdminLayout({ children }) {
