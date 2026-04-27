@@ -55,7 +55,7 @@ export default function VehicleCard({ vehicle }) {
         <p className={styles.meta}>
           <span>{vehicle.year}</span>
           <span className={styles.metaSpacer} />
-          <span>{formatKm(vehicle.mileage)}km</span>
+          <span>{formatKm(vehicle.quilometragem)}km</span>
         </p>
 
         {vehicle.price ? (

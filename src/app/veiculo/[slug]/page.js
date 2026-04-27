@@ -92,7 +92,7 @@ export default async function VeiculoPage({ params }) {
               <div className={styles.heroMeta}>
                 <span>{vehicle.year}</span>
                 <span className={styles.dot} aria-hidden="true" />
-                <span>{vehicle.mileage.toLocaleString("pt-BR")} km</span>
+                <span>{vehicle.quilometragem.toLocaleString("pt-BR")} km</span>
                 <span className={styles.dot} aria-hidden="true" />
                 <span>{vehicle.color}</span>
               </div>
@@ -138,7 +138,7 @@ export default async function VeiculoPage({ params }) {
             <div className={styles.specs}>
               <SpecItem
                 label="Quilometragem"
-                value={`${vehicle.mileage.toLocaleString("pt-BR")} km`}
+                value={`${vehicle.quilometragem.toLocaleString("pt-BR")} km`}
               />
               <SpecItem label="Combustível" value={vehicle.fuel} />
               <SpecItem label="Câmbio" value={vehicle.transmission} />

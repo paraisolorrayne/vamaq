@@ -22,7 +22,7 @@ export async function POST(request) {
     model: body.model || "",
     year: Number(body.year) || new Date().getFullYear(),
     price: body.price ? Number(body.price) : null,
-    mileage: Number(body.mileage) || 0,
+    quilometragem: Number(body.quilometragem) || 0,
     fuel: body.fuel || "Gasolina",
     transmission: body.transmission || "Automático",
     power: body.power || "",
@@ -30,6 +30,8 @@ export async function POST(request) {
     bodyType: body.bodyType || "Sedan",
     featured: Boolean(body.featured),
     badge: body.badge || null,
+    opcionais: Array.isArray(body.opcionais) ? body.opcionais : [],
+    blindagem: body.blindagem || { blindado: false, tipo: "" },
     images: body.images || { main: "", gallery: [] },
     specs: body.specs || {
       engine: "",

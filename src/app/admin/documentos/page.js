@@ -42,7 +42,7 @@ export default function DocumentosPage() {
       veiculo_modelo: v.model || prev.veiculo_modelo,
       veiculo_ano: String(v.year) || prev.veiculo_ano,
       veiculo_cor: v.color || prev.veiculo_cor,
-      veiculo_km: v.mileage ? v.mileage.toLocaleString("pt-BR") : prev.veiculo_km,
+      veiculo_km: v.quilometragem ? v.quilometragem.toLocaleString("pt-BR") : prev.veiculo_km,
     }));
   }
 

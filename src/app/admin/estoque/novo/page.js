@@ -15,7 +15,7 @@ const EMPTY_VEHICLE = {
   model: "",
   year: new Date().getFullYear(),
   price: "",
-  mileage: "",
+  quilometragem: "",
   fuel: "Gasolina",
   transmission: "Automático",
   power: "",
@@ -23,6 +23,8 @@ const EMPTY_VEHICLE = {
   bodyType: "Sedan",
   featured: false,
   badge: "",
+  opcionais: [],
+  blindagem: { blindado: false, tipo: "" },
   description: "",
   specs: { engine: "", acceleration: "", topSpeed: "", doors: 4, seats: 5 },
   images: { main: "", gallery: [] },
@@ -62,7 +64,7 @@ function NovoVeiculoForm() {
             ...EMPTY_VEHICLE,
             ...data,
             price: data.price || "",
-            mileage: data.mileage ?? "",
+            quilometragem: data.quilometragem ?? "",
             badge: data.badge || "",
           });
         }
@@ -146,7 +148,7 @@ function NovoVeiculoForm() {
     const payload = {
       ...form,
       price: form.price ? Number(form.price) : null,
-      mileage: Number(form.mileage) || 0,
+      quilometragem: Number(form.quilometragem) || 0,
       badge: form.badge || null,
       specs: {
         ...form.specs,
@@ -384,8 +386,8 @@ function NovoVeiculoForm() {
               <label className={styles.formLabel}>Quilometragem</label>
               <input
                 type="number"
-                value={form.mileage}
-                onChange={(e) => handleChange("mileage", e.target.value)}
+                value={form.quilometragem}
+                onChange={(e) => handleChange("quilometragem", e.target.value)}
                 className={styles.formInput}
                 placeholder="Ex: 12000"
               />
@@ -487,6 +489,130 @@ function NovoVeiculoForm() {
               />
             </div>
           </div>
+        </div>
+
+        {/* Blindagem */}
+        <div className={styles.card} style={{ marginBottom: 24 }}>
+          <h3
+            style={{ fontSize: "1rem", fontWeight: 600, marginBottom: 16 }}
+          >
+            Blindagem
+          </h3>
+          <div className={styles.formGrid}>
+            <div className={styles.formGroup}>
+              <label className={styles.formCheckbox}>
+                <input
+                  type="checkbox"
+                  checked={form.blindagem?.blindado || false}
+                  onChange={(e) =>
+                    handleChange("blindagem", {
+                      ...form.blindagem,
+                      blindado: e.target.checked,
+                    })
+                  }
+                />
+                <span>Veículo blindado</span>
+              </label>
+            </div>
+            {form.blindagem?.blindado && (
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Tipo de Blindagem</label>
+                <input
+                  type="text"
+                  value={form.blindagem?.tipo || ""}
+                  onChange={(e) =>
+                    handleChange("blindagem", {
+                      ...form.blindagem,
+                      tipo: e.target.value,
+                    })
+                  }
+                  className={styles.formInput}
+                  placeholder="Ex: Nível III-A"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Opcionais */}
+        <div className={styles.card} style={{ marginBottom: 24 }}>
+          <h3
+            style={{ fontSize: "1rem", fontWeight: 600, marginBottom: 16 }}
+          >
+            Opcionais
+          </h3>
+          <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+            <input
+              type="text"
+              id="novo-opcional"
+              className={styles.formInput}
+              placeholder="Ex: Teto Solar Panorâmico"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  const val = e.target.value.trim();
+                  if (val) {
+                    handleChange("opcionais", [...(form.opcionais || []), val]);
+                    e.target.value = "";
+                  }
+                }
+              }}
+            />
+            <button
+              type="button"
+              className={styles.btnSecondary}
+              onClick={() => {
+                const input = document.getElementById("novo-opcional");
+                const val = input?.value.trim();
+                if (val) {
+                  handleChange("opcionais", [...(form.opcionais || []), val]);
+                  input.value = "";
+                }
+              }}
+            >
+              +
+            </button>
+          </div>
+          {form.opcionais?.length > 0 && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {form.opcionais.map((opt, idx) => (
+                <span
+                  key={idx}
+                  style={{
+                    background: "#f0f0f0",
+                    borderRadius: 20,
+                    padding: "4px 12px",
+                    fontSize: "0.85rem",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
+                >
+                  {opt}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleChange(
+                        "opcionais",
+                        form.opcionais.filter((_, i) => i !== idx)
+                      )
+                    }
+                    style={{
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      padding: 0,
+                      fontSize: "1rem",
+                      lineHeight: 1,
+                      color: "#999",
+                    }}
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Specs */}

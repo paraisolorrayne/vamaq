@@ -136,7 +136,7 @@ export default function EstoquePage() {
                       </strong>
                     </td>
                     <td>{v.year}</td>
-                    <td>{v.mileage?.toLocaleString("pt-BR")} km</td>
+                    <td>{v.quilometragem?.toLocaleString("pt-BR")} km</td>
                     <td>{v.color}</td>
                     <td>
                       {v.featured ? (

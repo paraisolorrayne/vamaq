@@ -5,7 +5,7 @@ export const vehicles = [
     model: "911 Carrera GTS",
     year: 2024,
     price: null,
-    mileage: 3200,
+    quilometragem: 3200,
     fuel: "Gasolina",
     transmission: "Automático",
     power: "480 cv",
@@ -16,6 +16,8 @@ export const vehicles = [
     images: { main: "/images/vehicles/porsche-911-main.jpg", gallery: [] },
     specs: { engine: "3.0 Biturbo Boxer", acceleration: "3.4s (0-100km/h)", topSpeed: "312 km/h", doors: 2, seats: 4 },
     description: "O ícone reinventado. O 911 Carrera GTS combina a alma esportiva clássica da Porsche com desempenho de pista, entregando 480 cv de pura adrenalina em um pacote refinado para o dia a dia.",
+    opcionais: ["Teto Solar Panorâmico", "Bancos Ventilados", "Sistema de Som Bose", "Pacote Sport Chrono"],
+    blindagem: { blindado: false, tipo: "" },
     slug: "porsche-911-carrera-gts-2024"
   },
   {
@@ -24,7 +26,7 @@ export const vehicles = [
     model: "M4 Competition",
     year: 2024,
     price: null,
-    mileage: 8500,
+    quilometragem: 8500,
     fuel: "Gasolina",
     transmission: "Automático",
     power: "510 cv",
@@ -35,6 +37,8 @@ export const vehicles = [
     images: { main: "/images/vehicles/bmw-m4-main.jpg", gallery: [] },
     specs: { engine: "3.0 Biturbo Inline-6", acceleration: "3.9s (0-100km/h)", topSpeed: "290 km/h", doors: 2, seats: 4 },
     description: "Performance sem concessões. O M4 Competition entrega a experiência M em sua forma mais pura, com motor biturbo de 510 cv e tração integral M xDrive.",
+    opcionais: ["Head-Up Display", "Harman Kardon", "Teto em Carbono", "M Sport Exhaust"],
+    blindagem: { blindado: false, tipo: "" },
     slug: "bmw-m4-competition-2024"
   },
   {
@@ -43,7 +47,7 @@ export const vehicles = [
     model: "GT 63 S",
     year: 2023,
     price: null,
-    mileage: 12000,
+    quilometragem: 12000,
     fuel: "Gasolina",
     transmission: "Automático",
     power: "639 cv",
@@ -54,6 +58,8 @@ export const vehicles = [
     images: { main: "/images/vehicles/amg-gt63-main.jpg", gallery: [] },
     specs: { engine: "4.0 V8 Biturbo", acceleration: "3.2s (0-100km/h)", topSpeed: "315 km/h", doors: 4, seats: 4 },
     description: "A mais potente expressão do DNA AMG. O GT 63 S combina o conforto de um gran turismo com a brutalidade de 639 cv do V8 biturbo.",
+    opcionais: ["Pacote AMG Night", "Bancos Massageadores", "Burmester 3D Sound"],
+    blindagem: { blindado: false, tipo: "" },
     slug: "mercedes-amg-gt-63-s-2023"
   },
   {
@@ -62,7 +68,7 @@ export const vehicles = [
     model: "F8 Tributo",
     year: 2023,
     price: null,
-    mileage: 4800,
+    quilometragem: 4800,
     fuel: "Gasolina",
     transmission: "Automático",
     power: "720 cv",
@@ -73,6 +79,8 @@ export const vehicles = [
     images: { main: "/images/vehicles/ferrari-f8-main.jpg", gallery: [] },
     specs: { engine: "3.9 V8 Biturbo", acceleration: "2.9s (0-100km/h)", topSpeed: "340 km/h", doors: 2, seats: 2 },
     description: "Uma homenagem ao motor V8 mais premiado da história. A F8 Tributo é a expressão máxima da engenharia Ferrari, com 720 cv e aerodinâmica derivada da F1.",
+    opcionais: ["Lifting System", "Carbono Exterior", "Câmeras 360°"],
+    blindagem: { blindado: false, tipo: "" },
     slug: "ferrari-f8-tributo-2023"
   },
   {
@@ -81,7 +89,7 @@ export const vehicles = [
     model: "Huracán EVO",
     year: 2023,
     price: null,
-    mileage: 6200,
+    quilometragem: 6200,
     fuel: "Gasolina",
     transmission: "Automático",
     power: "640 cv",
@@ -92,6 +100,8 @@ export const vehicles = [
     images: { main: "/images/vehicles/huracan-evo-main.jpg", gallery: [] },
     specs: { engine: "5.2 V10 Aspirado", acceleration: "2.9s (0-100km/h)", topSpeed: "325 km/h", doors: 2, seats: 2 },
     description: "O rugido do V10 aspirado mais emocionante do mundo. O Huracán EVO representa a essência Lamborghini com tecnologia de ponta e desempenho visceral.",
+    opcionais: ["Sensonum Sound", "Câmeras 360°", "Pintura Especial"],
+    blindagem: { blindado: false, tipo: "" },
     slug: "lamborghini-huracan-evo-2023"
   },
   {
@@ -100,7 +110,7 @@ export const vehicles = [
     model: "Sport SVR",
     year: 2024,
     price: null,
-    mileage: 15000,
+    quilometragem: 15000,
     fuel: "Gasolina",
     transmission: "Automático",
     power: "575 cv",
@@ -111,6 +121,8 @@ export const vehicles = [
     images: { main: "/images/vehicles/rr-sport-svr-main.jpg", gallery: [] },
     specs: { engine: "5.0 V8 Supercharged", acceleration: "4.5s (0-100km/h)", topSpeed: "283 km/h", doors: 4, seats: 5 },
     description: "O SUV mais rápido da Range Rover, agora com blindagem NÍVEL III-A. Combina luxo absoluto, capacidade off-road e desempenho de superesportivo.",
+    opcionais: ["Teto Panorâmico", "Pacote Off-Road", "TV Digital", "Geladeira Traseira"],
+    blindagem: { blindado: true, tipo: "Nível III-A" },
     slug: "range-rover-sport-svr-2024"
   },
   {
@@ -119,7 +131,7 @@ export const vehicles = [
     model: "RS e-tron GT",
     year: 2024,
     price: null,
-    mileage: 2100,
+    quilometragem: 2100,
     fuel: "Elétrico",
     transmission: "Automático",
     power: "646 cv",
@@ -130,6 +142,8 @@ export const vehicles = [
     images: { main: "/images/vehicles/audi-rs-etron-main.jpg", gallery: [] },
     specs: { engine: "Dual Motor Elétrico", acceleration: "3.3s (0-100km/h)", topSpeed: "250 km/h", doors: 4, seats: 4 },
     description: "O futuro da performance é elétrico. O RS e-tron GT entrega 646 cv de torque instantâneo em um design que define a nova era da Audi Sport.",
+    opcionais: [],
+    blindagem: { blindado: false, tipo: "" },
     slug: "audi-rs-etron-gt-2024"
   },
   {
@@ -138,7 +152,7 @@ export const vehicles = [
     model: "720S",
     year: 2022,
     price: null,
-    mileage: 9800,
+    quilometragem: 9800,
     fuel: "Gasolina",
     transmission: "Automático",
     power: "720 cv",
@@ -149,6 +163,8 @@ export const vehicles = [
     images: { main: "/images/vehicles/mclaren-720s-main.jpg", gallery: [] },
     specs: { engine: "4.0 V8 Biturbo", acceleration: "2.9s (0-100km/h)", topSpeed: "341 km/h", doors: 2, seats: 2 },
     description: "Engenharia de F1 para as ruas. A 720S é uma obra-prima aerodinâmica que dissolve a fronteira entre carro de rua e máquina de corrida.",
+    opcionais: [],
+    blindagem: { blindado: false, tipo: "" },
     slug: "mclaren-720s-2022"
   },
   {
@@ -157,7 +173,7 @@ export const vehicles = [
     model: "Cayenne Turbo GT",
     year: 2024,
     price: null,
-    mileage: 7500,
+    quilometragem: 7500,
     fuel: "Gasolina",
     transmission: "Automático",
     power: "640 cv",
@@ -168,6 +184,8 @@ export const vehicles = [
     images: { main: "/images/vehicles/cayenne-turbo-gt-main.jpg", gallery: [] },
     specs: { engine: "4.0 V8 Biturbo", acceleration: "3.3s (0-100km/h)", topSpeed: "300 km/h", doors: 4, seats: 5 },
     description: "O SUV mais rápido de Nürburgring. O Cayenne Turbo GT leva a filosofia esportiva da Porsche ao formato familiar, sem perder um grama de emoção.",
+    opcionais: [],
+    blindagem: { blindado: false, tipo: "" },
     slug: "porsche-cayenne-turbo-gt-2024"
   },
   {
@@ -176,7 +194,7 @@ export const vehicles = [
     model: "M8 Competition",
     year: 2023,
     price: null,
-    mileage: 11200,
+    quilometragem: 11200,
     fuel: "Gasolina",
     transmission: "Automático",
     power: "625 cv",
@@ -187,6 +205,8 @@ export const vehicles = [
     images: { main: "/images/vehicles/bmw-m8-main.jpg", gallery: [] },
     specs: { engine: "4.4 V8 Biturbo", acceleration: "3.2s (0-100km/h)", topSpeed: "305 km/h", doors: 2, seats: 4 },
     description: "O gran turismo definitivo da BMW M. O M8 Competition combina luxo absoluto com desempenho brutal, entregando 625 cv em uma carroceria de tirar o fôlego.",
+    opcionais: [],
+    blindagem: { blindado: false, tipo: "" },
     slug: "bmw-m8-competition-2023"
   }
 ];
@@ -210,7 +230,7 @@ export function getAllVehicles(filters = {}) {
   }
   if (filters.minYear) result = result.filter(v => v.year >= filters.minYear);
   if (filters.maxYear) result = result.filter(v => v.year <= filters.maxYear);
-  if (filters.maxMileage) result = result.filter(v => v.mileage <= filters.maxMileage);
+  if (filters.maxQuilometragem) result = result.filter(v => v.quilometragem <= filters.maxQuilometragem);
   if (filters.search) {
     const q = filters.search.toLowerCase();
     result = result.filter(v => `${v.brand} ${v.model} ${v.color}`.toLowerCase().includes(q));
@@ -249,7 +269,7 @@ export function sortVehicles(list, sortBy) {
   const sorted = [...list];
   switch (sortBy) {
     case 'recent': return sorted.sort((a, b) => b.year - a.year);
-    case 'mileage': return sorted.sort((a, b) => a.mileage - b.mileage);
+    case 'quilometragem': return sorted.sort((a, b) => a.quilometragem - b.quilometragem);
     case 'brand': return sorted.sort((a, b) => a.brand.localeCompare(b.brand));
     default: return sorted;
   }
