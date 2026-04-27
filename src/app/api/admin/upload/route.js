@@ -34,6 +34,62 @@ async function createGradientBackground(w, h) {
     .toBuffer();
 }
 
+async function refineEdges(fgBuffer, w, h) {
+  const { data } = await sharp(fgBuffer)
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const pixels = new Uint8Array(data);
+  const output = Buffer.from(data);
+  const radius = 5;
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const idx = (y * w + x) * 4;
+      const a = pixels[idx + 3];
+      if (a === 0 || a > 240) continue;
+
+      let bestDist = Infinity;
+      let bestR = pixels[idx];
+      let bestG = pixels[idx + 1];
+      let bestB = pixels[idx + 2];
+      let foundOpaque = false;
+
+      for (let dy = -radius; dy <= radius; dy++) {
+        for (let dx = -radius; dx <= radius; dx++) {
+          if (dx === 0 && dy === 0) continue;
+          const ny = y + dy;
+          const nx = x + dx;
+          if (ny < 0 || ny >= h || nx < 0 || nx >= w) continue;
+          const nIdx = (ny * w + nx) * 4;
+          if (pixels[nIdx + 3] > 240) {
+            const dist = dx * dx + dy * dy;
+            if (dist < bestDist) {
+              bestDist = dist;
+              bestR = pixels[nIdx];
+              bestG = pixels[nIdx + 1];
+              bestB = pixels[nIdx + 2];
+              foundOpaque = true;
+            }
+          }
+        }
+      }
+
+      if (foundOpaque) {
+        output[idx] = bestR;
+        output[idx + 1] = bestG;
+        output[idx + 2] = bestB;
+      } else if (a < 100) {
+        output[idx + 3] = 0;
+      }
+    }
+  }
+
+  return sharp(output, { raw: { width: w, height: h, channels: 4 } })
+    .png()
+    .toBuffer();
+}
+
 async function createDropShadow(fgBuffer, w, h) {
   const fgMeta = await sharp(fgBuffer).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   const fgPixels = new Uint8Array(fgMeta.data);
@@ -94,13 +150,15 @@ export async function POST(request) {
       const w = metadata.width;
       const h = metadata.height;
 
+      const refinedFg = await refineEdges(fgPng, w, h);
+
       const bgLayer = await createGradientBackground(w, h);
-      const shadowLayer = await createDropShadow(fgPng, w, h);
+      const shadowLayer = await createDropShadow(refinedFg, w, h);
 
       buffer = await sharp(bgLayer)
         .composite([
           { input: shadowLayer, blend: "over" },
-          { input: fgPng, blend: "over" },
+          { input: refinedFg, blend: "over" },
         ])
         .webp({ quality: 90 })
         .toBuffer();
