@@ -17,7 +17,7 @@ export async function GET(_request, { params }) {
 export async function PUT(request, { params }) {
   const { id } = await params;
   const body = await request.json();
-  const updated = updateVehicle(id, body);
+  const updated = await updateVehicle(id, body);
   if (!updated) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
@@ -26,7 +26,7 @@ export async function PUT(request, { params }) {
 
 export async function DELETE(_request, { params }) {
   const { id } = await params;
-  const ok = deleteVehicle(id);
+  const ok = await deleteVehicle(id);
   if (!ok) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }

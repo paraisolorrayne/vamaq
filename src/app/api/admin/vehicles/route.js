@@ -42,6 +42,6 @@ export async function POST(request) {
     slug,
   };
 
-  addVehicle(vehicle);
+  await addVehicle(vehicle);
   return NextResponse.json(vehicle, { status: 201 });
 }

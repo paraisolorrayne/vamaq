@@ -61,7 +61,7 @@ function NovoVeiculoForm() {
             ...EMPTY_VEHICLE,
             ...data,
             price: data.price || "",
-            mileage: data.mileage || "",
+            mileage: data.mileage ?? "",
             badge: data.badge || "",
           });
         }
