@@ -60,6 +60,9 @@ export default function DocumentosPage() {
         }),
       });
       const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Erro ao gerar documento");
+      }
       setPreview(data);
     } catch (err) {
       alert("Erro ao gerar documento: " + err.message);

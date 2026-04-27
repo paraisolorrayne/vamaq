@@ -44,7 +44,8 @@ function NovoVeiculoForm() {
   const galleryInputRef = useRef(null);
 
   const [form, setForm] = useState(EMPTY_VEHICLE);
-  const [uploading, setUploading] = useState(false);
+  const [uploadCount, setUploadCount] = useState(0);
+  const uploading = uploadCount > 0;
   const [removeBg, setRemoveBg] = useState(true);
   const [saving, setSaving] = useState(false);
   const [loadingEdit, setLoadingEdit] = useState(!!editId);
@@ -85,7 +86,7 @@ function NovoVeiculoForm() {
   }, []);
 
   async function uploadImage(file, isMain) {
-    setUploading(true);
+    setUploadCount((c) => c + 1);
     try {
       const fd = new FormData();
       fd.append("file", file);
@@ -111,7 +112,7 @@ function NovoVeiculoForm() {
     } catch (err) {
       alert("Erro ao fazer upload: " + err.message);
     }
-    setUploading(false);
+    setUploadCount((c) => c - 1);
   }
 
   function handleMainDrop(e) {
@@ -155,18 +156,20 @@ function NovoVeiculoForm() {
     };
 
     try {
-      if (editId) {
-        await fetch(`/api/admin/vehicles/${editId}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-      } else {
-        await fetch("/api/admin/vehicles", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
+      const res = editId
+        ? await fetch(`/api/admin/vehicles/${editId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          })
+        : await fetch("/api/admin/vehicles", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Erro ao salvar veículo");
       }
       router.push("/admin/estoque");
     } catch (err) {
