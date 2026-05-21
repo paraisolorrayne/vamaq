@@ -1,46 +1,26 @@
 /**
  * Vehicle repository — fonte única de dados do site público (Postgres).
  *
- * Lê direto do Postgres via `pg` (sem Supabase). Se `DATABASE_URL` não estiver
- * definida, as listas retornam vazias (ver src/lib/db.js) — o site não esconde
- * isso com mock.
- *
- * As fotos são arquivos estáticos servidos de /public/veiculos/<slug>/ e o
- * caminho público vem de `vehicle_images.url`.
- *
- * Toda função é async — páginas server-side usam `await`.
+ * Lê do Postgres via `pg`. Sem DATABASE_URL, retorna listas vazias.
+ * Shape no banco: colunas escalares + jsonb (images {main,gallery}, specs).
+ * Só veículos `published = true` aparecem no site.
  */
 
 import { query } from '@/lib/db';
 
-/* ------------------------------------------------------------------ */
-/* SELECT base + DB row → UI shape                                     */
-/* ------------------------------------------------------------------ */
-
-const VEHICLE_SELECT = `
-  select
-    v.id, v.slug, v.brand, v.model, v.year, v.body_type, v.color,
-    v.price, v.mileage, v.badge, v.featured,
-    v.fuel, v.transmission, v.power,
-    v.spec_engine, v.spec_acceleration, v.spec_top_speed,
-    v.spec_doors, v.spec_seats,
-    v.description, v.status, v.published_at,
-    coalesce(
-      (
-        select json_agg(vi.url order by vi.is_primary desc, vi.position asc)
-        from vehicle_images vi
-        where vi.vehicle_id = v.id
-      ),
-      '[]'::json
-    ) as image_urls
-  from vehicles v
+const SELECT = `
+  select id, slug, brand, model, year, price, quilometragem,
+         fuel, transmission, power, color, body_type, featured, badge,
+         images, specs, description
+  from vehicles
 `;
 
 function rowToVehicle(row) {
   if (!row) return null;
-
-  const urls = Array.isArray(row.image_urls) ? row.image_urls.filter(Boolean) : [];
-
+  const images = row.images || { main: '', gallery: [] };
+  const gallery = Array.isArray(images.gallery) ? images.gallery.filter(Boolean) : [];
+  const main = images.main || gallery[0] || null;
+  const specs = row.specs || {};
   return {
     id: row.id,
     slug: row.slug,
@@ -49,69 +29,52 @@ function rowToVehicle(row) {
     year: row.year,
     bodyType: row.body_type,
     color: row.color,
-    price: row.price !== null ? Number(row.price) : null,
-    mileage: row.mileage,
+    price: row.price !== null && row.price !== undefined ? Number(row.price) : null,
+    mileage: row.quilometragem,
     badge: row.badge,
     featured: row.featured,
     fuel: row.fuel,
     transmission: row.transmission,
     power: row.power,
     description: row.description || '',
-    status: row.status,
-    publishedAt: row.published_at,
     images: {
-      main: urls[0] || null,
-      gallery: urls,
+      main,
+      gallery: main ? [main, ...gallery.filter((u) => u !== main)] : gallery,
     },
     specs: {
-      engine: row.spec_engine || '',
-      acceleration: row.spec_acceleration || '',
-      topSpeed: row.spec_top_speed || '',
-      doors: row.spec_doors ?? null,
-      seats: row.spec_seats ?? null,
+      engine: specs.engine || '',
+      acceleration: specs.acceleration || '',
+      topSpeed: specs.topSpeed || '',
+      doors: specs.doors ?? null,
+      seats: specs.seats ?? null,
     },
   };
 }
 
-/* ------------------------------------------------------------------ */
-/* Public API                                                          */
-/* ------------------------------------------------------------------ */
-
 export async function getAllVehicles(filters = {}) {
-  const where = [`v.status = 'published'`];
+  const where = ['published = true'];
   const params = [];
 
-  const addInFilter = (column, value) => {
-    const list = Array.isArray(value) ? value : [value];
+  const addIn = (col, val) => {
+    const list = Array.isArray(val) ? val : [val];
     if (!list.length) return;
     params.push(list);
-    where.push(`v.${column} = any($${params.length})`);
+    where.push(`${col} = any($${params.length})`);
   };
 
-  if (filters?.brand?.length) addInFilter('brand', filters.brand);
-  if (filters?.bodyType?.length) addInFilter('body_type', filters.bodyType);
-  if (filters?.fuel?.length) addInFilter('fuel', filters.fuel);
-
-  if (filters?.minYear) {
-    params.push(filters.minYear);
-    where.push(`v.year >= $${params.length}`);
-  }
-  if (filters?.maxYear) {
-    params.push(filters.maxYear);
-    where.push(`v.year <= $${params.length}`);
-  }
-  if (filters?.maxMileage) {
-    params.push(filters.maxMileage);
-    where.push(`v.mileage <= $${params.length}`);
-  }
+  if (filters?.brand?.length) addIn('brand', filters.brand);
+  if (filters?.bodyType?.length) addIn('body_type', filters.bodyType);
+  if (filters?.fuel?.length) addIn('fuel', filters.fuel);
+  if (filters?.minYear) { params.push(filters.minYear); where.push(`year >= $${params.length}`); }
+  if (filters?.maxYear) { params.push(filters.maxYear); where.push(`year <= $${params.length}`); }
+  if (filters?.maxMileage) { params.push(filters.maxMileage); where.push(`quilometragem <= $${params.length}`); }
   if (filters?.search) {
     params.push(`%${filters.search}%`);
     const i = params.length;
-    where.push(`(v.brand ilike $${i} or v.model ilike $${i} or v.color ilike $${i})`);
+    where.push(`(brand ilike $${i} or model ilike $${i} or color ilike $${i})`);
   }
 
-  const sql = `${VEHICLE_SELECT} where ${where.join(' and ')} order by v.published_at desc nulls last`;
-
+  const sql = `${SELECT} where ${where.join(' and ')} order by created_at desc`;
   try {
     const { rows } = await query(sql, params);
     return rows.map(rowToVehicle);
@@ -122,10 +85,7 @@ export async function getAllVehicles(filters = {}) {
 }
 
 export async function getFeaturedVehicles(limit = 6) {
-  const sql = `${VEHICLE_SELECT}
-    where v.status = 'published' and v.featured = true
-    order by v.published_at desc nulls last
-    limit $1`;
+  const sql = `${SELECT} where published = true and featured = true order by created_at desc limit $1`;
   try {
     const { rows } = await query(sql, [limit]);
     return rows.map(rowToVehicle);
@@ -137,7 +97,7 @@ export async function getFeaturedVehicles(limit = 6) {
 
 export async function getVehicleBySlug(slug) {
   if (!slug) return null;
-  const sql = `${VEHICLE_SELECT} where v.slug = $1 and v.status = 'published' limit 1`;
+  const sql = `${SELECT} where slug = $1 and published = true limit 1`;
   try {
     const { rows } = await query(sql, [slug]);
     return rows.length ? rowToVehicle(rows[0]) : null;
@@ -149,19 +109,11 @@ export async function getVehicleBySlug(slug) {
 
 export async function getRelatedVehicles(vehicle, limit = 3) {
   if (!vehicle) return [];
-  const sql = `${VEHICLE_SELECT}
-    where v.status = 'published'
-      and v.slug <> $1
-      and (v.brand = $2 or v.body_type = $3)
-    order by v.published_at desc nulls last
-    limit $4`;
+  const sql = `${SELECT}
+    where published = true and slug <> $1 and (brand = $2 or body_type = $3)
+    order by created_at desc limit $4`;
   try {
-    const { rows } = await query(sql, [
-      vehicle.slug,
-      vehicle.brand,
-      vehicle.bodyType,
-      limit,
-    ]);
+    const { rows } = await query(sql, [vehicle.slug, vehicle.brand, vehicle.bodyType, limit]);
     return rows.map(rowToVehicle);
   } catch (err) {
     console.error('[vehicles repo] getRelatedVehicles error:', err);
@@ -171,17 +123,13 @@ export async function getRelatedVehicles(vehicle, limit = 3) {
 
 export async function getAllSlugs() {
   try {
-    const { rows } = await query(
-      `select slug from vehicles where status = 'published'`
-    );
+    const { rows } = await query(`select slug from vehicles where published = true`);
     return rows.map((r) => r.slug);
   } catch (err) {
     console.error('[vehicles repo] getAllSlugs error:', err);
     return [];
   }
 }
-
-/* --------- Faceted filter options (derivadas dos dados atuais) ---- */
 
 export async function getBrands() {
   const list = await getAllVehicles();
@@ -198,8 +146,6 @@ export async function getFuelTypes() {
   return [...new Set(list.map((v) => v.fuel))].sort();
 }
 
-/* --------- Sorting (helper puro, sem DB) -------------------------- */
-
 export function sortVehicles(list, sortBy) {
   const sorted = [...list];
   switch (sortBy) {
@@ -213,8 +159,6 @@ export function sortVehicles(list, sortBy) {
       return sorted;
   }
 }
-
-/* --------- WhatsApp helpers (re-export do módulo neutro) ---------- */
 
 export {
   WHATSAPP_NUMBER,
