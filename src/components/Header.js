@@ -34,8 +34,7 @@ export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
   const isHome = pathname === '/';
-  // transparente sobre o hero dark da home, até rolar
-  const transparent = isHome && !isScrolled && !isMenuOpen;
+  const transparent = false;
 
   const handleScroll = useCallback(() => {
     setIsScrolled(window.scrollY > 50);
