@@ -82,7 +82,7 @@ export default function Footer() {
           {/* Column 1: Brand */}
           <div>
             <Link href="/" className={styles['footer__brand-logo']} aria-label="Vamaq Motors">
-              <LogoVamaq className={styles['footer__brand-logo-img']} />
+              <LogoVamaq className={styles['footer__brand-logo-img']} variant="dark" />
             </Link>
             <p className={styles['footer__brand-desc']}>
               Boutique automotiva especializada em veiculos premium, esportivos e superesportivos. Curadoria rigorosa e procedencia garantida.
@@ -144,7 +144,7 @@ export default function Footer() {
               </div>
               <div className={styles['footer__contact-item']}>
                 <PhoneIcon className={styles['footer__contact-icon']} />
-                <span>(11) 99999-9999</span>
+                <span>(34) 98414-3315</span>
               </div>
               <div className={styles['footer__contact-item']}>
                 <MailIcon className={styles['footer__contact-icon']} />

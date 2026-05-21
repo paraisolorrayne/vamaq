@@ -38,10 +38,9 @@
 }
 
 .footer__brand-logo-img {
-  height: 72px;
+  height: 44px;
   width: auto;
   display: block;
-  border-radius: 10px;
 }
 
 .footer__brand-desc {

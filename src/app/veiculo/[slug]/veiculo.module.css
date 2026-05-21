@@ -45,10 +45,10 @@
 
 .brandEyebrow {
   font-size: var(--text-xs);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.18em;
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.3em;
   text-transform: uppercase;
-  color: var(--text-tertiary);
+  color: var(--color-accent);
   margin-bottom: 12px;
 }
 
@@ -56,9 +56,10 @@
   font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
   font-size: var(--text-2xl);
   font-weight: var(--fw-bold);
-  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
   color: var(--color-ink);
-  line-height: 1;
+  line-height: 1.02;
   margin-bottom: var(--space-sm);
 }
 

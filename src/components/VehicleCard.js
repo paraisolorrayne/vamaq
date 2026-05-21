@@ -26,21 +26,30 @@ export default function VehicleCard({ vehicle }) {
         className={styles.imageWrap}
         aria-label={`Ver detalhes: ${vehicle.brand} ${vehicle.model}`}
       >
-        <div className={styles.placeholder}>
-          <svg
-            className={styles.placeholderIcon}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-            <circle cx="12" cy="13" r="4" />
-          </svg>
-        </div>
+        {vehicle.images?.main ? (
+          <img
+            src={vehicle.images.main}
+            alt={`${vehicle.brand} ${vehicle.model} ${vehicle.year}`}
+            className={styles.image}
+            loading="lazy"
+          />
+        ) : (
+          <div className={styles.placeholder}>
+            <svg
+              className={styles.placeholderIcon}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+              <circle cx="12" cy="13" r="4" />
+            </svg>
+          </div>
+        )}
 
         {vehicle.badge && (
           <span className={`${styles.badge} ${getBadgeClass(vehicle.badge)}`}>

@@ -1,15 +1,14 @@
 /**
- * VAMAQ Motors — official logo.
- * The SVG file ships with its own background + brand gradients, so we render
- * it as a static image (no currentColor tint).
+ * VAMAQ Motors — logo (monocromático, fundo transparente).
+ * variant="light"  → wordmark escuro, para fundos CLAROS (padrão)
+ * variant="dark"   → wordmark branco, para fundos ESCUROS
  */
-export default function LogoVamaq({ className, title = 'Vamaq Motors' }) {
+export default function LogoVamaq({ className, variant = 'light', title = 'Vamaq Motors' }) {
+  const src =
+    variant === 'dark'
+      ? '/images/vamaq-logo-on-dark.svg'
+      : '/images/vamaq-logo-on-light.svg';
   return (
-    <img
-      src="/images/VAMAQ-LOGO.svg"
-      alt={title}
-      className={className}
-      draggable={false}
-    />
+    <img src={src} alt={title} className={className} draggable={false} />
   );
 }

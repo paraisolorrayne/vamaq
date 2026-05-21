@@ -2,30 +2,20 @@
    VAMAQ MOTORS — Home Page Styles
    ============================================ */
 
-/* --- HERO --- */
+/* --- HERO (dark cinematográfico) --- */
 .hero {
   position: relative;
   overflow: hidden;
-  background: var(--bg-soft);
-  padding: 140px 0 var(--space-2xl);
-}
-
-.heroBg {
-  display: none;
-}
-
-.heroBgGradient {
-  display: none;
-}
-
-.heroOverlay {
-  display: none;
+  background-color: var(--bg-feature);
+  background-image: var(--grad-glow), var(--grad-hero);
+  color: var(--text-on-dark);
+  padding: 160px 0 var(--space-2xl);
 }
 
 .heroContent {
   position: relative;
   z-index: 2;
-  max-width: 860px;
+  max-width: 880px;
   margin: 0 auto;
   text-align: center;
 }
@@ -38,11 +28,11 @@
   margin-bottom: var(--space-md);
   font-size: var(--text-xs);
   font-weight: var(--fw-semibold);
-  letter-spacing: 0.12em;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: var(--color-ink);
-  background: #FFFFFF;
-  border: 1px solid var(--border-light);
+  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--feature-hairline);
   border-radius: var(--radius-full);
 }
 
@@ -52,15 +42,17 @@
   height: 6px;
   border-radius: 50%;
   background: var(--color-accent);
+  box-shadow: 0 0 10px var(--color-accent);
 }
 
 .heroTagline {
   font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
-  font-size: var(--text-2xl);
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
   font-weight: var(--fw-bold);
-  letter-spacing: -0.02em;
-  color: var(--color-ink);
-  line-height: 1.05;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  color: #FFFFFF;
+  line-height: 1.02;
   margin-bottom: var(--space-md);
 }
 
@@ -71,10 +63,10 @@
 
 .heroSubtitle {
   font-size: var(--text-md);
-  color: var(--text-secondary);
+  color: var(--text-on-dark-soft);
   margin: 0 auto var(--space-lg);
   line-height: 1.6;
-  max-width: 540px;
+  max-width: 560px;
 }
 
 .heroActions {
@@ -91,10 +83,11 @@
   margin: var(--space-xl) auto 0;
   aspect-ratio: 3 / 4;
   max-width: 420px;
-  border-radius: 32px;
+  border-radius: 24px;
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
   overflow: hidden;
-  box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--feature-hairline);
+  box-shadow: var(--shadow-dark), 0 0 90px -24px rgba(255, 106, 0, 0.4);
 }
 
 .heroVisualImg {

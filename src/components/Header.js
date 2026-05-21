@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import LogoVamaq from './LogoVamaq';
 import { getWhatsAppGenericUrl } from '@/lib/whatsapp';
 import styles from './Header.module.css';
@@ -31,6 +32,10 @@ function WhatsAppIcon({ className }) {
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const pathname = usePathname();
+  const isHome = pathname === '/';
+  // transparente sobre o hero dark da home, até rolar
+  const transparent = isHome && !isScrolled && !isMenuOpen;
 
   const handleScroll = useCallback(() => {
     setIsScrolled(window.scrollY > 50);
@@ -62,6 +67,7 @@ export default function Header() {
   const headerClass = [
     styles.header,
     isScrolled ? styles['header--scrolled'] : '',
+    transparent ? styles['header--transparent'] : '',
   ]
     .filter(Boolean)
     .join(' ');
@@ -85,7 +91,7 @@ export default function Header() {
       <div className={styles.header__inner}>
         {/* Logo */}
         <Link href="/" className={styles.header__logo} aria-label="Vamaq Motors - Pagina inicial">
-          <LogoVamaq className={styles['header__logo-img']} />
+          <LogoVamaq className={styles['header__logo-img']} variant={transparent ? 'dark' : 'light'} />
         </Link>
 
         {/* Desktop nav */}
