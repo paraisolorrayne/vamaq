@@ -135,8 +135,12 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  flex-wrap: wrap;
   margin-top: 4px;
 }
+.priceRow .cta { flex: 0 0 auto; }
+.priceRow .price,
+.priceRow .priceConsult { flex: 1 1 auto; }
 
 .price {
   font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);

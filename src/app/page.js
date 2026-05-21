@@ -14,6 +14,7 @@ import styles from "./page.module.css";
 
 export default async function HomePage() {
   const featuredVehicles = await getFeaturedVehicles(6);
+  const heroVehicle = featuredVehicles[0] || null;
 
   return (
     <>
@@ -34,14 +35,14 @@ export default async function HomePage() {
                 mais desejados do mercado — tudo em um só lugar.
               </p>
               <div className={styles.heroActions}>
-                <Link href="/acervo" className="btn btn--primary btn--lg">
+                <Link href="/acervo" className="btn btn--accent btn--lg">
                   Ver Acervo
                 </Link>
                 <a
                   href={getWhatsAppGenericUrl(
                     "Olá! Vi o site da Vamaq Motors e gostaria de mais informações."
                   )}
-                  className="btn btn--outline btn--lg"
+                  className="btn btn--whatsapp btn--lg"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -49,20 +50,41 @@ export default async function HomePage() {
                 </a>
               </div>
             </div>
-            <div className={styles.heroVisual}>
-              <div className={styles.heroVisualCorner}>
-                <span className={styles.heroVisualCornerDot} />
-                Acervo selecionado
-              </div>
-              <img
-                src="/images/equipe/mateus-1.jpg"
-                width={900}
-                height={1600}
-                alt="Mateus Parreira, fundador da Vamaq Motors, no showroom"
-                className={styles.heroVisualImg}
-                loading="eager"
-              />
-            </div>
+
+            {heroVehicle && (
+              <Link
+                href={`/veiculo/${heroVehicle.slug}`}
+                className={styles.heroVisual}
+                aria-label={`Ver ${heroVehicle.brand} ${heroVehicle.model}`}
+              >
+                <span className={styles.heroVisualCorner}>
+                  <span className={styles.heroVisualCornerDot} />
+                  Destaque
+                </span>
+                {heroVehicle.images?.main && (
+                  <img
+                    src={heroVehicle.images.main}
+                    alt={`${heroVehicle.brand} ${heroVehicle.model} ${heroVehicle.year}`}
+                    className={styles.heroVisualImg}
+                    loading="eager"
+                  />
+                )}
+                <span className={styles.heroVisualInfo}>
+                  <span className={styles.heroVisualName}>
+                    {heroVehicle.brand} {heroVehicle.model}
+                  </span>
+                  <span className={styles.heroVisualPrice}>
+                    {heroVehicle.price
+                      ? heroVehicle.price.toLocaleString("pt-BR", {
+                          style: "currency",
+                          currency: "BRL",
+                          minimumFractionDigits: 0,
+                        })
+                      : "Sob consulta"}
+                  </span>
+                </span>
+              </Link>
+            )}
           </div>
         </section>
 
