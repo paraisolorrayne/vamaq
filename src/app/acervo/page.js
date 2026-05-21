@@ -15,6 +15,8 @@ import {
 } from "@/lib/repositories/vehicles";
 import AcervoClient from "./AcervoClient";
 
+export const revalidate = 60;
+
 export const metadata = {
   title: "Nosso Acervo — Vamaq Motors",
   description:

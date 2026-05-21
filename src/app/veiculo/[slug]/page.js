@@ -9,6 +9,8 @@ import {
   getAllSlugs,
 } from "@/lib/repositories/vehicles";
 
+export const revalidate = 60;
+
 export async function generateStaticParams() {
   const slugs = await getAllSlugs();
   return slugs.map((slug) => ({ slug }));

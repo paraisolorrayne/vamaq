@@ -7,6 +7,8 @@ import { getFeaturedVehicles } from "@/lib/repositories/vehicles";
 import { getWhatsAppGenericUrl } from "@/lib/whatsapp";
 import styles from "./page.module.css";
 
+export const revalidate = 60;
+
 export default async function HomePage() {
   const featuredVehicles = await getFeaturedVehicles(6);
   const heroVehicle = featuredVehicles[0] || null;
