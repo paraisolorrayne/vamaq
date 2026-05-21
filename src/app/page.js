@@ -1,5 +1,4 @@
 import Link from "next/link";
-import heroPhoto from "@/resources/foto-destaque.jpg";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
@@ -56,10 +55,10 @@ export default async function HomePage() {
                 Acervo selecionado
               </div>
               <img
-                src={heroPhoto.src}
-                width={heroPhoto.width}
-                height={heroPhoto.height}
-                alt="Mateus Parreira no showroom da Vamaq Motors com Ferrari SF90 e Lamborghini Huracán"
+                src="/images/equipe/mateus-1.jpg"
+                width={900}
+                height={1600}
+                alt="Mateus Parreira, fundador da Vamaq Motors, no showroom"
                 className={styles.heroVisualImg}
                 loading="eager"
               />
@@ -114,8 +113,11 @@ export default async function HomePage() {
                 </Link>
               </div>
               <div className={styles.aboutImage}>
-                {/* SUBSTITUIR: foto real da loja ou do Mateus */}
-                Foto Institucional
+                <img
+                  src="/images/equipe/mateus-2.jpg"
+                  alt="Mateus Parreira no showroom da Vamaq Motors"
+                  className={styles.aboutImageImg}
+                />
               </div>
             </div>
           </div>

@@ -9,9 +9,23 @@ import styles from "./contato.module.css";
 export default function ContatoPage() {
   const handleSubmit = (e) => {
     e.preventDefault();
-    const nome = e.target.nome.value;
-    const msg = `Olá! Meu nome é ${nome}. Gostaria de falar com a Vamaq Motors.`;
-    window.open(getWhatsAppGenericUrl(msg), "_blank");
+    const f = e.target;
+    const nome = f.nome.value.trim();
+    const telefone = f.telefone.value.trim();
+    const email = f.email.value.trim();
+    const assunto = f.assunto.options[f.assunto.selectedIndex]?.text;
+    const mensagem = f.mensagem.value.trim();
+
+    const linhas = [
+      `Olá! Meu nome é ${nome} e gostaria de falar com a Vamaq Motors.`,
+      "",
+      assunto && f.assunto.value ? `*Assunto:* ${assunto}` : null,
+      telefone ? `*Telefone:* ${telefone}` : null,
+      email ? `*E-mail:* ${email}` : null,
+      mensagem ? `*Mensagem:* ${mensagem}` : null,
+    ].filter(Boolean);
+
+    window.open(getWhatsAppGenericUrl(linhas.join("\n")), "_blank");
   };
 
   return (

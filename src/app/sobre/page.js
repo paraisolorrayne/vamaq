@@ -67,8 +67,11 @@ export default function SobrePage() {
                 </p>
               </div>
               <div className={styles.imagePlaceholder}>
-                {/* SUBSTITUIR: foto real do Mateus — sugestão: 04 — Conteúdo/Publicacao-Inicial-Estoque/fotos/mateus-sobre/00000488.jpg */}
-                Foto do Mateus Parreira
+                <img
+                  src="/images/equipe/mateus-3.jpg"
+                  alt="Mateus Parreira, fundador da Vamaq Motors"
+                  className={styles.imagePhoto}
+                />
               </div>
             </div>
 
