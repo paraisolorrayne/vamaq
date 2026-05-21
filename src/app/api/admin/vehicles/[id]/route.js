@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import {
   getVehicleById,
   updateVehicle,
@@ -21,6 +22,11 @@ export async function PUT(request, { params }) {
   if (!updated) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
+
+  revalidatePath('/');
+  revalidatePath('/acervo');
+  if (updated.slug) revalidatePath(`/veiculo/${updated.slug}`);
+
   return NextResponse.json(updated);
 }
 
@@ -30,5 +36,9 @@ export async function DELETE(_request, { params }) {
   if (!ok) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
+
+  revalidatePath('/');
+  revalidatePath('/acervo');
+
   return NextResponse.json({ success: true });
 }
