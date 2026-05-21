@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import LogoVamaq from './LogoVamaq';
-import { getWhatsAppGenericUrl } from '@/data/vehicles';
+import { getWhatsAppGenericUrl } from '@/lib/whatsapp';
 import styles from './Header.module.css';
 
 const NAV_LINKS = [

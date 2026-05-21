@@ -1,4 +1,4 @@
-import { getWhatsAppGenericUrl } from '@/data/vehicles';
+import { getWhatsAppGenericUrl } from '@/lib/whatsapp';
 import styles from './WhatsAppFloat.module.css';
 
 const WHATSAPP_URL = getWhatsAppGenericUrl(

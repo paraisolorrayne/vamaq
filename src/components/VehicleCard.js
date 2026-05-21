@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { getWhatsAppUrl } from '@/data/vehicles';
+import { getWhatsAppUrl } from '@/lib/whatsapp';
 import styles from './VehicleCard.module.css';
 
 function formatKm(km) {

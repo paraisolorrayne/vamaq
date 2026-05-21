@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import LogoVamaq from './LogoVamaq';
-import { getWhatsAppGenericUrl } from '@/data/vehicles';
+import { getWhatsAppGenericUrl } from '@/lib/whatsapp';
 import styles from './Footer.module.css';
 
 const QUICK_LINKS = [

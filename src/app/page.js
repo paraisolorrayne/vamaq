@@ -9,11 +9,12 @@ import VehicleCard from "@/components/VehicleCard";
 import ProcessSection from "@/components/ProcessSection";
 import TestimonialsSection from "@/components/TestimonialsSection";
 import FAQ from "@/components/FAQ";
-import { getFeaturedVehicles, getWhatsAppGenericUrl } from "@/data/vehicles";
+import { getFeaturedVehicles } from "@/lib/repositories/vehicles";
+import { getWhatsAppGenericUrl } from "@/lib/whatsapp";
 import styles from "./page.module.css";
 
-export default function HomePage() {
-  const featuredVehicles = getFeaturedVehicles(6);
+export default async function HomePage() {
+  const featuredVehicles = await getFeaturedVehicles(6);
 
   return (
     <>

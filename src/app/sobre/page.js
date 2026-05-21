@@ -1,13 +1,13 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
-import { getWhatsAppGenericUrl } from "@/data/vehicles";
+import { getWhatsAppGenericUrl } from "@/lib/whatsapp";
 import styles from "./sobre.module.css";
 
 export const metadata = {
   title: "Sobre",
   description:
-    "Conheça a Vamaq Motors — mais de 13 anos de experiência no mercado automotivo de luxo.",
+    "Vamaq Motors — 13 anos de mercado, mais de 2.500 veículos negociados. Curadoria automotiva com a assinatura de Mateus Parreira.",
 };
 
 export default function SobrePage() {
@@ -19,7 +19,8 @@ export default function SobrePage() {
         <div className={`container ${styles.hero}`}>
           <h1 className={styles.heroTitle}>Sobre a Vamaq Motors</h1>
           <p className={styles.heroSubtitle}>
-            Mais de 13 anos conectando pessoas a veículos extraordinários
+            13 anos de mercado. Mais de 2.500 veículos negociados. Uma única
+            obsessão: procedência.
           </p>
         </div>
 
@@ -28,39 +29,46 @@ export default function SobrePage() {
           <div className="container">
             <div className={styles.content}>
               <div className={styles.text}>
-                <h2 className={styles.heading}>Nossa História</h2>
+                <h2 className={styles.heading}>A Vamaq nasceu da paixão pelo que faço</h2>
                 <p>
-                  A Vamaq Motors nasceu da paixão por veículos de alta
-                  performance e da visão de criar uma experiência de compra à
-                  altura dos carros que comercializamos. Liderada por Mateus
-                  Parreira, administrador de marketing com mais de 13 anos de
-                  vivência no mercado automotivo de luxo, a empresa se
-                  consolidou como referência em curadoria de veículos premium.
+                  A Vamaq Motors é a materialização de 13 anos de mercado.
+                  Começou em 2014, com um vendedor que sempre fez questão de
+                  unir três coisas que raramente andam juntas no setor
+                  automotivo: seriedade, transparência e paixão real pelo
+                  produto.
                 </p>
+                <p>
+                  Sou o Mateus Parreira, administrador de marketing por
+                  formação e vendedor por vocação. Já passaram pelas minhas
+                  mãos mais de 2.500 veículos — de nacionais selecionadas a
+                  importados de coleção. A Vamaq foi fundada em 2026, mas
+                  carrega na essência uma trajetória inteira de relacionamento
+                  e procedência impecável.
+                </p>
+
+                <h2 className={styles.heading}>O que me move</h2>
+                <p>
+                  Vender o que eu mais amo. Carro nunca foi mercadoria pra mim
+                  — é projeto, é desejo, é decisão importante na vida de quem
+                  compra. Por isso aqui não tem pressa, não tem pressão e não
+                  tem letra miúda. O que tem é histórico, transparência e o
+                  compromisso de só vender um carro que eu mesmo compraria.
+                </p>
+
+                <h2 className={styles.heading}>Como trabalhamos</h2>
                 <p>
                   Cada carro que entra no nosso acervo passa por uma
                   verificação rigorosa de procedência, histórico de manutenção
-                  e estado de conservação. Não trabalhamos com volume —
-                  trabalhamos com excelência.
-                </p>
-
-                <h2 className={styles.heading}>Nosso Diferencial</h2>
-                <p>
-                  Enquanto concessionárias tradicionais focam em volume de
-                  vendas, nós focamos em experiência. Cada cliente é atendido
-                  de forma personalizada, com transparência total em cada etapa
-                  da negociação. Nosso objetivo não é vender um carro — é
-                  construir uma relação de confiança que dure.
-                </p>
-                <p>
-                  Trabalhamos exclusivamente com marcas que definem o segmento
-                  premium: Porsche, BMW, Mercedes-AMG, Ferrari, Lamborghini,
-                  McLaren, Audi, Range Rover, Bentley e Maserati.
+                  e estado de conservação. Trabalhamos com o melhor do mercado
+                  premium — Porsche, BMW, Mercedes-AMG, Audi, Range Rover,
+                  Ferrari, Lamborghini, McLaren — e também com nacionais
+                  selecionadas, desde que o carro tenha procedência e estado
+                  para entrar na Vamaq.
                 </p>
               </div>
               <div className={styles.imagePlaceholder}>
-                {/* SUBSTITUIR: foto real da loja ou equipe */}
-                Foto Institucional
+                {/* SUBSTITUIR: foto real do Mateus — sugestão: 04 — Conteúdo/Publicacao-Inicial-Estoque/fotos/mateus-sobre/00000488.jpg */}
+                Foto do Mateus Parreira
               </div>
             </div>
 
@@ -69,23 +77,23 @@ export default function SobrePage() {
               <div className={styles.valueCard}>
                 <h3 className={styles.valueTitle}>Curadoria Rigorosa</h3>
                 <p className={styles.valueText}>
-                  Cada veículo é selecionado e inspecionado pessoalmente. Só
-                  trabalhamos com carros que passam nos nossos critérios de
-                  qualidade.
+                  Cada veículo é inspecionado pessoalmente antes de entrar no
+                  acervo. Só fica o que passaria no nosso próprio crivo de
+                  compra.
                 </p>
               </div>
               <div className={styles.valueCard}>
-                <h3 className={styles.valueTitle}>Procedência Garantida</h3>
+                <h3 className={styles.valueTitle}>Procedência Inegociável</h3>
                 <p className={styles.valueText}>
-                  Histórico completo, quilometragem verificada, sem sinistro. A
-                  transparência é inegociável.
+                  Histórico completo, quilometragem verificada, sem sinistro.
+                  Aqui transparência não é diferencial — é a regra.
                 </p>
               </div>
               <div className={styles.valueCard}>
-                <h3 className={styles.valueTitle}>Atendimento Premium</h3>
+                <h3 className={styles.valueTitle}>Atendimento Direto</h3>
                 <p className={styles.valueText}>
-                  Cada cliente recebe atenção personalizada. Sem pressão, sem
-                  pressa. A experiência é tão importante quanto o carro.
+                  Você fala com o Mateus. Sem intermediário, sem roteiro de
+                  venda. A negociação é entre você e quem entende do produto.
                 </p>
               </div>
             </div>

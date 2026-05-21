@@ -5,7 +5,7 @@ import styles from './StatsSection.module.css';
 
 const STATS = [
   { value: 13, suffix: '+', label: 'Anos de mercado', prefix: '' },
-  { value: 500, suffix: '+', label: 'Veículos negociados', prefix: '' },
+  { value: 2500, suffix: '+', label: 'Veículos negociados', prefix: '' },
   { value: 100, suffix: '%', label: 'Procedência verificada', prefix: '' },
   { value: 4.9, suffix: '', label: 'Avaliação dos clientes', prefix: '\u2605 ', decimals: 1 },
 ];
