@@ -140,7 +140,7 @@ export default function Footer() {
             <div className={styles['footer__contact-list']}>
               <div className={styles['footer__contact-item']}>
                 <MapPinIcon className={styles['footer__contact-icon']} />
-                <span>Av. Europa, 158 — Jardim Europa, Sao Paulo - SP</span>
+                <span>Av. Francisco Galassi — Morada da Colina, Uberlândia - MG, 38411-120</span>
               </div>
               <div className={styles['footer__contact-item']}>
                 <PhoneIcon className={styles['footer__contact-icon']} />

@@ -156,7 +156,7 @@ export default async function HomePage() {
             <div className={styles.discoverCard}>
               <div className={styles.discoverImage}>
                 <img
-                  src="/images/equipe/mateus-2.jpg"
+                  src="/images/equipe/mateus-showroom.png"
                   alt="Showroom da Vamaq Motors"
                   className={styles.discoverImageImg}
                 />
