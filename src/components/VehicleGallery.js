@@ -55,12 +55,18 @@ export default function VehicleGallery({ images = [], alt = 'Veículo', badge = 
   }, [lightboxOpen]);
 
   /* Keep the active thumbnail visible in the strip */
+  const thumbsInitial = useRef(true);
   useEffect(() => {
+    if (thumbsInitial.current) {
+      thumbsInitial.current = false;
+      return;
+    }
     const strip = thumbsRef.current;
     if (!strip) return;
     const active = strip.children[index];
-    if (active && typeof active.scrollIntoView === 'function') {
-      active.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    if (active) {
+      const activeCenter = active.offsetLeft - strip.offsetLeft + active.offsetWidth / 2;
+      strip.scrollTo({ left: activeCenter - strip.clientWidth / 2, behavior: 'smooth' });
     }
   }, [index]);
 

@@ -69,12 +69,18 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
     return () => document.removeEventListener('keydown', handler);
   }, [prev, next]);
 
+  const initialRender = useRef(true);
   useEffect(() => {
+    if (initialRender.current) {
+      initialRender.current = false;
+      return;
+    }
     const track = trackRef.current;
     if (!track) return;
     const child = track.children[index];
     if (child) {
-      child.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      const childCenter = child.offsetLeft - track.offsetLeft + child.offsetWidth / 2;
+      track.scrollTo({ left: childCenter - track.clientWidth / 2, behavior: 'smooth' });
     }
   }, [index]);
 
