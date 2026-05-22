@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<svg width="1920" height="1280" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg">
+<svg width="1920" height="1280" viewBox="380 360 1230 460" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg">
  <defs>
   <clipPath id="clip-0">
    <path clip-rule="nonzero" d="m1219,408l332,0l0,258l-332,0l0,-258zm0,0" id="svg_1"/>

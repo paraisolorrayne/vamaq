@@ -12,12 +12,13 @@ export const revalidate = 60;
 export default async function HomePage() {
   const featuredVehicles = await getFeaturedVehicles(6);
   const heroVehicle = featuredVehicles[0] || null;
+  const gridVehicles = featuredVehicles.slice(1, 4);
 
   return (
     <>
       <Header />
       <main id="main-content">
-        {/* ======== HERO — Light, featured vehicle like 4boss ======== */}
+        {/* ======== HERO — Compact featured + 3 vehicles grid (pyramid) ======== */}
         <section className={styles.hero}>
           <div className={styles.heroInner}>
             {heroVehicle ? (
@@ -25,9 +26,6 @@ export default async function HomePage() {
                 <div className={styles.heroText}>
                   <h6 className={styles.heroBrand}>{heroVehicle.brand}</h6>
                   <h1 className={styles.heroModel}>{heroVehicle.model}</h1>
-                  {heroVehicle.version && (
-                    <p className={styles.heroVersion}>{heroVehicle.version}</p>
-                  )}
                 </div>
 
                 <Link
@@ -47,20 +45,10 @@ export default async function HomePage() {
 
                 <div className={styles.heroSpecs}>
                   <div className={styles.heroSpec}>
-                    <svg className={styles.heroSpecIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                      <line x1="16" y1="2" x2="16" y2="6" />
-                      <line x1="8" y1="2" x2="8" y2="6" />
-                      <line x1="3" y1="10" x2="21" y2="10" />
-                    </svg>
                     <span className={styles.heroSpecLabel}>Ano</span>
                     <span className={styles.heroSpecValue}>{heroVehicle.year}</span>
                   </div>
                   <div className={styles.heroSpec}>
-                    <svg className={styles.heroSpecIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
-                      <path d="M12 6v6l4 2" />
-                    </svg>
                     <span className={styles.heroSpecLabel}>Km</span>
                     <span className={styles.heroSpecValue}>
                       {heroVehicle.mileage
@@ -69,11 +57,6 @@ export default async function HomePage() {
                     </span>
                   </div>
                   <div className={styles.heroSpec}>
-                    <svg className={styles.heroSpecIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <circle cx="12" cy="12" r="10" />
-                      <line x1="12" y1="8" x2="12" y2="12" />
-                      <line x1="12" y1="16" x2="12.01" y2="16" />
-                    </svg>
                     <span className={styles.heroSpecLabel}>Valor</span>
                     <span className={styles.heroSpecValue}>
                       {heroVehicle.price
@@ -114,6 +97,19 @@ export default async function HomePage() {
           </div>
         </section>
 
+        {/* ======== VEHICLES GRID — 3 columns below hero ======== */}
+        {gridVehicles.length > 0 && (
+          <section className={styles.featured}>
+            <div className="container">
+              <div className={styles.featuredGrid}>
+                {gridVehicles.map((vehicle) => (
+                  <VehicleCard key={vehicle.id} vehicle={vehicle} />
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* ======== REFERÊNCIA / ABOUT ======== */}
         <section className={styles.reference}>
           <div className="container">
@@ -136,21 +132,16 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* ======== FEATURED VEHICLES ======== */}
-        <section className={styles.featured}>
-          <div className="container">
-            <div className={styles.featuredGrid}>
-              {featuredVehicles.slice(0, 3).map((vehicle) => (
-                <VehicleCard key={vehicle.id} vehicle={vehicle} />
-              ))}
-            </div>
-            <div className={styles.featuredMore}>
+        {/* ======== SEE ALL BUTTON ======== */}
+        {featuredVehicles.length > 0 && (
+          <section className={styles.featuredMoreSection}>
+            <div className="container">
               <Link href="/acervo" className={styles.featuredMoreBtn}>
                 Conheça todos os veículos
               </Link>
             </div>
-          </div>
-        </section>
+          </section>
+        )}
 
         {/* ======== ABOUT / DESCUBRA ======== */}
         <section className={styles.discover}>

@@ -3,7 +3,7 @@
    Light theme, inspired by 4boss.com.br
    ============================================ */
 
-/* --- HERO (light/cream, featured vehicle) --- */
+/* --- HERO (compact, featured vehicle at top of pyramid) --- */
 .hero {
   position: relative;
   background-color: var(--bg-primary);
@@ -19,7 +19,7 @@
 }
 
 .heroText {
-  padding-top: var(--space-lg);
+  padding-top: var(--space-sm);
 }
 
 .heroBrand {
@@ -34,7 +34,7 @@
 
 .heroModel {
   font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
-  font-size: clamp(3rem, 8vw, 7rem);
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
   font-weight: var(--fw-bold);
   text-transform: uppercase;
   letter-spacing: -0.02em;
@@ -51,16 +51,16 @@
   margin-bottom: var(--space-md);
 }
 
-/* Hero vehicle image */
+/* Hero vehicle image — compact */
 .heroImageWrap {
   display: block;
   position: relative;
   width: 100%;
-  max-width: 900px;
-  margin: var(--space-lg) auto 0;
+  max-width: 640px;
+  margin: var(--space-md) auto 0;
   aspect-ratio: 16 / 9;
   overflow: hidden;
-  border-radius: 0;
+  border-radius: var(--radius-sm);
 }
 
 .heroImage {
@@ -81,8 +81,8 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-xl);
-  padding: var(--space-lg) var(--container-pad);
-  max-width: 700px;
+  padding: var(--space-sm) var(--container-pad) var(--space-md);
+  max-width: 500px;
   margin: 0 auto;
 }
 
@@ -91,13 +91,6 @@
   flex-direction: column;
   align-items: center;
   gap: 4px;
-}
-
-.heroSpecIcon {
-  width: 20px;
-  height: 20px;
-  color: var(--text-tertiary);
-  margin-bottom: 2px;
 }
 
 .heroSpecLabel {
@@ -179,19 +172,19 @@
   line-height: 1.7;
 }
 
-/* --- FEATURED VEHICLES --- */
+/* --- FEATURED VEHICLES GRID (below hero — pyramid base) --- */
 .featured {
-  padding: var(--space-2xl) 0;
+  padding: 0 0 var(--space-lg);
 }
 
 .featuredGrid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 24px;
+  gap: 20px;
 }
 
-.featuredMore {
-  margin-top: var(--space-xl);
+.featuredMoreSection {
+  padding: 0 0 var(--space-xl);
 }
 
 .featuredMoreBtn {
@@ -353,7 +346,7 @@
 
 @media (min-width: 768px) {
   .hero {
-    padding: 120px 0 0;
+    padding: 100px 0 0;
   }
   .heroSpecs {
     gap: var(--space-2xl);
@@ -378,9 +371,6 @@
 @media (min-width: 1024px) {
   .heroSpecs {
     gap: var(--space-3xl);
-  }
-  .heroSpecValue {
-    font-size: var(--text-lg);
   }
   .featuredGrid {
     grid-template-columns: repeat(3, 1fr);

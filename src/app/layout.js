@@ -1,4 +1,5 @@
 import { Inter, Rajdhani } from "next/font/google";
+import ScrollToTop from "@/components/ScrollToTop";
 import "./globals.css";
 
 const inter = Inter({
@@ -45,6 +46,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="pt-BR" className={`${inter.variable} ${rajdhani.variable}`}>
       <body style={{ fontFamily: "var(--font-primary)" }}>
+        <ScrollToTop />
         <a href="#main-content" className="skip-link">
           Pular para o conteúdo
         </a>
