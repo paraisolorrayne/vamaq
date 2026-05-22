@@ -3,16 +3,20 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
 import VehicleCard from "@/components/VehicleCard";
-import { getFeaturedVehicles } from "@/lib/repositories/vehicles";
+import { getFeaturedVehicles, getAllVehicles } from "@/lib/repositories/vehicles";
 import { getWhatsAppGenericUrl } from "@/lib/whatsapp";
 import styles from "./page.module.css";
 
 export const revalidate = 60;
 
 export default async function HomePage() {
-  const featuredVehicles = await getFeaturedVehicles(6);
-  const heroVehicle = featuredVehicles[0] || null;
-  const gridVehicles = featuredVehicles.slice(1, 4);
+  const [featuredVehicles, allVehicles] = await Promise.all([
+    getFeaturedVehicles(1),
+    getAllVehicles(),
+  ]);
+  const heroVehicle = featuredVehicles[0] || allVehicles[0] || null;
+  const heroId = heroVehicle?.id;
+  const gridVehicles = allVehicles.filter((v) => v.id !== heroId).slice(0, 3);
 
   return (
     <>

@@ -46,7 +46,6 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
   const count = galleryImages.length;
 
   const [index, setIndex] = useState(0);
-  const [activeTab, setActiveTab] = useState('images');
   const trackRef = useRef(null);
 
   const goTo = useCallback(
@@ -167,33 +166,57 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
           <h5 className={styles.galleryBrand}>{vehicle.brand}</h5>
           <h2 className={styles.galleryModel}>{vehicle.model}</h2>
           {version && <h3 className={styles.galleryVersion}>{version}</h3>}
+        </div>
 
-          <ul className={styles.tabs} role="tablist">
-            <li>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={activeTab === 'images'}
-                className={`${styles.tab} ${activeTab === 'images' ? styles.tabActive : ''}`}
-                onClick={() => setActiveTab('images')}
-              >
-                Imagens
-              </button>
-            </li>
-            <li>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={activeTab === 'info'}
-                className={`${styles.tab} ${activeTab === 'info' ? styles.tabActive : ''}`}
-                onClick={() => setActiveTab('info')}
-              >
-                Informações principais
-              </button>
-            </li>
-          </ul>
+        <div className={styles.galleryMain}>
+          {galleryImages.length > 0 ? (
+            <>
+              <div className={styles.galleryTrack} ref={trackRef}>
+                {galleryImages.map((src, i) => (
+                  <img
+                    key={`${src}-${i}`}
+                    src={src}
+                    alt={`${vehicle.brand} ${vehicle.model} — foto ${i + 1}`}
+                    className={`${styles.galleryImage} ${i === index ? styles.galleryImageActive : ''}`}
+                    loading={i < 3 ? 'eager' : 'lazy'}
+                    draggable={false}
+                    onClick={() => setIndex(i)}
+                  />
+                ))}
+              </div>
+              {count > 1 && (
+                <div className={styles.galleryControls}>
+                  <span className={styles.galleryCounter}>{index + 1}/{count}</span>
+                  <div className={styles.galleryProgress}>
+                    <div
+                      className={styles.galleryProgressBar}
+                      style={{ width: `${((index + 1) / count) * 100}%` }}
+                    />
+                  </div>
+                  <div className={styles.galleryNav}>
+                    <button type="button" className={styles.galleryNavBtn} onClick={prev} aria-label="Anterior">
+                      <ArrowIcon direction="left" />
+                    </button>
+                    <button type="button" className={styles.galleryNavBtn} onClick={next} aria-label="Próxima">
+                      <ArrowIcon direction="right" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className={styles.galleryEmpty}>
+              <p>Nenhuma imagem disponível</p>
+            </div>
+          )}
+        </div>
+      </section>
 
-          {activeTab === 'info' && (
+      {/* ===== INFORMAÇÕES PRINCIPAIS — always visible below gallery ===== */}
+      <section className={styles.specsSection}>
+        <div className="container">
+          <h2 className={styles.specsSectionTitle}>Informações principais</h2>
+          <div className={styles.specsGrid}>
             <ul className={styles.specsList}>
               <li className={styles.specItem}>
                 <span className={styles.specLabel}>Quilometragem</span>
@@ -230,84 +253,41 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
                 </li>
               )}
             </ul>
-          )}
-        </div>
 
-        <div className={styles.galleryMain}>
-          {activeTab === 'images' && galleryImages.length > 0 ? (
-            <>
-              <div className={styles.galleryTrack} ref={trackRef}>
-                {galleryImages.map((src, i) => (
-                  <img
-                    key={`${src}-${i}`}
-                    src={src}
-                    alt={`${vehicle.brand} ${vehicle.model} — foto ${i + 1}`}
-                    className={`${styles.galleryImage} ${i === index ? styles.galleryImageActive : ''}`}
-                    loading={i < 3 ? 'eager' : 'lazy'}
-                    draggable={false}
-                    onClick={() => setIndex(i)}
-                  />
-                ))}
+            {(vehicle.description || vehicle.specs?.engine) && (
+              <div className={styles.specsExtra}>
+                {vehicle.description && (
+                  <div className={styles.infoPanelBlock}>
+                    <h4 className={styles.infoPanelTitle}>Sobre este veículo</h4>
+                    <p className={styles.infoPanelText}>{vehicle.description}</p>
+                  </div>
+                )}
+                {vehicle.specs?.engine && (
+                  <div className={styles.infoPanelBlock}>
+                    <h4 className={styles.infoPanelTitle}>Performance</h4>
+                    <dl className={styles.performanceList}>
+                      <div className={styles.performanceItem}>
+                        <dt>Motor</dt>
+                        <dd>{vehicle.specs.engine}</dd>
+                      </div>
+                      {vehicle.specs.acceleration && (
+                        <div className={styles.performanceItem}>
+                          <dt>0 a 100 km/h</dt>
+                          <dd>{vehicle.specs.acceleration}</dd>
+                        </div>
+                      )}
+                      {vehicle.specs.topSpeed && (
+                        <div className={styles.performanceItem}>
+                          <dt>Velocidade máxima</dt>
+                          <dd>{vehicle.specs.topSpeed}</dd>
+                        </div>
+                      )}
+                    </dl>
+                  </div>
+                )}
               </div>
-              {count > 1 && (
-                <div className={styles.galleryControls}>
-                  <span className={styles.galleryCounter}>{index + 1}/{count}</span>
-                  <div className={styles.galleryProgress}>
-                    <div
-                      className={styles.galleryProgressBar}
-                      style={{ width: `${((index + 1) / count) * 100}%` }}
-                    />
-                  </div>
-                  <div className={styles.galleryNav}>
-                    <button type="button" className={styles.galleryNavBtn} onClick={prev} aria-label="Anterior">
-                      <ArrowIcon direction="left" />
-                    </button>
-                    <button type="button" className={styles.galleryNavBtn} onClick={next} aria-label="Próxima">
-                      <ArrowIcon direction="right" />
-                    </button>
-                  </div>
-                </div>
-              )}
-            </>
-          ) : activeTab === 'images' ? (
-            <div className={styles.galleryEmpty}>
-              <p>Nenhuma imagem disponível</p>
-            </div>
-          ) : null}
-
-          {activeTab === 'info' && (
-            <div className={styles.infoPanel}>
-              {vehicle.description && (
-                <div className={styles.infoPanelBlock}>
-                  <h4 className={styles.infoPanelTitle}>Sobre este veículo</h4>
-                  <p className={styles.infoPanelText}>{vehicle.description}</p>
-                </div>
-              )}
-              {vehicle.specs?.engine && (
-                <div className={styles.infoPanelBlock}>
-                  <h4 className={styles.infoPanelTitle}>Performance</h4>
-                  <dl className={styles.performanceList}>
-                    <div className={styles.performanceItem}>
-                      <dt>Motor</dt>
-                      <dd>{vehicle.specs.engine}</dd>
-                    </div>
-                    {vehicle.specs.acceleration && (
-                      <div className={styles.performanceItem}>
-                        <dt>0 a 100 km/h</dt>
-                        <dd>{vehicle.specs.acceleration}</dd>
-                      </div>
-                    )}
-                    {vehicle.specs.topSpeed && (
-                      <div className={styles.performanceItem}>
-                        <dt>Velocidade máxima</dt>
-                        <dd>{vehicle.specs.topSpeed}</dd>
-                      </div>
-                    )}
-                  </dl>
-                </div>
-              )}
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </section>
 
