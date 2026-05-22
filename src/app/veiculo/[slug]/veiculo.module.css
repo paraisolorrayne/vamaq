@@ -4,7 +4,7 @@
    ============================================ */
 
 .page {
-  padding-top: 80px;
+  padding-top: 90px;
   background: var(--bg-primary);
 }
 
@@ -448,6 +448,101 @@
   margin: 0;
 }
 
+/* ===== SPECS SECTION (below gallery, light bg) ===== */
+
+.specsSection {
+  padding: var(--space-2xl) 0;
+  background: var(--bg-primary);
+}
+
+.specsSectionTitle {
+  font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
+  font-size: var(--text-xl);
+  font-weight: var(--fw-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--color-ink);
+  margin-bottom: var(--space-xl);
+}
+
+.specsGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-xl);
+}
+
+.specsSection .specsList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.specsSection .specItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.specsSection .specItem:last-child {
+  border-bottom: none;
+}
+
+.specsSection .specLabel {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.specsSection .specValue {
+  font-size: var(--text-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--color-ink);
+}
+
+.specsExtra {}
+
+.specsSection .infoPanelBlock {
+  margin-bottom: var(--space-xl);
+}
+
+.specsSection .infoPanelBlock:last-child {
+  margin-bottom: 0;
+}
+
+.specsSection .infoPanelTitle {
+  font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
+  font-size: var(--text-lg);
+  font-weight: var(--fw-bold);
+  color: var(--color-ink);
+  margin-bottom: var(--space-md);
+}
+
+.specsSection .infoPanelText {
+  font-size: var(--text-md);
+  color: var(--text-secondary);
+  line-height: 1.8;
+}
+
+.specsSection .performanceItem {
+  padding-bottom: var(--space-md);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.specsSection .performanceItem:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.specsSection .performanceItem dt {
+  color: var(--text-tertiary);
+}
+
+.specsSection .performanceItem dd {
+  color: var(--color-ink);
+}
+
 /* ===== CTA SECTION ===== */
 
 .ctaSection {
@@ -640,8 +735,8 @@
     padding: 0 var(--space-xl) var(--space-xl);
   }
 
-  .infoPanel {
-    padding: var(--space-xl);
+  .specsGrid {
+    grid-template-columns: 1fr 1fr;
   }
 
   .relatedGrid {
