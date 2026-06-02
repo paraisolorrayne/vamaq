@@ -46,6 +46,7 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
   const count = galleryImages.length;
 
   const [index, setIndex] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const trackRef = useRef(null);
 
   const goTo = useCallback(
@@ -61,12 +62,23 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
 
   useEffect(() => {
     const handler = (e) => {
-      if (e.key === 'ArrowLeft') prev();
+      if (e.key === 'Escape') setLightboxOpen(false);
+      else if (e.key === 'ArrowLeft') prev();
       else if (e.key === 'ArrowRight') next();
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   }, [prev, next]);
+
+  /* Trava o scroll do body enquanto o lightbox está aberto */
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [lightboxOpen]);
 
   const initialRender = useRef(true);
   useEffect(() => {
@@ -180,7 +192,10 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
                     className={`${styles.galleryImage} ${i === index ? styles.galleryImageActive : ''}`}
                     loading={i < 3 ? 'eager' : 'lazy'}
                     draggable={false}
-                    onClick={() => setIndex(i)}
+                    onClick={() => {
+                      setIndex(i);
+                      setLightboxOpen(true);
+                    }}
                   />
                 ))}
               </div>
@@ -211,6 +226,70 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
           )}
         </div>
       </section>
+
+      {/* ===== LIGHTBOX — foto em tela cheia sem sair do site ===== */}
+      {lightboxOpen && galleryImages[index] && (
+        <div
+          className={styles.lightbox}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Foto em tela cheia"
+          onClick={() => setLightboxOpen(false)}
+        >
+          <button
+            type="button"
+            className={styles.lightboxClose}
+            onClick={(e) => {
+              e.stopPropagation();
+              setLightboxOpen(false);
+            }}
+            aria-label="Fechar"
+          >
+            &times;
+          </button>
+
+          {count > 1 && (
+            <div className={styles.lightboxCounter}>
+              {index + 1} / {count}
+            </div>
+          )}
+
+          <img
+            src={galleryImages[index]}
+            alt={`${vehicle.brand} ${vehicle.model} — foto ${index + 1}`}
+            className={styles.lightboxImage}
+            onClick={(e) => e.stopPropagation()}
+            draggable={false}
+          />
+
+          {count > 1 && (
+            <>
+              <button
+                type="button"
+                className={`${styles.lightboxNav} ${styles.lightboxNavPrev}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  prev();
+                }}
+                aria-label="Anterior"
+              >
+                <ArrowIcon direction="left" />
+              </button>
+              <button
+                type="button"
+                className={`${styles.lightboxNav} ${styles.lightboxNavNext}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  next();
+                }}
+                aria-label="Próxima"
+              >
+                <ArrowIcon direction="right" />
+              </button>
+            </>
+          )}
+        </div>
+      )}
 
       {/* ===== INFORMAÇÕES PRINCIPAIS — always visible below gallery ===== */}
       <section className={styles.specsSection}>

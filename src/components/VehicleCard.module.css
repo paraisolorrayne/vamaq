@@ -21,6 +21,8 @@
   overflow: hidden;
   background: var(--bg-cream);
   border-radius: 18px;
+  /* isolate mantém o multiply contido neste wrap */
+  isolation: isolate;
 }
 
 .image {
@@ -29,6 +31,9 @@
   object-fit: cover;
   display: block;
   transition: transform var(--ease-slow);
+  /* Funde o fundo branco da foto de estúdio com o cream do card,
+     eliminando o quadrado branco. */
+  mix-blend-mode: multiply;
 }
 
 .card:hover .image {

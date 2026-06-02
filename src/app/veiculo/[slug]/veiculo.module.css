@@ -310,7 +310,7 @@
   object-fit: cover;
   border-radius: 8px;
   scroll-snap-align: center;
-  cursor: pointer;
+  cursor: zoom-in;
   opacity: 0.6;
   transition: opacity var(--ease-fast), transform var(--ease-fast);
 }
@@ -755,5 +755,111 @@
 
   .gallerySidebar {
     flex: 0 0 380px;
+  }
+}
+
+/* ============================================
+   LIGHTBOX — foto em tela cheia sem sair do site
+   ============================================ */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  background: rgba(10, 10, 10, 0.94);
+  backdrop-filter: blur(8px);
+  cursor: zoom-out;
+  animation: lightboxIn 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes lightboxIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.lightboxImage {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 12px;
+  cursor: default;
+}
+
+.lightboxClose {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  line-height: 1;
+  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.12);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background var(--ease-fast);
+  z-index: 2;
+}
+
+.lightboxClose:hover {
+  background: var(--color-accent);
+}
+
+.lightboxCounter {
+  position: absolute;
+  top: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.75);
+  font-variant-numeric: tabular-nums;
+}
+
+.lightboxNav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.12);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background var(--ease-fast);
+  z-index: 2;
+}
+
+.lightboxNav:hover {
+  background: var(--color-accent);
+}
+
+.lightboxNavPrev {
+  left: 20px;
+}
+
+.lightboxNavNext {
+  right: 20px;
+}
+
+@media (min-width: 1024px) {
+  .lightboxNav {
+    width: 60px;
+    height: 60px;
   }
 }
