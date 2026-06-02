@@ -1,3 +1,5 @@
+import { BUSINESS } from "@/lib/businessInfo";
+
 export const DEFAULT_TEMPLATES = [
   {
     id: "compra-venda",
@@ -116,8 +118,8 @@ Endereço: {{proprietario_endereco}}
 Telefone: {{proprietario_telefone}}
 
 CONSIGNATÁRIA:
-VAMAQ MOTORS LTDA.
-Endereço: [Endereço da loja]
+${BUSINESS.legalName}
+Endereço: ${BUSINESS.address.full}
 
 Celebram o presente contrato de consignação, mediante as seguintes cláusulas:
 
