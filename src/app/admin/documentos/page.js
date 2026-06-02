@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import styles from "../admin.module.css";
 import { DEFAULT_TEMPLATES } from "@/lib/contractTemplates";
+import { generateContractPdf } from "@/lib/contractPdf";
 
 export default function DocumentosPage() {
   const [templates] = useState(DEFAULT_TEMPLATES);
@@ -72,56 +73,11 @@ export default function DocumentosPage() {
 
   async function handleDownloadPdf() {
     if (!preview) return;
-    const { jsPDF } = await import("jspdf");
-    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-    const margin = 20;
-    const pageWidth = 210 - margin * 2;
-    const pageHeight = 297 - margin * 2;
-    let y = margin;
-
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(14);
-    const titleLines = doc.splitTextToSize(preview.title, pageWidth);
-    doc.text(titleLines, margin, y);
-    y += titleLines.length * 7 + 8;
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-
-    const lines = preview.content.split("\n");
-    for (const line of lines) {
-      if (y > pageHeight + margin - 10) {
-        doc.addPage();
-        y = margin;
-      }
-
-      if (
-        line.startsWith("CLÁUSULA") ||
-        line.startsWith("VENDEDOR") ||
-        line.startsWith("COMPRADOR") ||
-        line.startsWith("CONSIGNANTE") ||
-        line.startsWith("CONSIGNATÁRIA")
-      ) {
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(11);
-        y += 4;
-      } else {
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(10);
-      }
-
-      const wrapped = doc.splitTextToSize(line, pageWidth);
-      for (const wl of wrapped) {
-        if (y > pageHeight + margin - 10) {
-          doc.addPage();
-          y = margin;
-        }
-        doc.text(wl, margin, y);
-        y += 5;
-      }
+    try {
+      await generateContractPdf(preview);
+    } catch (err) {
+      alert("Erro ao gerar PDF: " + err.message);
     }
-
-    doc.save(`${preview.title.replace(/\s+/g, "_")}.pdf`);
   }
 
   return (

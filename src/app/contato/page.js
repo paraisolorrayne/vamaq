@@ -4,6 +4,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
 import { getWhatsAppGenericUrl } from "@/lib/whatsapp";
+import { BUSINESS, MAPS_EMBED_URL } from "@/lib/businessInfo";
 import styles from "./contato.module.css";
 
 export default function ContatoPage() {
@@ -70,7 +71,7 @@ export default function ContatoPage() {
               </div>
               <div>
                 <div className={styles.cardTitle}>Telefone</div>
-                <div className={styles.cardText}>(34) 98414-3315</div>
+                <div className={styles.cardText}>{BUSINESS.phone}</div>
               </div>
             </a>
 
@@ -83,7 +84,7 @@ export default function ContatoPage() {
               </div>
               <div>
                 <div className={styles.cardTitle}>E-mail</div>
-                <div className={styles.cardText}>contato@vamaqmotors.com.br</div>
+                <div className={styles.cardText}>{BUSINESS.email}</div>
               </div>
             </a>
           </div>
@@ -100,7 +101,7 @@ export default function ContatoPage() {
                   </div>
                   <div className={styles.formGroup}>
                     <label htmlFor="telefone">Telefone</label>
-                    <input type="tel" id="telefone" name="telefone" placeholder="(34) 98414-3315" required />
+                    <input type="tel" id="telefone" name="telefone" placeholder={BUSINESS.phone} required />
                   </div>
                 </div>
                 <div className={styles.formGroup}>
@@ -128,8 +129,16 @@ export default function ContatoPage() {
               </form>
 
               <div className={styles.mapPlaceholder}>
-                {/* SUBSTITUIR: embed do Google Maps */}
-                Mapa — São Paulo, SP
+                <iframe
+                  title={`Mapa - ${BUSINESS.name}`}
+                  src={MAPS_EMBED_URL}
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  allowFullScreen
+                />
               </div>
             </div>
 
@@ -144,7 +153,7 @@ export default function ContatoPage() {
                 </div>
                 <div>
                   <div className={styles.infoLabel}>Endereço</div>
-                  <div className={styles.infoValue}>São Paulo, SP — Região da Av. Europa</div>
+                  <div className={styles.infoValue}>{BUSINESS.address.full}</div>
                 </div>
               </div>
               <div className={styles.infoItem}>
@@ -155,7 +164,7 @@ export default function ContatoPage() {
                 </div>
                 <div>
                   <div className={styles.infoLabel}>Telefone</div>
-                  <div className={styles.infoValue}>(34) 98414-3315</div>
+                  <div className={styles.infoValue}>{BUSINESS.phone}</div>
                 </div>
               </div>
               <div className={styles.infoItem}>
@@ -167,7 +176,7 @@ export default function ContatoPage() {
                 </div>
                 <div>
                   <div className={styles.infoLabel}>E-mail</div>
-                  <div className={styles.infoValue}>contato@vamaqmotors.com.br</div>
+                  <div className={styles.infoValue}>{BUSINESS.email}</div>
                 </div>
               </div>
               <div className={styles.infoItem}>
@@ -179,7 +188,7 @@ export default function ContatoPage() {
                 </div>
                 <div>
                   <div className={styles.infoLabel}>Horário</div>
-                  <div className={styles.infoValue}>Seg–Sex: 9h às 18h · Sáb: 9h às 14h</div>
+                  <div className={styles.infoValue}>{BUSINESS.hours.weekdays} · {BUSINESS.hours.saturday}</div>
                 </div>
               </div>
 

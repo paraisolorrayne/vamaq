@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import LogoVamaq from './LogoVamaq';
 import { getWhatsAppGenericUrl } from '@/lib/whatsapp';
+import { BUSINESS } from '@/lib/businessInfo';
 import styles from './Footer.module.css';
 
 const QUICK_LINKS = [
@@ -140,19 +141,19 @@ export default function Footer() {
             <div className={styles['footer__contact-list']}>
               <div className={styles['footer__contact-item']}>
                 <MapPinIcon className={styles['footer__contact-icon']} />
-                <span>Av. Francisco Galassi — Morada da Colina, Uberlândia - MG, 38411-120</span>
+                <span>{BUSINESS.address.full}</span>
               </div>
               <div className={styles['footer__contact-item']}>
                 <PhoneIcon className={styles['footer__contact-icon']} />
-                <span>(34) 98414-3315</span>
+                <span>{BUSINESS.phone}</span>
               </div>
               <div className={styles['footer__contact-item']}>
                 <MailIcon className={styles['footer__contact-icon']} />
-                <span>contato@vamaqmotors.com.br</span>
+                <span>{BUSINESS.email}</span>
               </div>
               <div className={styles['footer__contact-item']}>
                 <ClockIcon className={styles['footer__contact-icon']} />
-                <span>Seg a Sex: 9h - 18h<br />Sab: 9h - 14h</span>
+                <span>{BUSINESS.hours.weekdays}<br />{BUSINESS.hours.saturday}</span>
               </div>
             </div>
           </div>

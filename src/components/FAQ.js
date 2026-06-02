@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { BUSINESS } from '@/lib/businessInfo';
 import styles from './FAQ.module.css';
 
 const FAQ_DATA = [
@@ -38,7 +39,7 @@ const FAQ_DATA = [
     id: 'localizacao',
     question: 'Onde fica a loja?',
     answer:
-      'Estamos localizados em São Paulo, em uma região de fácil acesso. Entre em contato pelo WhatsApp para obter o endereço completo e instruções de como chegar. Funcionamos de segunda a sábado, das 9h às 18h.',
+      `Estamos localizados na ${BUSINESS.address.full}. Entre em contato pelo WhatsApp para agendar uma visita e receber instruções de como chegar. Funcionamos de segunda a sábado.`,
   },
 ];
 
