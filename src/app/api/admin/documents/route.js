@@ -1,5 +1,15 @@
 import { NextResponse } from "next/server";
 
+// Formata datas ISO (YYYY-MM-DD, vindas de <input type="date">) para DD/MM/AAAA.
+// Faz o parse manual para evitar deslocamento de fuso horário.
+function formatValue(value) {
+  if (typeof value === "string") {
+    const m = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (m) return `${m[3]}/${m[2]}/${m[1]}`;
+  }
+  return value;
+}
+
 export async function POST(request) {
   try {
     const { templateBody, values, title } = await request.json();
@@ -14,7 +24,8 @@ export async function POST(request) {
     let filled = templateBody;
     for (const [key, value] of Object.entries(values)) {
       const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      filled = filled.replace(new RegExp(`\\{\\{${escaped}\\}\\}`, "g"), () => value || "_______________");
+      const formatted = formatValue(value);
+      filled = filled.replace(new RegExp(`\\{\\{${escaped}\\}\\}`, "g"), () => formatted || "_______________");
     }
 
     return NextResponse.json({
