@@ -4,12 +4,11 @@
 
 // --- Paleta da marca (ver src/styles/variables.css) ---
 const ACCENT = [255, 106, 0]; // laranja VAMAQ
-const DARK = [10, 10, 20]; // faixa de cabeçalho
 const INK = [17, 17, 17]; // títulos / valores fortes
 const TEXT = [55, 55, 60]; // corpo de texto
 const MUTED = [125, 125, 132]; // rótulos / legendas
 const BORDER = [225, 225, 228];
-const SOFT = [247, 247, 248]; // fundo dos cards
+const SOFT = [253, 243, 236]; // fundo dos cards (creme quente da marca)
 const ROW_SHADE = [250, 250, 251];
 
 // --- Geometria A4 (mm) ---
@@ -40,9 +39,8 @@ export async function buildContractDoc(preview, opts = {}) {
 
   const blocks = parseContract(preview);
 
-  // Logos rasterizadas (no-op fora do browser → cai no wordmark em texto)
-  const logoDark =
-    opts.logos?.dark ?? (await loadVamaqLogo("/images/vamaq-logo-on-dark.svg"));
+  // Logo rasterizada (no-op fora do browser → cai no wordmark em texto).
+  // Cabeçalho e rodapé claros usam a versão sobre fundo claro.
   const logoLight =
     opts.logos?.light ?? (await loadVamaqLogo("/images/vamaq-logo-on-light.svg"));
 
@@ -62,40 +60,35 @@ export async function buildContractDoc(preview, opts = {}) {
   }
 
   function drawHeaderBand() {
-    const bandH = 33;
-    setFill(DARK);
-    doc.rect(0, 0, PAGE_W, bandH, "F");
-    setFill(ACCENT);
-    doc.rect(0, bandH, PAGE_W, 1.3, "F");
-
-    if (logoDark) {
+    // Cabeçalho claro: logomarca + data de emissão + filete inferior
+    if (logoLight) {
       const logoH = 11;
-      const logoW = logoH * logoDark.aspect;
-      doc.addImage(logoDark.dataUrl, "PNG", MARGIN, 8.5, logoW, logoH);
+      const logoW = logoH * logoLight.aspect;
+      doc.addImage(logoLight.dataUrl, "PNG", MARGIN, 8, logoW, logoH);
     } else {
       // Fallback: wordmark em texto
       doc.setFont("helvetica", "bold");
       doc.setFontSize(21);
-      doc.setTextColor(255, 255, 255);
+      setText(INK);
       doc.text("VAMAQ", MARGIN, 17);
       const w = doc.getTextWidth("VAMAQ");
       setText(ACCENT);
       doc.text(" MOTORS", MARGIN + w, 17);
     }
 
-    // Tagline
+    // Data de emissão (direita, em duas linhas)
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(7.2);
-    doc.setTextColor(165, 165, 175);
-    doc.text("COMPRA · VENDA · CONSIGNAÇÃO DE VEÍCULOS", MARGIN, 27);
+    doc.setFontSize(7.5);
+    setText(MUTED);
+    doc.text("Emitido em", PAGE_W - MARGIN, 11.5, { align: "right" });
+    doc.text(formatToday(), PAGE_W - MARGIN, 15.5, { align: "right" });
 
-    // Data de emissão (direita)
-    const emitido = `Emitido em ${formatToday()}`;
-    doc.setFontSize(7.2);
-    doc.setTextColor(150, 150, 160);
-    doc.text(emitido, PAGE_W - MARGIN, 27, { align: "right" });
+    // Filete divisor
+    setDraw(BORDER);
+    doc.setLineWidth(0.4);
+    doc.line(MARGIN, 24, PAGE_W - MARGIN, 24);
 
-    return bandH + 1.3 + 9; // y inicial do conteúdo
+    return 33; // y inicial do conteúdo
   }
 
   function drawRunningHeader() {
@@ -126,7 +119,7 @@ export async function buildContractDoc(preview, opts = {}) {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(7.5);
     setText(ACCENT);
-    doc.text("CONTRATO", MARGIN, y);
+    doc.text("COMPRA · VENDA · CONSIGNAÇÃO DE VEÍCULOS", MARGIN, y);
     y += 5.5;
 
     doc.setFont("helvetica", "bold");
@@ -138,7 +131,7 @@ export async function buildContractDoc(preview, opts = {}) {
 
     setDraw(ACCENT);
     doc.setLineWidth(0.9);
-    doc.line(MARGIN, y, MARGIN + 30, y);
+    doc.line(MARGIN, y, MARGIN + 13, y);
     y += 7;
   }
 
@@ -288,20 +281,72 @@ export async function buildContractDoc(preview, opts = {}) {
     const colW = (CONTENT_W - gap) / 2;
     sigs.slice(0, 2).forEach((s, idx) => {
       const x = MARGIN + idx * (colW + gap);
+      const cx = x + colW / 2;
       setDraw(INK);
       doc.setLineWidth(0.4);
       doc.line(x, y, x + colW, y);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
       setText(INK);
-      doc.text(s.name || "", x + colW / 2, y + 5, { align: "center" });
+      doc.text(s.name || "", cx, y + 5, { align: "center" });
+      let yy = y + 9.4;
+      if (s.sub) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(7.6);
+        setText(TEXT);
+        doc.text(s.sub, cx, yy, { align: "center" });
+        yy += 4.4;
+      }
       if (s.role) {
         doc.setFont("helvetica", "normal");
         doc.setFontSize(7.4);
         setText(MUTED);
-        doc.text(s.role.toUpperCase(), x + colW / 2, y + 9.5, {
-          align: "center",
-        });
+        doc.text(s.role.toUpperCase(), cx, yy, { align: "center" });
+      }
+    });
+    y += 18;
+  }
+
+  function renderWitnesses(b) {
+    ensure(28);
+    y += 6;
+    // Título "TESTEMUNHAS"
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    setText(MUTED);
+    doc.text("TESTEMUNHAS", MARGIN, y);
+    y += 8;
+
+    const gap = 14;
+    const colW = (CONTENT_W - gap) / 2;
+    const people = (b.people && b.people.length ? b.people : [{}, {}]).slice(0, 2);
+    while (people.length < 2) people.push({});
+
+    people.forEach((p, idx) => {
+      const x = MARGIN + idx * (colW + gap);
+      // Linha "Nome:"
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.2);
+      setText(MUTED);
+      doc.text("Nome:", x, y);
+      const nameX = x + doc.getTextWidth("Nome: ");
+      setDraw(BORDER);
+      doc.setLineWidth(0.3);
+      doc.line(nameX, y + 0.6, x + colW, y + 0.6);
+      if (p.nome) {
+        setText(TEXT);
+        doc.text(p.nome, nameX + 1, y - 0.4);
+      }
+      // Linha "CPF:"
+      const y2 = y + 8;
+      setText(MUTED);
+      doc.text("CPF:", x, y2);
+      const cpfX = x + doc.getTextWidth("CPF: ");
+      setDraw(BORDER);
+      doc.line(cpfX, y2 + 0.6, x + colW, y2 + 0.6);
+      if (p.cpf) {
+        setText(TEXT);
+        doc.text(p.cpf, cpfX + 1, y2 - 0.4);
       }
     });
     y += 16;
@@ -333,6 +378,7 @@ export async function buildContractDoc(preview, opts = {}) {
   drawTitle();
 
   const signatures = [];
+  let witnesses = null;
   for (const b of blocks) {
     switch (b.type) {
       case "party":
@@ -356,11 +402,15 @@ export async function buildContractDoc(preview, opts = {}) {
       case "signature":
         signatures.push(b);
         break;
+      case "witnesses":
+        witnesses = b;
+        break;
       default:
         break;
     }
   }
   if (signatures.length) renderSignatures(signatures);
+  if (witnesses) renderWitnesses(witnesses);
 
   drawFooters();
 
@@ -410,6 +460,31 @@ function parseContract(preview) {
       continue;
     }
 
+    // Testemunhas (TESTEMUNHAS + pares Nome:/CPF:)
+    if (/^TESTEMUNHAS$/i.test(t)) {
+      i++;
+      const people = [];
+      let current = null;
+      while (i < lines.length) {
+        const l = lines[i].trim();
+        if (!l) {
+          i++;
+          continue;
+        }
+        if (/^_{3,}/.test(l) || isPartyHeader(l) || /^CL[ÁA]USULA/i.test(l)) break;
+        const m = matchKv(l);
+        if (m && /^nome$/i.test(m[1])) {
+          current = { nome: m[2], cpf: "" };
+          people.push(current);
+        } else if (m && /^cpf$/i.test(m[1]) && current) {
+          current.cpf = m[2];
+        }
+        i++;
+      }
+      blocks.push({ type: "witnesses", people });
+      continue;
+    }
+
     // Assinatura
     if (/^_{3,}/.test(t)) {
       i++;
@@ -418,16 +493,17 @@ function parseContract(preview) {
         i < lines.length &&
         lines[i].trim() &&
         !/^_{3,}/.test(lines[i].trim()) &&
-        labels.length < 2
+        labels.length < 3
       ) {
         labels.push(lines[i].trim());
         i++;
       }
-      blocks.push({
-        type: "signature",
-        name: labels[0] || "",
-        role: labels[1] || "",
-      });
+      // Última linha é o papel (CONSIGNANTE/CONSIGNATÁRIA/...); a do meio (se
+      // houver) é uma linha de identificação (CPF/CNPJ).
+      const name = labels[0] || "";
+      const role = labels.length > 1 ? labels[labels.length - 1] : "";
+      const sub = labels.length > 2 ? labels[1] : "";
+      blocks.push({ type: "signature", name, sub, role });
       continue;
     }
 
@@ -463,9 +539,10 @@ function isPartyHeader(t) {
   );
 }
 
-// rótulo curto de uma palavra seguido de ":" — ex.: "Nome:", "Endereço:", "RENAVAM:"
+// rótulo curto seguido de ":" — ex.: "Nome:", "Endereço:", "RENAVAM:",
+// "Razão Social:", "Ano Fabricação / Modelo:" (aceita espaços e barra).
 function matchKv(t) {
-  const m = t.match(/^([A-Za-zÀ-ÿ().\/-]{2,20}):\s*(.*)$/);
+  const m = t.match(/^([A-Za-zÀ-ÿ().\/ -]{2,30}):\s*(.*)$/);
   if (!m) return null;
   return [t, m[1].trim(), m[2].trim()];
 }
@@ -474,6 +551,7 @@ function isSpecial(t) {
   return (
     isPartyHeader(t) ||
     /^CL[ÁA]USULA/i.test(t) ||
+    /^TESTEMUNHAS$/i.test(t) ||
     /^_{3,}/.test(t) ||
     !!matchKv(t)
   );

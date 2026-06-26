@@ -4,6 +4,11 @@
 export const BUSINESS = {
   name: "VAMAQ MOTORS",
   legalName: "VAMAQ MOTORS LTDA.",
+  // Dados cadastrais (usados em contratos/documentos)
+  razaoSocial: "Mateus Parreira Sousa",
+  tradeName: "Vamaq Motors",
+  cnpj: "45.348.469/0001-54",
+  representante: "Mateus Parreira Sousa",
   phone: "(34) 98414-3315",
   phoneE164: "+5534984143315",
   email: "contato@vamaqmotors.com.br",
