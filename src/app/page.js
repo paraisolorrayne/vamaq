@@ -7,7 +7,9 @@ import { getFeaturedVehicles, getAllVehicles } from "@/lib/repositories/vehicles
 import { getWhatsAppGenericUrl } from "@/lib/whatsapp";
 import styles from "./page.module.css";
 
-export const revalidate = 60;
+// Render dinâmico: o hero/vitrine lê o estoque direto do Postgres, então o
+// cache estático não enxerga alterações feitas no admin. Ver /acervo.
+export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const [featuredVehicles, allVehicles] = await Promise.all([

@@ -6,15 +6,12 @@ import VehicleDetailView from "@/components/VehicleDetailView";
 import {
   getVehicleBySlug,
   getRelatedVehicles,
-  getAllSlugs,
 } from "@/lib/repositories/vehicles";
 
-export const revalidate = 60;
-
-export async function generateStaticParams() {
-  const slugs = await getAllSlugs();
-  return slugs.map((slug) => ({ slug }));
-}
+// Render dinâmico: a página lê o veículo direto do Postgres. Com ISR estático
+// as edições do admin não refletiam e slugs novos não eram pré-gerados.
+// Dinâmico garante que cada acesso busque o estado atual do banco.
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;

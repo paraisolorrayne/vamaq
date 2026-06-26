@@ -15,7 +15,10 @@ import {
 } from "@/lib/repositories/vehicles";
 import AcervoClient from "./AcervoClient";
 
-export const revalidate = 60;
+// Render dinâmico: a lista lê o estoque direto do Postgres (não via fetch),
+// então o Next não consegue auto-invalidar o cache quando o admin cria/edita
+// um veículo. Forçar dinâmico garante que cada acesso reflita o banco na hora.
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Nosso Acervo — Vamaq Motors",
