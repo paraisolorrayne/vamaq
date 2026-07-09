@@ -211,14 +211,16 @@ export async function buildContractDoc(preview, opts = {}) {
   }
 
   function renderVehicle(b) {
-    sectionLabel("DADOS DO VEÍCULO");
     const rows = b.rows;
     const cols = 2;
     const cellW = CONTENT_W / cols;
     const cellH = 11;
     const nRows = Math.ceil(rows.length / cols);
 
-    ensure(nRows * cellH + 4);
+    // A grade não é dividida entre páginas, então o rótulo só entra se ela
+    // couber inteira junto — evita rótulo órfão no fim da página.
+    ensure(9 + nRows * cellH + 4);
+    sectionLabel("DADOS DO VEÍCULO");
     const top = y;
 
     rows.forEach(([k, v], i) => {
@@ -275,36 +277,45 @@ export async function buildContractDoc(preview, opts = {}) {
   }
 
   function renderSignatures(sigs) {
-    ensure(30);
-    y += 12;
     const gap = 14;
     const colW = (CONTENT_W - gap) / 2;
-    sigs.slice(0, 2).forEach((s, idx) => {
-      const x = MARGIN + idx * (colW + gap);
-      const cx = x + colW / 2;
-      setDraw(INK);
-      doc.setLineWidth(0.4);
-      doc.line(x, y, x + colW, y);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(9);
-      setText(INK);
-      doc.text(s.name || "", cx, y + 5, { align: "center" });
-      let yy = y + 9.4;
-      if (s.sub) {
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(7.6);
-        setText(TEXT);
-        doc.text(s.sub, cx, yy, { align: "center" });
-        yy += 4.4;
-      }
-      if (s.role) {
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(7.4);
-        setText(MUTED);
-        doc.text(s.role.toUpperCase(), cx, yy, { align: "center" });
-      }
+    // Duas assinaturas por linha; uma assinatura sozinha (ex.: anuente)
+    // fica centralizada, como no modelo de referência.
+    const rows = [];
+    for (let i = 0; i < sigs.length; i += 2) rows.push(sigs.slice(i, i + 2));
+    rows.forEach((row, ri) => {
+      ensure(32);
+      y += ri === 0 ? 12 : 6;
+      row.forEach((s, idx) => {
+        const x =
+          row.length === 1
+            ? MARGIN + (CONTENT_W - colW) / 2
+            : MARGIN + idx * (colW + gap);
+        const cx = x + colW / 2;
+        setDraw(INK);
+        doc.setLineWidth(0.4);
+        doc.line(x, y, x + colW, y);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9);
+        setText(INK);
+        doc.text(s.name || "", cx, y + 5, { align: "center" });
+        let yy = y + 9.4;
+        if (s.sub) {
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(7.6);
+          setText(TEXT);
+          doc.text(s.sub, cx, yy, { align: "center" });
+          yy += 4.4;
+        }
+        if (s.role) {
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(7.4);
+          setText(MUTED);
+          doc.text(s.role.toUpperCase(), cx, yy, { align: "center" });
+        }
+      });
+      y += 18;
     });
-    y += 18;
   }
 
   function renderWitnesses(b) {
@@ -534,15 +545,16 @@ function parseContract(preview) {
 
 function isPartyHeader(t) {
   return (
-    /^(VENDEDOR|COMPRADOR|CONSIGNANTE|CONSIGNAT[ÁA]RI)/i.test(t) &&
+    /^(VENDEDOR|COMPRADOR|CONSIGNANTE|CONSIGNAT[ÁA]RI|ANUENTE|DADOS PARA PAGAMENTO)/i.test(t) &&
     t.endsWith(":")
   );
 }
 
 // rótulo curto seguido de ":" — ex.: "Nome:", "Endereço:", "RENAVAM:",
-// "Razão Social:", "Ano Fabricação / Modelo:" (aceita espaços e barra).
+// "Razão Social:", "Nº do CRV:", "Código de Segurança do CRV:" (aceita
+// espaços, barra, dígitos e ordinais).
 function matchKv(t) {
-  const m = t.match(/^([A-Za-zÀ-ÿ().\/ -]{2,30}):\s*(.*)$/);
+  const m = t.match(/^([A-Za-z0-9À-ÿºª°().\/ -]{2,34}):\s*(.*)$/);
   if (!m) return null;
   return [t, m[1].trim(), m[2].trim()];
 }

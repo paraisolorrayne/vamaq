@@ -5,6 +5,21 @@ import styles from "../admin.module.css";
 import { DEFAULT_TEMPLATES } from "@/lib/contractTemplates";
 import { generateContractPdf } from "@/lib/contractPdf";
 
+// Agrupa os campos por seção preservando a ordem de declaração do modelo.
+function groupBySection(fields) {
+  const groups = [];
+  const byName = new Map();
+  fields.forEach((f) => {
+    const key = f.section || "";
+    if (!byName.has(key)) {
+      byName.set(key, []);
+      groups.push([key, byName.get(key)]);
+    }
+    byName.get(key).push(f);
+  });
+  return groups;
+}
+
 export default function DocumentosPage() {
   const [templates] = useState(DEFAULT_TEMPLATES);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
@@ -25,7 +40,7 @@ export default function DocumentosPage() {
     setPreview(null);
     const initial = {};
     template.fields.forEach((f) => {
-      initial[f.key] = "";
+      initial[f.key] = f.type === "select" ? f.options?.[0] || "" : "";
     });
     setValues(initial);
   }, []);
@@ -43,6 +58,7 @@ export default function DocumentosPage() {
       veiculo_modelo: v.model || prev.veiculo_modelo,
       veiculo_ano: String(v.year) || prev.veiculo_ano,
       veiculo_cor: v.color || prev.veiculo_cor,
+      veiculo_combustivel: v.fuel || prev.veiculo_combustivel,
       veiculo_km: v.quilometragem ? v.quilometragem.toLocaleString("pt-BR") : prev.veiculo_km,
     }));
   }
@@ -55,7 +71,9 @@ export default function DocumentosPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          templateBody: selectedTemplate.body,
+          // O corpo é montado conforme os dados (anuente opcional, favorecido
+          // do pagamento, alienação fiduciária) — a API só preenche os campos.
+          templateBody: selectedTemplate.build(values),
           values,
           title: selectedTemplate.name,
         }),
@@ -237,22 +255,70 @@ export default function DocumentosPage() {
           )}
 
           <div className={styles.card}>
-            <div className={styles.formGrid}>
-              {selectedTemplate.fields.map((field) => (
-                <div key={field.key} className={styles.formGroup}>
-                  <label className={styles.formLabel}>{field.label}</label>
-                  <input
-                    type={field.type === "date" ? "date" : "text"}
-                    value={values[field.key] || ""}
-                    onChange={(e) =>
-                      handleFieldChange(field.key, e.target.value)
-                    }
-                    className={styles.formInput}
-                    placeholder={field.label}
-                  />
+            {groupBySection(selectedTemplate.fields).map(([section, fields]) => (
+              <div key={section || "geral"} style={{ marginBottom: 24 }}>
+                {section && (
+                  <h3
+                    style={{
+                      fontSize: "0.85rem",
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.04em",
+                      color: "#b45309",
+                      margin: "0 0 12px",
+                      paddingBottom: 6,
+                      borderBottom: "1px solid #eee",
+                    }}
+                  >
+                    {section}
+                  </h3>
+                )}
+                <div className={styles.formGrid}>
+                  {fields.map((field) => (
+                    <div key={field.key} className={styles.formGroup}>
+                      <label className={styles.formLabel}>{field.label}</label>
+                      {field.type === "select" ? (
+                        <select
+                          value={values[field.key] || field.options?.[0] || ""}
+                          onChange={(e) =>
+                            handleFieldChange(field.key, e.target.value)
+                          }
+                          className={styles.formSelect}
+                        >
+                          {(field.options || []).map((opt) => (
+                            <option key={opt} value={opt}>
+                              {opt}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          type={field.type === "date" ? "date" : "text"}
+                          value={values[field.key] || ""}
+                          onChange={(e) =>
+                            handleFieldChange(field.key, e.target.value)
+                          }
+                          className={styles.formInput}
+                          placeholder={field.label}
+                        />
+                      )}
+                      {field.hint && (
+                        <p
+                          style={{
+                            fontSize: "0.72rem",
+                            color: "#999",
+                            margin: "4px 0 0",
+                            lineHeight: 1.4,
+                          }}
+                        >
+                          {field.hint}
+                        </p>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
 
             <div className={styles.formActions}>
               <button
