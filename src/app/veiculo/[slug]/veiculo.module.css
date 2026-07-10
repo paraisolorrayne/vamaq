@@ -28,8 +28,10 @@
 }
 
 .heroInner {
+  /* Sem z-index: ele criaria um stacking context que impediria o
+     multiply da foto de alcançar o fundo da seção. A ordem no DOM já
+     garante o heroInner acima do heroBgImg. */
   position: relative;
-  z-index: 2;
   display: flex;
   flex-direction: column;
   gap: var(--space-xl);
@@ -153,7 +155,10 @@
   height: auto;
   object-fit: contain;
   display: block;
-  filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.15));
+  /* Foto de estúdio com fundo branco: multiply funde o branco com o
+     fundo da seção, eliminando o quadrado (mesma técnica do hero da
+     home). Sem drop-shadow — a sombra retangular denunciaria a borda. */
+  mix-blend-mode: multiply;
 }
 
 .heroPlaceholder {
