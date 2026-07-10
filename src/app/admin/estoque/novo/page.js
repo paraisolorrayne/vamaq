@@ -32,6 +32,64 @@ const EMPTY_VEHICLE = {
   images: { main: "", gallery: [] },
 };
 
+// Fotos de celular (3–8MB, 12MP+) estouram limites de corpo do proxy e deixam
+// a remoção de fundo lenta. Redimensiona para ~1920px e mira ≤ ~950KB antes de
+// enviar; o redesenho no canvas também corrige a orientação EXIF (foto deitada).
+const MAX_UPLOAD_DIM = 1920;
+const TARGET_UPLOAD_BYTES = 950 * 1024;
+
+function decodeImageFile(file) {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => resolve({ img, url });
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(null);
+    };
+    img.src = url;
+  });
+}
+
+function canvasToBlob(canvas, quality) {
+  return new Promise((resolve) =>
+    canvas.toBlob(resolve, "image/jpeg", quality)
+  );
+}
+
+async function compressForUpload(file) {
+  // Já é pequena: envia como está (evita perda de qualidade desnecessária)
+  if (file.size <= TARGET_UPLOAD_BYTES) return file;
+
+  const decoded = await decodeImageFile(file);
+  if (!decoded) return file; // formato que o navegador não decodifica
+
+  try {
+    const { img } = decoded;
+    const scale = Math.min(
+      1,
+      MAX_UPLOAD_DIM / Math.max(img.naturalWidth, img.naturalHeight)
+    );
+    const w = Math.max(1, Math.round(img.naturalWidth * scale));
+    const h = Math.max(1, Math.round(img.naturalHeight * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+
+    let blob = null;
+    for (const quality of [0.85, 0.75, 0.65]) {
+      blob = await canvasToBlob(canvas, quality);
+      if (blob && blob.size <= TARGET_UPLOAD_BYTES) break;
+    }
+    if (!blob) return file;
+    const name = file.name.replace(/\.[^.]+$/, "") + ".jpg";
+    return new File([blob], name, { type: "image/jpeg" });
+  } finally {
+    URL.revokeObjectURL(decoded.url);
+  }
+}
+
 export default function NovoVeiculoPage() {
   return (
     <Suspense fallback={<div className={styles.loading}>Carregando...</div>}>
@@ -93,12 +151,16 @@ function NovoVeiculoForm() {
   async function uploadImage(file, isMain) {
     setUploadCount((c) => c + 1);
     try {
+      const compressed = await compressForUpload(file);
       const fd = new FormData();
-      fd.append("file", file);
+      fd.append("file", compressed);
       fd.append("removeBg", isMain ? (removeBgMain ? "true" : "false") : (removeBgGallery ? "true" : "false"));
 
       const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || `Falha no envio (HTTP ${res.status})`);
+      }
 
       if (data.url) {
         setForm((prev) => {

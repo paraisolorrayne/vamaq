@@ -4,6 +4,18 @@ import fs from "fs";
 import path from "path";
 import { v4 as uuidv4 } from "uuid";
 import { removeBackground } from "@imgly/background-removal-node";
+import heicConvert from "heic-convert";
+
+// Fotos de iPhone chegam em HEIC, que o sharp pré-compilado do Linux não
+// decodifica (codec HEVC é patenteado). Detecta pelos magic bytes (ftyp....)
+// e converte para JPEG com heic-convert (JS puro) antes do pipeline.
+const HEIC_BRANDS = ["heic", "heix", "hevc", "hevx", "heif", "mif1", "msf1"];
+
+function isHeic(buffer) {
+  if (buffer.length < 12) return false;
+  if (buffer.toString("ascii", 4, 8) !== "ftyp") return false;
+  return HEIC_BRANDS.includes(buffer.toString("ascii", 8, 12));
+}
 
 const UPLOAD_DIR = path.join(process.cwd(), "public", "images", "vehicles");
 const ICE_WHITE = { r: 245, g: 245, b: 240, alpha: 255 };
@@ -132,13 +144,24 @@ export async function POST(request) {
 
     const bytes = await file.arrayBuffer();
     let buffer = Buffer.from(bytes);
+    let mimeType = file.type || "image/png";
+
+    if (isHeic(buffer)) {
+      buffer = Buffer.from(
+        await heicConvert({ buffer, format: "JPEG", quality: 0.92 })
+      );
+      mimeType = "image/jpeg";
+    }
+
+    // Fotos de celular chegam "deitadas" sem isso: aplica a orientação EXIF
+    // antes de qualquer processamento (a remoção de fundo ignora EXIF).
+    buffer = await sharp(buffer).rotate().toBuffer();
 
     ensureDir(UPLOAD_DIR);
     const filename = `${uuidv4()}.webp`;
     const filepath = path.join(UPLOAD_DIR, filename);
 
     if (removeBg) {
-      const mimeType = file.type || "image/png";
       const blob = new Blob([buffer], { type: mimeType });
       const resultBlob = await removeBackground(blob, {
         output: { format: "image/png" },
@@ -163,7 +186,10 @@ export async function POST(request) {
         .webp({ quality: 90 })
         .toBuffer();
     } else {
-      buffer = await sharp(buffer).webp({ quality: 90 }).toBuffer();
+      buffer = await sharp(buffer)
+        .resize(2560, 2560, { fit: "inside", withoutEnlargement: true })
+        .webp({ quality: 90 })
+        .toBuffer();
     }
 
     fs.writeFileSync(filepath, buffer);
@@ -175,7 +201,7 @@ export async function POST(request) {
   } catch (err) {
     console.error("Upload error:", err);
     return NextResponse.json(
-      { error: "Upload failed" },
+      { error: `Falha ao processar a imagem: ${err.message}` },
       { status: 500 }
     );
   }
