@@ -118,14 +118,14 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
               <div className={styles.heroMetaItem}>
                 <span className={styles.heroMetaLabel}>Km</span>
                 <span className={styles.heroMetaValue}>
-                  {vehicle.mileage?.toLocaleString('pt-BR') || '0'}km
+                  {vehicle.mileage?.toLocaleString('pt-BR') || '0'} km
                 </span>
               </div>
             </div>
 
             {vehicle.price ? (
               <h2 className={styles.heroPrice}>
-                R$ {vehicle.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                R$ {vehicle.price.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
               </h2>
             ) : (
               <h2 className={`${styles.heroPrice} ${styles.heroPriceConsult}`}>
@@ -300,7 +300,7 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
               <li className={styles.specItem}>
                 <span className={styles.specLabel}>Quilometragem</span>
                 <span className={styles.specValue}>
-                  {vehicle.mileage?.toLocaleString('pt-BR') || '0'}km
+                  {vehicle.mileage?.toLocaleString('pt-BR') || '0'} km
                 </span>
               </li>
               <li className={styles.specItem}>

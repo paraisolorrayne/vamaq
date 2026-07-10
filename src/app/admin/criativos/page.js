@@ -78,13 +78,27 @@ function Slider({ label, min, max, value, onChange }) {
   );
 }
 
+// Colunas minmax(0,1fr) + width 100% nos controles: sem isso a largura
+// intrínseca dos inputs estoura os grids e os campos vazam do card.
+const grid2 = {
+  display: "grid",
+  gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)",
+  gap: "0 12px",
+};
+const grid3 = {
+  display: "grid",
+  gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)",
+  gap: "0 12px",
+};
+
 function Field({ label, value, onChange, placeholder }) {
   return (
-    <div className={styles.formGroup}>
+    <div className={styles.formGroup} style={{ minWidth: 0 }}>
       <label className={styles.formLabel}>{label}</label>
       <input
         type="text"
         className={styles.formInput}
+        style={{ width: "100%", minWidth: 0 }}
         value={value}
         placeholder={placeholder || label}
         onChange={(e) => onChange(e.target.value)}
@@ -98,6 +112,7 @@ function VehicleSelect({ vehicles, onPick, placeholder }) {
   return (
     <select
       className={styles.formSelect}
+      style={{ width: "100%", minWidth: 0 }}
       defaultValue=""
       onChange={(e) => {
         onPick(e.target.value);
@@ -393,12 +408,12 @@ export default function CriativosPage() {
                   />
                 </div>
               )}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 12px" }}>
+              <div style={grid2}>
                 <Field label="Marca" value={values.marca} onChange={(v) => setValue("marca", v)} />
                 <Field label="Ano" value={values.ano} onChange={(v) => setValue("ano", v)} />
               </div>
               <Field label="Modelo" value={values.modelo} onChange={(v) => setValue("modelo", v)} />
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 12px" }}>
+              <div style={grid2}>
                 <Field label="KM" value={values.km} onChange={(v) => setValue("km", v)} />
                 <Field
                   label="Preço (vazio = Consulte)"
@@ -413,7 +428,7 @@ export default function CriativosPage() {
                 placeholder="BLINDADO, TETO SOLAR, ÚNICO DONO"
               />
               {tpl === "vitrine" ? (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0 12px" }}>
+                <div style={grid3}>
                   <Field
                     label="Potência"
                     value={values.potencia}
@@ -427,7 +442,7 @@ export default function CriativosPage() {
                   />
                 </div>
               ) : (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 12px" }}>
+                <div style={grid2}>
                   <Field
                     label="Potência"
                     value={values.potencia}
@@ -462,14 +477,7 @@ export default function CriativosPage() {
                   }
                 }}
               />
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr 1fr",
-                  gap: "0 12px",
-                  marginTop: 10,
-                }}
-              >
+              <div style={{ ...grid3, marginTop: 10 }}>
                 <Slider
                   label="Zoom"
                   min={55}
@@ -504,7 +512,7 @@ export default function CriativosPage() {
               <h3 style={{ fontSize: "0.9rem", fontWeight: 700, marginBottom: 12 }}>
                 Acervo — título e carros
               </h3>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 12px" }}>
+              <div style={grid2}>
                 <Field label="Título — linha 1" value={values.at1} onChange={(v) => setValue("at1", v)} />
                 <Field label="Título — linha 2" value={values.at2} onChange={(v) => setValue("at2", v)} />
               </div>
@@ -538,7 +546,7 @@ export default function CriativosPage() {
                     onChange={(v) => setAcervoField(i, "nome", v)}
                     placeholder="ex.: BMW 320i M Sport"
                   />
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0 12px" }}>
+                  <div style={grid3}>
                     <Field label="Ano" value={item.ano} onChange={(v) => setAcervoField(i, "ano", v)} />
                     <Field label="KM" value={item.km} onChange={(v) => setAcervoField(i, "km", v)} />
                     <Field
@@ -562,14 +570,7 @@ export default function CriativosPage() {
                         setAcImgs((prev) => prev.map((x, idx) => (idx === i ? img : x)));
                     }}
                   />
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      gap: "0 12px",
-                      marginTop: 8,
-                    }}
-                  >
+                  <div style={{ ...grid2, marginTop: 8 }}>
                     <Slider
                       label="Zoom"
                       min={55}
@@ -594,7 +595,7 @@ export default function CriativosPage() {
             <h3 style={{ fontSize: "0.9rem", fontWeight: 700, marginBottom: 12 }}>
               Rodapé e logo
             </h3>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 12px" }}>
+            <div style={grid2}>
               <Field label="Instagram" value={values.handle} onChange={(v) => setValue("handle", v)} />
               <Field label="Site" value={values.site} onChange={(v) => setValue("site", v)} />
             </div>

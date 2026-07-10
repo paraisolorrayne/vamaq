@@ -21,7 +21,7 @@ export default function AdminLayout({ children }) {
       <aside className={styles.sidebar}>
         <div className={styles.sidebarHeader}>
           <Link href="/admin" className={styles.logoLink}>
-            <LogoVamaq className={styles.logoImage} />
+            <LogoVamaq variant="dark" className={styles.logoImage} />
           </Link>
           <span className={styles.logoSub}>Painel Administrativo</span>
         </div>
