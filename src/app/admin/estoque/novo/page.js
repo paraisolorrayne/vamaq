@@ -4,6 +4,7 @@ import { Suspense, useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import styles from "../../admin.module.css";
+import { parseValorBR, formatValorBR } from "@/lib/money";
 
 const FUEL_OPTIONS = ["Gasolina", "Diesel", "Flex", "Elétrico", "Híbrido"];
 const BODY_OPTIONS = ["Sedan", "Coupé", "SUV", "Hatch", "Conversível", "Picape"];
@@ -22,6 +23,7 @@ const EMPTY_VEHICLE = {
   color: "",
   bodyType: "Sedan",
   featured: false,
+  published: true,
   badge: "",
   opcionais: [],
   blindagem: { blindado: false, tipo: "" },
@@ -64,7 +66,7 @@ function NovoVeiculoForm() {
           setForm({
             ...EMPTY_VEHICLE,
             ...data,
-            price: data.price || "",
+            price: data.price != null ? formatValorBR(data.price) : "",
             quilometragem: data.quilometragem ?? "",
             badge: data.badge || "",
           });
@@ -146,9 +148,10 @@ function NovoVeiculoForm() {
     e.preventDefault();
     setSaving(true);
 
+    const parsedPrice = parseValorBR(form.price);
     const payload = {
       ...form,
-      price: form.price ? Number(form.price) : null,
+      price: isFinite(parsedPrice) ? parsedPrice : null,
       quilometragem: Number(form.quilometragem) || 0,
       badge: form.badge || null,
       specs: {
@@ -385,11 +388,12 @@ function NovoVeiculoForm() {
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Preço (R$)</label>
               <input
-                type="number"
+                type="text"
+                inputMode="numeric"
                 value={form.price}
                 onChange={(e) => handleChange("price", e.target.value)}
                 className={styles.formInput}
-                placeholder="Deixe vazio para 'Sob Consulta'"
+                placeholder="ex.: 299.000 — vazio = 'Sob Consulta'"
               />
               <FipePriceLookup
                 brand={form.brand}
@@ -490,6 +494,14 @@ function NovoVeiculoForm() {
                   onChange={(e) => handleChange("featured", e.target.checked)}
                 />
                 <span>Exibir na vitrine (destaque na home)</span>
+              </label>
+              <label className={styles.formCheckbox}>
+                <input
+                  type="checkbox"
+                  checked={form.published}
+                  onChange={(e) => handleChange("published", e.target.checked)}
+                />
+                <span>Publicado no site (aparece no acervo)</span>
               </label>
             </div>
             <div className={`${styles.formGroup} ${styles.formGroupFull}`}>
@@ -791,9 +803,12 @@ function FipePriceLookup({ brand, onApplyPrice }) {
 
   function applyPrice() {
     if (!resultado) return;
-    const raw = resultado.Valor.replace(/[^\d]/g, "");
-    const num = parseInt(raw, 10) / 100;
-    onApplyPrice(String(num));
+    // "R$ 214.996,00" → 214996 → arredonda ao milhar (215.000) para não levar
+    // o valor quebrado da tabela FIPE direto para a vitrine.
+    const num = parseValorBR(resultado.Valor);
+    if (!isFinite(num)) return;
+    const rounded = Math.round(num / 1000) * 1000;
+    onApplyPrice(formatValorBR(rounded));
     setOpen(false);
   }
 

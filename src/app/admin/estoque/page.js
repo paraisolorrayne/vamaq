@@ -139,7 +139,15 @@ export default function EstoquePage() {
                     <td>{v.quilometragem?.toLocaleString("pt-BR")} km</td>
                     <td>{v.color}</td>
                     <td>
-                      {v.featured ? (
+                      {!v.published ? (
+                        <span
+                          className={styles.badgeWarning}
+                          title="Não aparece no site — edite e marque 'Publicado no site'"
+                          style={{ background: "#fee2e2", color: "#b91c1c" }}
+                        >
+                          Oculto
+                        </span>
+                      ) : v.featured ? (
                         <span className={styles.badgeSuccess}>Destaque</span>
                       ) : (
                         <span className={styles.badgeWarning}>Normal</span>

@@ -1,4 +1,5 @@
 import { BUSINESS } from "@/lib/businessInfo";
+import { parseValorBR } from "@/lib/money";
 
 // Modelos de contrato fiéis aos PDFs de referência da VAMAQ.
 // Cada modelo expõe `build(values)`, que monta o corpo do documento de acordo
@@ -67,14 +68,6 @@ export function inteiroPorExtenso(n) {
   // "e" antes do último grupo quando ele é menor que cem ou centena redonda
   const liga = resto && (resto < 100 || resto % 100 === 0) ? " e " : " ";
   return grupos.join(" ") + liga + ultimo;
-}
-
-// Converte "158.000,00", "158000" ou "158000.5" em número; NaN se não der.
-function parseValorBR(raw) {
-  let s = String(raw ?? "").trim().replace(/[R$\s]/g, "");
-  if (!s) return NaN;
-  if (s.includes(",")) s = s.replace(/\./g, "").replace(",", ".");
-  return parseFloat(s);
 }
 
 export function valorPorExtensoBRL(raw) {
