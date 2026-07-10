@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import styles from "../admin.module.css";
 import { DEFAULT_TEMPLATES } from "@/lib/contractTemplates";
-import { generateContractPdf } from "@/lib/contractPdf";
+import { generateContractPdf, buildContractDoc } from "@/lib/contractPdf";
 
 // Agrupa os campos por seção preservando a ordem de declaração do modelo.
 function groupBySection(fields) {
@@ -27,6 +27,32 @@ export default function DocumentosPage() {
   const [vehicles, setVehicles] = useState([]);
   const [generating, setGenerating] = useState(false);
   const [preview, setPreview] = useState(null);
+  const [pdfUrl, setPdfUrl] = useState(null);
+  const [viewMode, setViewMode] = useState("pdf"); // "pdf" | "texto"
+
+  // Pré-visualização fiel: gera o PDF real (mesmo do "Baixar PDF") e exibe
+  // num iframe. O texto puro fica disponível como visão alternativa.
+  useEffect(() => {
+    if (!preview) {
+      setPdfUrl(null);
+      return;
+    }
+    let cancelled = false;
+    let url = null;
+    buildContractDoc(preview)
+      .then((doc) => {
+        if (cancelled) return;
+        url = doc.output("bloburl");
+        setPdfUrl(String(url));
+      })
+      .catch(() => {
+        if (!cancelled) setViewMode("texto");
+      });
+    return () => {
+      cancelled = true;
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [preview]);
 
   useEffect(() => {
     fetch("/api/admin/vehicles")
@@ -167,6 +193,14 @@ export default function DocumentosPage() {
               Pré-visualização
             </h2>
             <div style={{ display: "flex", gap: 12 }}>
+              <button
+                onClick={() =>
+                  setViewMode((m) => (m === "pdf" ? "texto" : "pdf"))
+                }
+                className={styles.btnSecondary}
+              >
+                {viewMode === "pdf" ? "Ver texto puro" : "Ver documento"}
+              </button>
               <button onClick={handleDownloadPdf} className={styles.btnPrimary}>
                 Baixar PDF
               </button>
@@ -187,20 +221,43 @@ export default function DocumentosPage() {
               </button>
             </div>
           </div>
-          <div
-            className={styles.card}
-            style={{
-              fontFamily: "'Courier New', monospace",
-              fontSize: "0.85rem",
-              lineHeight: 1.8,
-              whiteSpace: "pre-wrap",
-              maxHeight: "70vh",
-              overflow: "auto",
-              padding: 32,
-            }}
-          >
-            {preview.content}
-          </div>
+          {viewMode === "pdf" ? (
+            pdfUrl ? (
+              <iframe
+                src={pdfUrl}
+                title="Pré-visualização do contrato"
+                style={{
+                  width: "100%",
+                  height: "78vh",
+                  border: "1px solid #e5e5e5",
+                  borderRadius: 12,
+                  background: "#525659",
+                }}
+              />
+            ) : (
+              <div
+                className={styles.card}
+                style={{ padding: 48, textAlign: "center", color: "#999" }}
+              >
+                Gerando pré-visualização do documento…
+              </div>
+            )
+          ) : (
+            <div
+              className={styles.card}
+              style={{
+                fontFamily: "'Courier New', monospace",
+                fontSize: "0.85rem",
+                lineHeight: 1.8,
+                whiteSpace: "pre-wrap",
+                maxHeight: "70vh",
+                overflow: "auto",
+                padding: 32,
+              }}
+            >
+              {preview.content}
+            </div>
+          )}
         </div>
       ) : (
         <div>
