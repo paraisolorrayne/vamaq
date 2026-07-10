@@ -78,19 +78,6 @@ function Slider({ label, min, max, value, onChange }) {
   );
 }
 
-// Colunas minmax(0,1fr) + width 100% nos controles: sem isso a largura
-// intrínseca dos inputs estoura os grids e os campos vazam do card.
-const grid2 = {
-  display: "grid",
-  gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)",
-  gap: "0 12px",
-};
-const grid3 = {
-  display: "grid",
-  gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)",
-  gap: "0 12px",
-};
-
 function Field({ label, value, onChange, placeholder }) {
   return (
     <div className={styles.formGroup} style={{ minWidth: 0 }}>
@@ -345,16 +332,9 @@ export default function CriativosPage() {
         </p>
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "minmax(340px, 400px) 1fr",
-          gap: 28,
-          alignItems: "start",
-        }}
-      >
+      <div className={styles.creativeLayout}>
         {/* ---------------- painel esquerdo ---------------- */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div className={styles.creativePanel}>
           <div className={styles.card}>
             <h3 style={{ fontSize: "0.9rem", fontWeight: 700, marginBottom: 12 }}>
               Formato
@@ -408,12 +388,12 @@ export default function CriativosPage() {
                   />
                 </div>
               )}
-              <div style={grid2}>
+              <div className={styles.grid2}>
                 <Field label="Marca" value={values.marca} onChange={(v) => setValue("marca", v)} />
                 <Field label="Ano" value={values.ano} onChange={(v) => setValue("ano", v)} />
               </div>
               <Field label="Modelo" value={values.modelo} onChange={(v) => setValue("modelo", v)} />
-              <div style={grid2}>
+              <div className={styles.grid2}>
                 <Field label="KM" value={values.km} onChange={(v) => setValue("km", v)} />
                 <Field
                   label="Preço (vazio = Consulte)"
@@ -428,7 +408,7 @@ export default function CriativosPage() {
                 placeholder="BLINDADO, TETO SOLAR, ÚNICO DONO"
               />
               {tpl === "vitrine" ? (
-                <div style={grid3}>
+                <div className={styles.grid3}>
                   <Field
                     label="Potência"
                     value={values.potencia}
@@ -442,7 +422,7 @@ export default function CriativosPage() {
                   />
                 </div>
               ) : (
-                <div style={grid2}>
+                <div className={styles.grid2}>
                   <Field
                     label="Potência"
                     value={values.potencia}
@@ -466,6 +446,7 @@ export default function CriativosPage() {
               </h3>
               <input
                 type="file"
+                className={styles.fileInput}
                 accept="image/*"
                 onChange={async (e) => {
                   const file = e.target.files?.[0];
@@ -477,7 +458,7 @@ export default function CriativosPage() {
                   }
                 }}
               />
-              <div style={{ ...grid3, marginTop: 10 }}>
+              <div className={styles.grid3} style={{ marginTop: 10 }}>
                 <Slider
                   label="Zoom"
                   min={55}
@@ -512,7 +493,7 @@ export default function CriativosPage() {
               <h3 style={{ fontSize: "0.9rem", fontWeight: 700, marginBottom: 12 }}>
                 Acervo — título e carros
               </h3>
-              <div style={grid2}>
+              <div className={styles.grid2}>
                 <Field label="Título — linha 1" value={values.at1} onChange={(v) => setValue("at1", v)} />
                 <Field label="Título — linha 2" value={values.at2} onChange={(v) => setValue("at2", v)} />
               </div>
@@ -546,7 +527,7 @@ export default function CriativosPage() {
                     onChange={(v) => setAcervoField(i, "nome", v)}
                     placeholder="ex.: BMW 320i M Sport"
                   />
-                  <div style={grid3}>
+                  <div className={styles.grid3}>
                     <Field label="Ano" value={item.ano} onChange={(v) => setAcervoField(i, "ano", v)} />
                     <Field label="KM" value={item.km} onChange={(v) => setAcervoField(i, "km", v)} />
                     <Field
@@ -561,6 +542,7 @@ export default function CriativosPage() {
                   </label>
                   <input
                     type="file"
+                    className={styles.fileInput}
                     accept="image/*"
                     onChange={async (e) => {
                       const file = e.target.files?.[0];
@@ -570,7 +552,7 @@ export default function CriativosPage() {
                         setAcImgs((prev) => prev.map((x, idx) => (idx === i ? img : x)));
                     }}
                   />
-                  <div style={{ ...grid2, marginTop: 8 }}>
+                  <div className={styles.grid2} style={{ marginTop: 8 }}>
                     <Slider
                       label="Zoom"
                       min={55}
@@ -595,7 +577,7 @@ export default function CriativosPage() {
             <h3 style={{ fontSize: "0.9rem", fontWeight: 700, marginBottom: 12 }}>
               Rodapé e logo
             </h3>
-            <div style={grid2}>
+            <div className={styles.grid2}>
               <Field label="Instagram" value={values.handle} onChange={(v) => setValue("handle", v)} />
               <Field label="Site" value={values.site} onChange={(v) => setValue("site", v)} />
             </div>
@@ -610,6 +592,7 @@ export default function CriativosPage() {
             </label>
             <input
               type="file"
+              className={styles.fileInput}
               accept="image/*"
               onChange={async (e) => {
                 const file = e.target.files?.[0];
@@ -631,33 +614,14 @@ export default function CriativosPage() {
         </div>
 
         {/* ---------------- preview ---------------- */}
-        <div
-          style={{
-            position: "sticky",
-            top: 24,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 12,
-          }}
-        >
-          <div
-            className={styles.card}
-            style={{ padding: 16, boxShadow: "0 12px 40px rgba(0,0,0,.08)" }}
-          >
+        <div className={styles.creativePreview}>
+          <div className={`${styles.card} ${styles.creativePreviewCard}`}>
             <canvas
               ref={canvasRef}
               width={1080}
               height={1920}
-              style={{
-                display: "block",
-                maxHeight: "78vh",
-                maxWidth: "100%",
-                width: "auto",
-                height: "auto",
-                borderRadius: 8,
-                opacity: fontsReady ? 1 : 0.4,
-              }}
+              className={styles.creativeCanvas}
+              style={{ opacity: fontsReady ? 1 : 0.4 }}
             />
           </div>
           <span

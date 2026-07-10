@@ -51,22 +51,13 @@ export default function EstoquePage() {
         className={styles.card}
         style={{ marginBottom: 24 }}
       >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: 16,
-            flexWrap: "wrap",
-          }}
-        >
+        <div className={styles.toolbar}>
           <input
             type="text"
             placeholder="Buscar por marca, modelo ou cor..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className={styles.formInput}
-            style={{ maxWidth: 360 }}
+            className={`${styles.formInput} ${styles.toolbarSearch}`}
           />
           <Link href="/admin/estoque/novo" className={styles.btnPrimary}>
             + Novo Veículo
@@ -92,7 +83,8 @@ export default function EstoquePage() {
             )}
           </div>
         ) : (
-          <div style={{ overflowX: "auto" }}>
+          <>
+          <div className={`${styles.tableWrap} ${styles.hideOnMobile}`}>
             <table className={styles.table}>
               <thead>
                 <tr>
@@ -139,19 +131,7 @@ export default function EstoquePage() {
                     <td>{v.quilometragem?.toLocaleString("pt-BR")} km</td>
                     <td>{v.color}</td>
                     <td>
-                      {!v.published ? (
-                        <span
-                          className={styles.badgeWarning}
-                          title="Não aparece no site — edite e marque 'Publicado no site'"
-                          style={{ background: "#fee2e2", color: "#b91c1c" }}
-                        >
-                          Oculto
-                        </span>
-                      ) : v.featured ? (
-                        <span className={styles.badgeSuccess}>Destaque</span>
-                      ) : (
-                        <span className={styles.badgeWarning}>Normal</span>
-                      )}
+                      <StatusBadge vehicle={v} />
                     </td>
                     <td>
                       <div className={styles.tableActions}>
@@ -174,8 +154,83 @@ export default function EstoquePage() {
               </tbody>
             </table>
           </div>
+
+          {/* Lista em cards — visível apenas no mobile */}
+          <div className={styles.cardList}>
+            {filtered.map((v) => (
+              <div key={v.id} className={styles.vehicleCard}>
+                <div className={styles.vehicleCardTop}>
+                  {v.images?.main ? (
+                    <img
+                      src={v.images.main}
+                      alt={`${v.brand} ${v.model}`}
+                      className={styles.vehicleCardThumb}
+                    />
+                  ) : (
+                    <div
+                      className={styles.vehicleCardThumb}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "0.7rem",
+                        color: "#999",
+                      }}
+                    >
+                      Sem foto
+                    </div>
+                  )}
+                  <div className={styles.vehicleCardInfo}>
+                    <strong className={styles.vehicleCardTitle}>
+                      {v.brand} {v.model}
+                    </strong>
+                    <span className={styles.vehicleCardMeta}>
+                      {v.year} · {v.quilometragem?.toLocaleString("pt-BR")} km
+                      {v.color ? ` · ${v.color}` : ""}
+                    </span>
+                    <span>
+                      <StatusBadge vehicle={v} />
+                    </span>
+                  </div>
+                </div>
+                <div className={styles.vehicleCardActions}>
+                  <Link
+                    href={`/admin/estoque/novo?id=${v.id}`}
+                    className={`${styles.btnSecondary} ${styles.btnSmall}`}
+                  >
+                    Editar
+                  </Link>
+                  <button
+                    onClick={() => handleDelete(v.id)}
+                    className={styles.btnDanger}
+                  >
+                    Excluir
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+          </>
         )}
       </div>
     </>
   );
+}
+
+function StatusBadge({ vehicle }) {
+  if (!vehicle.published) {
+    return (
+      <span
+        className={styles.badgeWarning}
+        title="Não aparece no site — edite e marque 'Publicado no site'"
+        style={{ background: "#fee2e2", color: "#b91c1c" }}
+      >
+        Oculto
+      </span>
+    );
+  }
+  if (vehicle.featured) {
+    return <span className={styles.badgeSuccess}>Destaque</span>;
+  }
+  return <span className={styles.badgeWarning}>Normal</span>;
 }

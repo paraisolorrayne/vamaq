@@ -220,7 +220,7 @@ export default function FipePage() {
 
       {resultado && (
         <div className={styles.card} style={{ marginBottom: 24 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12, marginBottom: 20 }}>
             <div>
               <p style={{ fontSize: "0.8rem", color: "#888", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>
                 Valor FIPE
@@ -261,7 +261,7 @@ export default function FipePage() {
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: 16, fontSize: "0.85rem", color: "#666" }}>
+          <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: "0.85rem", color: "#666" }}>
             <span>Código FIPE: <strong>{resultado.CodigoFipe}</strong></span>
             <span>Tipo: <strong>{resultado.TipoVeiculo === 1 ? "Carro" : resultado.TipoVeiculo === 2 ? "Moto" : "Caminhão"}</strong></span>
           </div>
@@ -273,6 +273,7 @@ export default function FipePage() {
           <h3 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: 16, color: "#333" }}>
             Consultas Recentes
           </h3>
+          <div className={styles.tableWrap}>
           <table className={styles.table}>
             <thead>
               <tr>
@@ -299,6 +300,7 @@ export default function FipePage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 

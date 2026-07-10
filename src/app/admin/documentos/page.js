@@ -186,13 +186,15 @@ export default function DocumentosPage() {
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
+              flexWrap: "wrap",
+              gap: 12,
               marginBottom: 24,
             }}
           >
             <h2 style={{ fontSize: "1.1rem", fontWeight: 600 }}>
               Pré-visualização
             </h2>
-            <div style={{ display: "flex", gap: 12 }}>
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
               <button
                 onClick={() =>
                   setViewMode((m) => (m === "pdf" ? "texto" : "pdf"))
@@ -266,6 +268,8 @@ export default function DocumentosPage() {
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
+              flexWrap: "wrap",
+              gap: 12,
               marginBottom: 24,
             }}
           >

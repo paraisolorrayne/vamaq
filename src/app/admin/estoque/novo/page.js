@@ -242,7 +242,7 @@ function NovoVeiculoForm() {
                   src={form.images.main}
                   alt="Principal"
                   style={{
-                    maxWidth: 300,
+                    maxWidth: "min(300px, 100%)",
                     maxHeight: 200,
                     borderRadius: 8,
                     margin: "0 auto",
@@ -822,7 +822,8 @@ function FipePriceLookup({ brand, onApplyPrice }) {
         <select
           value={marcaSel}
           onChange={(e) => setMarcaSel(e.target.value)}
-          style={{ flex: 1, minWidth: 120, padding: "6px 8px", fontSize: "0.8rem", borderRadius: 6, border: "1px solid #d0d0d0" }}
+          className={styles.fipeSelect}
+          style={{ flex: 1, minWidth: 120 }}
         >
           <option value="">Marca</option>
           {marcas.map((m) => (
@@ -833,7 +834,8 @@ function FipePriceLookup({ brand, onApplyPrice }) {
           value={modeloSel}
           onChange={(e) => setModeloSel(e.target.value)}
           disabled={!modelos.length}
-          style={{ flex: 2, minWidth: 140, padding: "6px 8px", fontSize: "0.8rem", borderRadius: 6, border: "1px solid #d0d0d0" }}
+          className={styles.fipeSelect}
+          style={{ flex: 2, minWidth: 140 }}
         >
           <option value="">Modelo</option>
           {modelos.map((m) => (
@@ -844,7 +846,8 @@ function FipePriceLookup({ brand, onApplyPrice }) {
           value={anoSel}
           onChange={(e) => setAnoSel(e.target.value)}
           disabled={!anos.length}
-          style={{ flex: 1, minWidth: 120, padding: "6px 8px", fontSize: "0.8rem", borderRadius: 6, border: "1px solid #d0d0d0" }}
+          className={styles.fipeSelect}
+          style={{ flex: 1, minWidth: 120 }}
         >
           <option value="">Ano</option>
           {anos.map((a) => (
