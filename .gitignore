@@ -47,3 +47,6 @@ supabase/.env
 
 # claude local settings
 /.claude/settings.local.json
+
+# uploads de fotos de veículos (dados de runtime, não versionados)
+/public/images/vehicles/

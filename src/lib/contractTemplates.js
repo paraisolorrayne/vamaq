@@ -340,6 +340,18 @@ function buildConsignacao(values) {
     ? `${prazoDias} (${prazoExtenso || "{{prazo_extenso}}"}) dias corridos`
     : `{{prazo_dias}} ({{prazo_extenso}}) dias corridos`;
 
+  // Retirada antecipada: só entra no contrato quando carência e taxa forem
+  // preenchidas; em branco, a rescisão mantém a redação sem ônus.
+  const carenciaDias = (values.retirada_carencia_dias || "").trim();
+  const temTaxaRetirada = Boolean(carenciaDias) && filled(values, "retirada_taxa");
+  const carenciaExtenso = /^\d+$/.test(carenciaDias)
+    ? inteiroPorExtenso(parseInt(carenciaDias, 10))
+    : "";
+  const carencia = carenciaExtenso
+    ? `${carenciaDias} (${carenciaExtenso}) dias corridos`
+    : `${carenciaDias} dias corridos`;
+  const taxaRetirada = moedaComExtenso("retirada_taxa", "retirada_taxa_extenso", values);
+
   const corpo = clausulas([
     {
       titulo: "DO OBJETO",
@@ -371,7 +383,9 @@ function buildConsignacao(values) {
     },
     {
       titulo: "DA RESCISÃO",
-      corpo: `O CONSIGNANTE poderá retirar o veículo a qualquer momento, mediante aviso prévio de 48 (quarenta e oito) horas, sem ônus para qualquer das partes, ressalvada eventual venda já concretizada.`,
+      corpo: temTaxaRetirada
+        ? `O CONSIGNANTE poderá retirar o veículo a qualquer momento, mediante aviso prévio de 48 (quarenta e oito) horas, ressalvada eventual venda já concretizada. Caso a retirada ocorra antes de decorridos ${carencia} da assinatura deste instrumento, o CONSIGNANTE pagará à CONSIGNATÁRIA, no ato da retirada, a importância de ${taxaRetirada}, a título de ressarcimento das despesas incorridas com a preparação e divulgação do veículo, tais como produção de material fotográfico e audiovisual, anúncios e tráfego pago, nada mais sendo devido entre as partes a esse título. Decorrida a carência, a retirada não gerará ônus para qualquer das partes.`
+        : `O CONSIGNANTE poderá retirar o veículo a qualquer momento, mediante aviso prévio de 48 (quarenta e oito) horas, sem ônus para qualquer das partes, ressalvada eventual venda já concretizada.`,
     },
     {
       titulo: "DO FORO",
@@ -541,6 +555,20 @@ export const DEFAULT_TEMPLATES = [
         hint: "Ex.: 120 — o prazo por extenso é gerado automaticamente se o campo abaixo ficar vazio.",
       },
       { key: "prazo_extenso", label: "Prazo por Extenso (opcional)", type: "text", section: "Condições" },
+      {
+        key: "retirada_carencia_dias",
+        label: "Carência para Retirada sem Taxa (dias)",
+        type: "text",
+        section: "Condições",
+        hint: "Ex.: 30 — se o consignante retirar o veículo antes desse prazo, paga a taxa abaixo. Em branco, a retirada sai sem ônus (redação atual).",
+      },
+      {
+        key: "retirada_taxa",
+        label: "Taxa de Retirada Antecipada (R$)",
+        type: "text",
+        section: "Condições",
+        hint: "Ex.: 800,00 — ressarce custos de preparação e divulgação (material do veículo, anúncios, tráfego pago). A cláusula só entra se carência e taxa estiverem preenchidas.",
+      },
       { key: "data_contrato", label: "Data do Contrato", type: "date", section: "Condições" },
     ],
   },
