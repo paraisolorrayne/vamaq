@@ -130,7 +130,14 @@ de URL/headers/envelope.
 Se a Vamaq emite NF hoje por outro meio, esses prazos afetam o cronograma de go-live do módulo
 fiscal — **validar com o contador** (ADR-001, passos de negócio).
 
-## 6. Recomendação de escopo do porte (decisão pendente com a Lorrayne)
+## 6. Recomendação de escopo do porte
+
+> **Atualização 2026-07-11:** decisões tomadas pela Lorrayne — ver "Decisões de escopo
+> registradas" no [ADR-001](./ADR-001-integracao-finance-ai-crm.md): só o CNPJ da Vamaq;
+> WhatsApp migra de Evolution para **Avisa API**; NFS-e ainda não é usada (priorizar a via mais
+> em conta — candidata: NFS-e Nacional própria); **estoque fica centralizado na tabela
+> `vehicles` do site** (fonte única, ciclo de vida por status, sem recadastro), e os módulos
+> consomem dela — isso resolve a sobreposição de estoque apontada abaixo.
 
 A Vamaq é **uma** concessionária (single-tenant na prática). Proposta de recorte:
 

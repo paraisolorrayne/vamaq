@@ -98,11 +98,33 @@ substituído pelo banco interno já existente.
 | Banco de produção sem backup | `pg_dump` agendado antes de qualquer dado real (Fase 2, passo 6) |
 | Refactor inconsistente entre módulos | Um módulo por vez: CRM → validar → commitar → Finance AI |
 
+## Decisões de escopo registradas (2026-07-11, Lorrayne)
+
+1. **Tenancy**: trabalharemos apenas com o CNPJ da Vamaq. O schema portado mantém `company_id`
+   (custo zero, preserva o código e reabre multi-loja no futuro) com uma única row em `companies`.
+2. **WhatsApp**: substituir Evolution API por **Avisa API**
+   (https://www.postman.com/mw10/avisa-api/documentation/fjeb27a/avisa-api). O porte do módulo de
+   mensageria será feito atrás de um adapter, trocando o provider; usar o repo
+   `paraisolorrayne/avisa-connect-hub` como referência de integração. (A doc no Postman é
+   JS-rendered — mapear endpoints manualmente na hora do porte.)
+3. **NFS-e**: a Vamaq **não emite NFS-e hoje**. Buscar a solução mais em conta — a candidata
+   natural é a via própria NFS-e Nacional já presente no Finance AI (custo zero por nota; o
+   `nfse-worker` roda na nossa VPS), ficando PlugNotas só se surgir necessidade de NFe/NFCe.
+   Validar com o contador da Vamaq (emissor aceito no município + prazo Simples 01/09/2026).
+4. **Estoque centralizado no site**: o cadastro de veículos permanece no admin do site — a tabela
+   `vehicles` é a **fonte única de verdade** — e os demais sistemas (CRM, Finance AI) consomem
+   dela. Veículo não é excluído nem recadastrado: ciclo de vida por status
+   (habilitar/desabilitar; hoje já existe `published`, a evoluir para status de ciclo de vida —
+   ex.: disponível/reservado/vendido/inativo — quando o CRM chegar), preservando o histórico do
+   veículo dentro da Vamaq mesmo quando ele sai e volta ao estoque.
+
 ## Próximas ações
 
-| # | Ação | Dono |
-|---|------|------|
-| 1 | Exportar Finance AI e CRM Automotivo do Lovable para o GitHub | Lorrayne (painel Lovable) |
-| 2 | Analisar exports, documentar schemas/policies (anexos 001a/001b) | Claude Code |
-| 3 | Definir solução de auth do /admin e implementar | Claude Code (validar abordagem com Lorrayne) |
-| 4 | Fase 2 em diante, na ordem | Claude Code |
+| # | Ação | Dono | Status |
+|---|------|------|--------|
+| 1 | Exportar Finance AI do Lovable para o GitHub | Lorrayne | ✅ `chat-finances-ai` |
+| 2 | Analisar export Finance AI (anexo 001a) | Claude Code | ✅ [ADR-001a](./ADR-001a-analise-finance-ai.md) |
+| 3 | Exportar CRM Automotivo (remix) e analisar (anexo 001b) | Lorrayne → Claude Code | ⏳ export em andamento |
+| 4 | Definir solução de auth do /admin e implementar | Claude Code (validar abordagem com Lorrayne) | pendente |
+| 5 | Desenhar ciclo de vida do veículo em `vehicles` (status) + contrato de consumo pelos módulos | Claude Code (após 001b) | pendente |
+| 6 | Fase 2 em diante, na ordem | Claude Code | pendente |
