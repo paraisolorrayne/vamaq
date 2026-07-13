@@ -39,9 +39,11 @@ function normalize(body) {
   return {
     brand: body.brand || '',
     model: body.model || '',
-    year: Number(body.year) || new Date().getFullYear(),
+    year: Math.round(Number(body.year)) || new Date().getFullYear(),
     price: body.price !== '' && body.price != null ? Number(body.price) : null,
-    quilometragem: Number(body.quilometragem) || 0,
+    // Colunas integer: arredonda para não estourar 22P02 se algum cliente
+    // mandar float (ex.: km digitado com separador de milhar).
+    quilometragem: Math.round(Number(body.quilometragem)) || 0,
     fuel: body.fuel || 'Gasolina',
     transmission: body.transmission || 'Automático',
     power: body.power || '',

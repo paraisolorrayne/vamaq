@@ -16,18 +16,26 @@ export async function GET(_request, { params }) {
 }
 
 export async function PUT(request, { params }) {
-  const { id } = await params;
-  const body = await request.json();
-  const updated = await updateVehicle(id, body);
-  if (!updated) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  try {
+    const { id } = await params;
+    const body = await request.json();
+    const updated = await updateVehicle(id, body);
+    if (!updated) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    revalidatePath('/');
+    revalidatePath('/acervo');
+    if (updated.slug) revalidatePath(`/veiculo/${updated.slug}`);
+
+    return NextResponse.json(updated);
+  } catch (err) {
+    console.error('Vehicle update error:', err);
+    return NextResponse.json(
+      { error: `Erro ao salvar veículo: ${err.message}` },
+      { status: 500 }
+    );
   }
-
-  revalidatePath('/');
-  revalidatePath('/acervo');
-  if (updated.slug) revalidatePath(`/veiculo/${updated.slug}`);
-
-  return NextResponse.json(updated);
 }
 
 export async function DELETE(_request, { params }) {

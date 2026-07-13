@@ -211,10 +211,13 @@ function NovoVeiculoForm() {
     setSaving(true);
 
     const parsedPrice = parseValorBR(form.price);
+    // Km aceita formato pt-BR ("130.726") — Number() leria como decimal e o
+    // Postgres rejeitaria na coluna integer.
+    const parsedKm = parseValorBR(form.quilometragem);
     const payload = {
       ...form,
       price: isFinite(parsedPrice) ? parsedPrice : null,
-      quilometragem: Number(form.quilometragem) || 0,
+      quilometragem: isFinite(parsedKm) ? Math.round(parsedKm) : 0,
       badge: form.badge || null,
       specs: {
         ...form.specs,

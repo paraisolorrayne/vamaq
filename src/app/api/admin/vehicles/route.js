@@ -8,11 +8,19 @@ export async function GET() {
 }
 
 export async function POST(request) {
-  const body = await request.json();
-  const vehicle = await addVehicle(body);
+  try {
+    const body = await request.json();
+    const vehicle = await addVehicle(body);
 
-  revalidatePath('/');
-  revalidatePath('/acervo');
+    revalidatePath('/');
+    revalidatePath('/acervo');
 
-  return NextResponse.json(vehicle, { status: 201 });
+    return NextResponse.json(vehicle, { status: 201 });
+  } catch (err) {
+    console.error('Vehicle create error:', err);
+    return NextResponse.json(
+      { error: `Erro ao salvar veículo: ${err.message}` },
+      { status: 500 }
+    );
+  }
 }
