@@ -340,17 +340,22 @@ function buildConsignacao(values) {
     ? `${prazoDias} (${prazoExtenso || "{{prazo_extenso}}"}) dias corridos`
     : `{{prazo_dias}} ({{prazo_extenso}}) dias corridos`;
 
-  // Retirada antecipada: só entra no contrato quando carência e taxa forem
-  // preenchidas; em branco, a rescisão mantém a redação sem ônus.
+  // Retirada antecipada: entra no contrato quando carência OU taxa forem
+  // preenchidas (campo faltante vira linha em branco, como no resto do
+  // gerador). Com os dois em branco, a rescisão mantém a redação sem ônus.
   const carenciaDias = (values.retirada_carencia_dias || "").trim();
-  const temTaxaRetirada = Boolean(carenciaDias) && filled(values, "retirada_taxa");
+  const temTaxaRetirada = Boolean(carenciaDias) || filled(values, "retirada_taxa");
   const carenciaExtenso = /^\d+$/.test(carenciaDias)
     ? inteiroPorExtenso(parseInt(carenciaDias, 10))
     : "";
-  const carencia = carenciaExtenso
-    ? `${carenciaDias} (${carenciaExtenso}) dias corridos`
-    : `${carenciaDias} dias corridos`;
-  const taxaRetirada = moedaComExtenso("retirada_taxa", "retirada_taxa_extenso", values);
+  const carencia = !carenciaDias
+    ? "{{retirada_carencia_dias}} dias corridos"
+    : carenciaExtenso
+      ? `${carenciaDias} (${carenciaExtenso}) dias corridos`
+      : `${carenciaDias} dias corridos`;
+  const taxaRetirada = filled(values, "retirada_taxa")
+    ? moedaComExtenso("retirada_taxa", "retirada_taxa_extenso", values)
+    : "R$ {{retirada_taxa}}";
 
   const corpo = clausulas([
     {
@@ -560,14 +565,14 @@ export const DEFAULT_TEMPLATES = [
         label: "Carência para Retirada sem Taxa (dias)",
         type: "text",
         section: "Condições",
-        hint: "Ex.: 30 — se o consignante retirar o veículo antes desse prazo, paga a taxa abaixo. Em branco, a retirada sai sem ônus (redação atual).",
+        hint: "Ex.: 30 — se o consignante retirar o veículo antes desse prazo, paga a taxa abaixo. Preenchendo carência ou taxa, a cláusula entra no contrato (campo vazio vira linha em branco). Com os dois em branco, a retirada sai sem ônus.",
       },
       {
         key: "retirada_taxa",
         label: "Taxa de Retirada Antecipada (R$)",
         type: "text",
         section: "Condições",
-        hint: "Ex.: 800,00 — ressarce custos de preparação e divulgação (material do veículo, anúncios, tráfego pago). A cláusula só entra se carência e taxa estiverem preenchidas.",
+        hint: "Ex.: 800,00 — ressarce custos de preparação e divulgação (material do veículo, anúncios, tráfego pago). O valor por extenso é gerado automaticamente.",
       },
       { key: "data_contrato", label: "Data do Contrato", type: "date", section: "Condições" },
     ],
