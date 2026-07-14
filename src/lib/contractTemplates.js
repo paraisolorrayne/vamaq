@@ -19,6 +19,11 @@ const ORDINAIS = [
   "OITAVA",
   "NONA",
   "DÉCIMA",
+  "DÉCIMA PRIMEIRA",
+  "DÉCIMA SEGUNDA",
+  "DÉCIMA TERCEIRA",
+  "DÉCIMA QUARTA",
+  "DÉCIMA QUINTA",
 ];
 
 // --- Valor por extenso (pt-BR) ---
@@ -104,6 +109,23 @@ function moedaComExtenso(valorKey, extensoKey, values) {
 
 function filled(values, key) {
   return Boolean((values[key] || "").trim());
+}
+
+// Aceita "60", "60 dias", "60 dias corridos" — usa o primeiro número digitado;
+// sem número nenhum, mantém o texto como veio.
+function prazoEmDias(raw) {
+  const t = (raw || "").trim();
+  const m = t.match(/\d+/);
+  return m ? m[0] : t;
+}
+
+// Cláusula livre digitada pelo usuário — entra antes do foro, quando preenchida.
+function clausulaPersonalizada(values) {
+  if (!filled(values, "clausulas_personalizadas")) return null;
+  return {
+    titulo: "DISPOSIÇÕES ESPECIAIS",
+    corpo: values.clausulas_personalizadas.trim(),
+  };
 }
 
 function linhaCnh(values, cnhKey, catKey) {
@@ -247,6 +269,7 @@ function buildCompraVenda(values) {
       titulo: "DA ENTREGA E DA POSSE",
       corpo: `A posse do veículo é transferida à COMPRADORA na data de assinatura deste instrumento, declarando esta tê-lo recebido e vistoriado, aceitando-o no estado em que se encontra.`,
     },
+    clausulaPersonalizada(values),
     {
       titulo: "DO FORO",
       corpo: `Fica eleito o foro da comarca de ${BUSINESS.address.city} - ${BUSINESS.address.state} para dirimir quaisquer dúvidas oriundas do presente contrato, com renúncia expressa a qualquer outro, por mais privilegiado que seja.`,
@@ -332,7 +355,7 @@ function buildConsignacao(values) {
 
   const valor = moedaComExtenso("valor_liquido", "valor_liquido_extenso", values);
 
-  const prazoDias = (values.prazo_dias || "").trim();
+  const prazoDias = prazoEmDias(values.prazo_dias);
   const prazoExtenso =
     (values.prazo_extenso || "").trim() ||
     (/^\d+$/.test(prazoDias) ? inteiroPorExtenso(parseInt(prazoDias, 10)) : "");
@@ -343,7 +366,7 @@ function buildConsignacao(values) {
   // Retirada antecipada: entra no contrato quando carência OU taxa forem
   // preenchidas (campo faltante vira linha em branco, como no resto do
   // gerador). Com os dois em branco, a rescisão mantém a redação sem ônus.
-  const carenciaDias = (values.retirada_carencia_dias || "").trim();
+  const carenciaDias = prazoEmDias(values.retirada_carencia_dias);
   const temTaxaRetirada = Boolean(carenciaDias) || filled(values, "retirada_taxa");
   const carenciaExtenso = /^\d+$/.test(carenciaDias)
     ? inteiroPorExtenso(parseInt(carenciaDias, 10))
@@ -387,11 +410,20 @@ function buildConsignacao(values) {
       corpo: `a) Entregar o veículo em perfeito estado de conservação e funcionamento; b) Manter a documentação do veículo regularizada, incluindo IPVA, licenciamento e eventuais débitos até a data de entrega; c) Não vender, doar ou alienar o veículo a terceiros durante a vigência deste contrato; d) Arcar com tributos, multas e demais encargos referentes a fatos geradores anteriores à entrega do veículo.`,
     },
     {
+      titulo: "DA GUARDA E DA RESPONSABILIDADE PELO VEÍCULO",
+      corpo: `Enquanto o veículo permanecer sob sua posse, a CONSIGNATÁRIA responde, na qualidade de depositária, pela sua guarda e conservação, obrigando-se a indenizar o CONSIGNANTE, no valor líquido previsto na cláusula DO VALOR E DA REMUNERAÇÃO, em caso de perda total decorrente de furto, roubo, incêndio ou colisão ocorridos nesse período, e a arcar com os reparos necessários em caso de dano parcial. A responsabilidade da CONSIGNATÁRIA não alcança: a) o desgaste natural do veículo e de seus componentes; b) as avarias preexistentes à entrega, em especial as registradas em termo de vistoria firmado entre as partes, quando houver; c) danos decorrentes de vício oculto ou defeito intrínseco do veículo não informado pelo CONSIGNANTE. A responsabilidade da CONSIGNATÁRIA cessa com a devolução do veículo ao CONSIGNANTE ou com a sua entrega ao comprador.`,
+    },
+    {
+      titulo: "DAS MULTAS E INFRAÇÕES",
+      corpo: `As infrações de trânsito cometidas no período em que o veículo estiver sob a posse da CONSIGNATÁRIA, bem como os danos causados a terceiros nesse período, são de responsabilidade exclusiva da CONSIGNATÁRIA, que se obriga a promover a indicação do condutor infrator na forma da legislação de trânsito e a reembolsar o CONSIGNANTE de qualquer valor que este venha a desembolsar em razão de tais fatos. As multas, os tributos e os demais débitos com fato gerador anterior à entrega do veículo à CONSIGNATÁRIA permanecem de responsabilidade do CONSIGNANTE.`,
+    },
+    {
       titulo: "DA RESCISÃO",
       corpo: temTaxaRetirada
         ? `O CONSIGNANTE poderá retirar o veículo a qualquer momento, mediante aviso prévio de 48 (quarenta e oito) horas, ressalvada eventual venda já concretizada. Caso a retirada ocorra antes de decorridos ${carencia} da assinatura deste instrumento, o CONSIGNANTE pagará à CONSIGNATÁRIA, no ato da retirada, a importância de ${taxaRetirada}, a título de ressarcimento das despesas incorridas com a preparação e divulgação do veículo, tais como produção de material fotográfico e audiovisual, anúncios e tráfego pago, nada mais sendo devido entre as partes a esse título. Decorrida a carência, a retirada não gerará ônus para qualquer das partes.`
         : `O CONSIGNANTE poderá retirar o veículo a qualquer momento, mediante aviso prévio de 48 (quarenta e oito) horas, sem ônus para qualquer das partes, ressalvada eventual venda já concretizada.`,
     },
+    clausulaPersonalizada(values),
     {
       titulo: "DO FORO",
       corpo: `Fica eleito o foro da comarca de ${BUSINESS.address.city} - ${BUSINESS.address.state} para dirimir quaisquer dúvidas oriundas do presente contrato, com renúncia expressa a qualquer outro, por mais privilegiado que seja.`,
@@ -428,6 +460,104 @@ CONSIGNANTE
 ${ASSINATURA_VAMAQ("CONSIGNATÁRIA")}${assinaturaAnuente}
 
 ${TESTEMUNHAS}`;
+}
+
+// ---------------------------------------------------------------------------
+// Termo de Vistoria e Recebimento de Veículo em Consignação
+// ---------------------------------------------------------------------------
+
+const CHECKLIST_VISTORIA = [
+  ["estado_lataria", "Lataria"],
+  ["estado_pintura", "Pintura"],
+  ["estado_vidros", "Vidros"],
+  ["estado_retrovisores", "Retrovisores"],
+  ["estado_iluminacao", "Iluminação"],
+  ["estado_pneus", "Pneus"],
+  ["estado_interior", "Interior"],
+  ["estado_painel", "Painel"],
+  ["estado_motor", "Motor e câmbio"],
+];
+
+function buildTermoVistoria(values) {
+  const consignante = [
+    "CONSIGNANTE:",
+    "Nome: {{proprietario_nome}}",
+    "CPF: {{proprietario_cpf}}",
+    filled(values, "proprietario_telefone") ? "Telefone: {{proprietario_telefone}}" : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const veiculo = [
+    "Marca: {{veiculo_marca}}",
+    "Modelo / Versão: {{veiculo_modelo}}",
+    "Ano Fabricação / Modelo: {{veiculo_ano}}",
+    "Cor: {{veiculo_cor}}",
+    "Placa: {{veiculo_placa}}",
+    "Chassi: {{veiculo_chassi}}",
+    "RENAVAM: {{veiculo_renavam}}",
+    "Hodômetro: {{veiculo_km}} km",
+    filled(values, "veiculo_combustivel") ? "Combustível: {{veiculo_combustivel}}" : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  // Quilometragem por escrito (número + extenso), como pede o termo.
+  const kmDigits = (values.veiculo_km || "").replace(/\D/g, "");
+  const kmLinha = kmDigits
+    ? `Na data desta vistoria, o hodômetro do veículo registra ${values.veiculo_km.trim()} (${inteiroPorExtenso(parseInt(kmDigits, 10))}) quilômetros, quilometragem conferida e confirmada por ambas as partes.`
+    : `Na data desta vistoria, o hodômetro do veículo registra {{veiculo_km}} quilômetros, quilometragem conferida e confirmada por ambas as partes.`;
+
+  const checklist = CHECKLIST_VISTORIA.map(([key, rotulo]) => `${rotulo}: {{${key}}}`).join("\n");
+
+  const temFotos = /^sim$/i.test((values.registro_fotografico || "").trim());
+  const fotos = temFotos
+    ? `A vistoria foi acompanhada de registro fotográfico composto por ${filled(values, "fotos_quantidade") ? "{{fotos_quantidade}}" : "_____"} fotografias, que refletem o estado do veículo na data da entrega e integram o presente termo como ANEXO I.`
+    : `As partes declaram dispensado o registro fotográfico da vistoria, prevalecendo, quanto ao estado do veículo, as descrições constantes deste termo.`;
+
+  const avarias = filled(values, "avarias_observacoes")
+    ? "{{avarias_observacoes}}"
+    : "Nenhuma avaria apontada pelas partes na data da vistoria.";
+
+  return `TERMO DE VISTORIA DE VEÍCULO EM CONSIGNAÇÃO
+
+Pelo presente termo, as partes abaixo identificadas formalizam a vistoria de entrega do veículo em consignação, que passa a integrar o contrato de consignação firmado entre elas:
+
+${consignante}
+
+${COMPRADORA_BLOCO("CONSIGNATÁRIA")}
+
+${veiculo}
+
+DA QUILOMETRAGEM
+
+${kmLinha}
+
+DO ESTADO DE CONSERVAÇÃO CONSTATADO NA VISTORIA
+
+${checklist}
+
+AVARIAS E OBSERVAÇÕES
+
+${avarias}
+
+DO REGISTRO FOTOGRÁFICO
+
+${fotos}
+
+DAS DECLARAÇÕES FINAIS
+
+As partes declaram que as informações acima refletem fielmente o estado do veículo no ato da entrega à CONSIGNATÁRIA. Este termo servirá de referência para a devolução do veículo e para a apuração de eventuais avarias supervenientes, na forma da cláusula de guarda e responsabilidade do contrato de consignação. E, por estarem de acordo, firmam o presente termo em 2 (duas) vias de igual teor.
+
+${BUSINESS.address.city}, {{data_contrato}}.
+
+
+___________________________________________
+{{proprietario_nome}}
+CPF: {{proprietario_cpf}}
+CONSIGNANTE
+
+${ASSINATURA_VAMAQ("CONSIGNATÁRIA")}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -494,6 +624,13 @@ export const DEFAULT_TEMPLATES = [
       { key: "favorecido_agencia", label: "Agência", type: "text", section: "Pagamento" },
       { key: "favorecido_conta", label: "Conta Corrente", type: "text", section: "Pagamento" },
       { key: "data_contrato", label: "Data do Contrato", type: "date", section: "Contrato" },
+      {
+        key: "clausulas_personalizadas",
+        label: "Cláusulas Personalizadas (opcional)",
+        type: "textarea",
+        section: "Contrato",
+        hint: "Condições específicas desta negociação. Entram ao final do contrato como cláusula DISPOSIÇÕES ESPECIAIS, antes do foro. Em branco, a cláusula não entra.",
+      },
     ],
   },
   {
@@ -575,6 +712,64 @@ export const DEFAULT_TEMPLATES = [
         hint: "Ex.: 800,00 — ressarce custos de preparação e divulgação (material do veículo, anúncios, tráfego pago). O valor por extenso é gerado automaticamente.",
       },
       { key: "data_contrato", label: "Data do Contrato", type: "date", section: "Condições" },
+      {
+        key: "clausulas_personalizadas",
+        label: "Cláusulas Personalizadas (opcional)",
+        type: "textarea",
+        section: "Condições",
+        hint: "Condições específicas desta negociação. Entram ao final do contrato como cláusula DISPOSIÇÕES ESPECIAIS, antes do foro. Em branco, a cláusula não entra.",
+      },
+    ],
+  },
+  {
+    id: "termo-vistoria",
+    name: "Termo de Vistoria de Veículo em Consignação",
+    description:
+      "Vistoria de entrega com quilometragem por escrito, checklist de conservação, avarias e registro fotográfico opcional em anexo",
+    build: buildTermoVistoria,
+    fields: [
+      { key: "proprietario_nome", label: "Nome do Consignante", type: "text", section: "Consignante (dados da CNH)" },
+      { key: "proprietario_cpf", label: "CPF do Consignante", type: "text", section: "Consignante (dados da CNH)" },
+      { key: "proprietario_telefone", label: "Telefone do Consignante", type: "text", section: "Consignante (dados da CNH)" },
+      { key: "veiculo_marca", label: "Marca", type: "text", section: "Veículo (dados do CRLV)" },
+      { key: "veiculo_modelo", label: "Modelo / Versão", type: "text", section: "Veículo (dados do CRLV)" },
+      { key: "veiculo_ano", label: "Ano Fabricação / Modelo", type: "text", section: "Veículo (dados do CRLV)" },
+      { key: "veiculo_cor", label: "Cor", type: "text", section: "Veículo (dados do CRLV)" },
+      { key: "veiculo_placa", label: "Placa", type: "text", section: "Veículo (dados do CRLV)" },
+      { key: "veiculo_chassi", label: "Chassi", type: "text", section: "Veículo (dados do CRLV)" },
+      { key: "veiculo_renavam", label: "RENAVAM", type: "text", section: "Veículo (dados do CRLV)" },
+      {
+        key: "veiculo_km",
+        label: "Quilometragem (km)",
+        type: "text",
+        section: "Veículo (dados do CRLV)",
+        hint: "Ex.: 130.726 — sai na ficha do veículo e por extenso no corpo do termo.",
+      },
+      { key: "veiculo_combustivel", label: "Combustível", type: "text", section: "Veículo (dados do CRLV)" },
+      ...CHECKLIST_VISTORIA.map(([key, rotulo]) => ({
+        key,
+        label: rotulo,
+        type: "select",
+        options: ["Bom", "Regular", "Com avaria (ver observações)"],
+        section: "Estado de conservação",
+      })),
+      {
+        key: "avarias_observacoes",
+        label: "Avarias e Observações",
+        type: "textarea",
+        section: "Vistoria",
+        hint: "Descreva avarias preexistentes, faltas e acessórios. Em branco, o termo registra que nenhuma avaria foi apontada.",
+      },
+      {
+        key: "registro_fotografico",
+        label: "Registro fotográfico em anexo?",
+        type: "select",
+        options: ["Sim", "Não"],
+        section: "Vistoria",
+        hint: "Com Sim, o termo menciona as fotos como ANEXO I (as fotos são impressas/anexadas à parte).",
+      },
+      { key: "fotos_quantidade", label: "Quantidade de Fotos", type: "text", section: "Vistoria" },
+      { key: "data_contrato", label: "Data da Vistoria", type: "date", section: "Vistoria" },
     ],
   },
 ];

@@ -336,9 +336,25 @@ export default function DocumentosPage() {
                 )}
                 <div className={styles.formGrid}>
                   {fields.map((field) => (
-                    <div key={field.key} className={styles.formGroup}>
+                    <div
+                      key={field.key}
+                      className={`${styles.formGroup} ${
+                        field.type === "textarea" ? styles.formGroupFull : ""
+                      }`}
+                    >
                       <label className={styles.formLabel}>{field.label}</label>
-                      {field.type === "select" ? (
+                      {field.type === "textarea" ? (
+                        <textarea
+                          value={values[field.key] || ""}
+                          onChange={(e) =>
+                            handleFieldChange(field.key, e.target.value)
+                          }
+                          className={styles.formInput}
+                          rows={4}
+                          placeholder={field.label}
+                          style={{ resize: "vertical", fontFamily: "inherit" }}
+                        />
+                      ) : field.type === "select" ? (
                         <select
                           value={values[field.key] || field.options?.[0] || ""}
                           onChange={(e) =>

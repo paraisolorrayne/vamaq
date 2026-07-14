@@ -47,6 +47,8 @@ Use markdown enxuto e escaneável. Estruture assim:
 | Valor líquido vs. comissão % | Deixar explícito o modelo: (a) valor líquido ao cliente + diferença à Vamaq, ou (b) preço anunciado + comissão %. Não misturar. |
 | Anuência do proprietário registral | Se o veículo está em nome de terceiro, esse anuente deve assinar autorizando venda e pagamento. |
 | Retirada antecipada (consignação) | Se houver taxa por retirada antes da carência: dias e valor preenchidos, destinação declarada (ressarcimento de custos de preparação/divulgação — material do veículo, tráfego pago) e ressalva de que após a carência a retirada não gera ônus. |
+| Termo de vistoria (consignação) | Recomendar termo de vistoria na entrega (modelo próprio no admin): quilometragem por escrito, checklist de conservação, avarias preexistentes e fotos em anexo — é a baseline da cláusula de guarda e responsabilidade. |
+| Responsabilidade na guarda | A cláusula de guarda deve ter: teto de indenização (valor líquido pactuado), exclusões (desgaste natural, avarias preexistentes do termo de vistoria, vício oculto não informado) e cessação na devolução/tradição. |
 | Dados do veículo | Bater marca, modelo, placa, chassi, RENAVAM e ano com o CRLV/ATPV-e. |
 | Foro e transferência | Foro definido (Uberlândia-MG) e prazo/obrigação de entrega da documentação (ATPV-e/CRV com firma reconhecida). |
 

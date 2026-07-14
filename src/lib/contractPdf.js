@@ -147,6 +147,16 @@ export async function buildContractDoc(preview, opts = {}) {
     y += 5;
   }
 
+  // Cabeçalho de seção pendente (blocos "heading"): só é desenhado junto com
+  // o início do bloco seguinte, para nunca ficar órfão no fim da página.
+  let pendingHeading = null;
+  function flushHeading(nextH) {
+    if (!pendingHeading) return;
+    ensure(9 + nextH);
+    sectionLabel(pendingHeading);
+    pendingHeading = null;
+  }
+
   function renderParty(b) {
     const padX = 6;
     const padTop = 5.5;
@@ -173,6 +183,7 @@ export async function buildContractDoc(preview, opts = {}) {
     });
     const h = padTop + titleGap + bodyH + padBottom;
 
+    flushHeading(h + 4);
     ensure(h + 4);
 
     setFill(SOFT);
@@ -219,6 +230,7 @@ export async function buildContractDoc(preview, opts = {}) {
 
     // A grade não é dividida entre páginas, então o rótulo só entra se ela
     // couber inteira junto — evita rótulo órfão no fim da página.
+    flushHeading(9 + nRows * cellH + 4);
     ensure(9 + nRows * cellH + 4);
     sectionLabel("DADOS DO VEÍCULO");
     const top = y;
@@ -251,6 +263,7 @@ export async function buildContractDoc(preview, opts = {}) {
   }
 
   function renderClause(b) {
+    flushHeading(16);
     ensure(16);
     y += 3.5;
     setFill(ACCENT);
@@ -268,6 +281,8 @@ export async function buildContractDoc(preview, opts = {}) {
     doc.setFontSize(9.4);
     setText(TEXT);
     const lines = doc.splitTextToSize(b.text, CONTENT_W);
+    // Junto com o cabeçalho pendente, garante ao menos as 2 primeiras linhas
+    flushHeading(Math.min(lines.length, 2) * 5.2);
     lines.forEach((ln) => {
       ensure(5.2);
       doc.text(ln, MARGIN, y);
@@ -407,6 +422,9 @@ export async function buildContractDoc(preview, opts = {}) {
       case "clause":
         renderClause(b);
         break;
+      case "heading":
+        pendingHeading = b.text.toUpperCase();
+        break;
       case "para":
         renderPara(b);
         break;
@@ -420,6 +438,7 @@ export async function buildContractDoc(preview, opts = {}) {
         break;
     }
   }
+  flushHeading(0);
   if (signatures.length) renderSignatures(signatures);
   if (witnesses) renderWitnesses(witnesses);
 
@@ -471,6 +490,7 @@ function parseContract(preview) {
       continue;
     }
 
+
     // Testemunhas (TESTEMUNHAS + pares Nome:/CPF:)
     if (/^TESTEMUNHAS$/i.test(t)) {
       i++;
@@ -515,6 +535,15 @@ function parseContract(preview) {
       const role = labels.length > 1 ? labels[labels.length - 1] : "";
       const sub = labels.length > 2 ? labels[1] : "";
       blocks.push({ type: "signature", name, sub, role });
+      continue;
+    }
+
+    // Cabeçalho de seção — linha curta toda em maiúsculas sem ":" final
+    // (ex.: "DA QUILOMETRAGEM" no termo de vistoria). Vem depois dos blocos
+    // de testemunhas/assinaturas para não capturá-los.
+    if (isSectionHeading(t)) {
+      blocks.push({ type: "heading", text: t });
+      i++;
       continue;
     }
 
@@ -565,7 +594,19 @@ function isSpecial(t) {
     /^CL[ÁA]USULA/i.test(t) ||
     /^TESTEMUNHAS$/i.test(t) ||
     /^_{3,}/.test(t) ||
+    isSectionHeading(t) ||
     !!matchKv(t)
+  );
+}
+
+// Linha curta toda em maiúsculas, sem ":" no fim — título de seção de termos
+// (a checagem de party/cláusula/testemunhas acontece antes desta).
+function isSectionHeading(t) {
+  return (
+    t.length <= 60 &&
+    !t.endsWith(":") &&
+    /^[A-ZÀ-Ü0-9ºª°()\/.–— -]+$/.test(t) &&
+    /[A-ZÀ-Ü]{2}/.test(t)
   );
 }
 
