@@ -103,6 +103,39 @@ export default function SobrePage() {
           </div>
         </section>
 
+        {/* Conheça nosso espaço */}
+        <section className="section">
+          <div className="container">
+            <div className={styles.spaceIntro}>
+              <h2 className={styles.heading}>Conheça nosso espaço</h2>
+              <p>
+                Nossa loja fica na Av. Francisco Galassi, 1434, em Uberlândia.
+                Um showroom pensado para você conhecer de perto cada veículo do
+                acervo, com calma e sem pressa. Venha nos visitar — o café fica
+                por nossa conta.
+              </p>
+            </div>
+            <div className={styles.spaceGallery}>
+              <figure className={styles.spacePhoto}>
+                <img
+                  src="/images/loja/fachada.jpg"
+                  alt="Fachada da loja Vamaq Motors na Av. Francisco Galassi, em Uberlândia"
+                  className={styles.spacePhotoImg}
+                  loading="lazy"
+                />
+              </figure>
+              <figure className={styles.spacePhoto}>
+                <img
+                  src="/images/loja/showroom.jpg"
+                  alt="Showroom interno da Vamaq Motors com veículos premium em exposição"
+                  className={styles.spacePhotoImg}
+                  loading="lazy"
+                />
+              </figure>
+            </div>
+          </div>
+        </section>
+
         {/* CTA */}
         <section className="section section--dark">
           <div className="container" style={{ textAlign: "center" }}>

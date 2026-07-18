@@ -88,12 +88,52 @@
   line-height: 1.7;
 }
 
+.spaceIntro {
+  max-width: 640px;
+  margin-bottom: var(--space-xl);
+}
+
+.spaceIntro p {
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+  line-height: 1.8;
+}
+
+.spaceGallery {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-lg);
+}
+
+.spacePhoto {
+  margin: 0;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  background: var(--bg-tertiary);
+}
+
+.spacePhotoImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s ease;
+}
+
+.spacePhoto:hover .spacePhotoImg {
+  transform: scale(1.03);
+}
+
 @media (min-width: 768px) {
   .heroTitle {
     font-size: var(--text-3xl);
   }
   .values {
     grid-template-columns: repeat(3, 1fr);
+  }
+  .spaceGallery {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
