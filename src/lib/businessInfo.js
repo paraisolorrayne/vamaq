@@ -9,8 +9,12 @@ export const BUSINESS = {
   tradeName: "Vamaq Motors",
   cnpj: "45.348.469/0001-54",
   representante: "Mateus Parreira Sousa",
-  phone: "(34) 98414-3315",
-  phoneE164: "+5534984143315",
+  // Plantão de vendas — celular, também usado no WhatsApp (ver src/lib/whatsapp.js)
+  phone: "(34) 99735-3315",
+  phoneE164: "+5534997353315",
+  // Telefone fixo
+  landline: "(34) 3046-4252",
+  landlineE164: "+553430464252",
   email: "contato@vamaqmotors.com.br",
   address: {
     street: "Av. Francisco Galassi",

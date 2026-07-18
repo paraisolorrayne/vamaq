@@ -99,7 +99,7 @@ export default function Footer() {
                 <InstagramIcon className={styles['footer__social-icon']} />
               </a>
               <a
-                href="https://youtube.com/@vamaqmotors"
+                href="https://www.youtube.com/@VamaqMotors"
                 className={styles['footer__social-link']}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -145,7 +145,7 @@ export default function Footer() {
               </div>
               <div className={styles['footer__contact-item']}>
                 <PhoneIcon className={styles['footer__contact-icon']} />
-                <span>{BUSINESS.phone}</span>
+                <span>Plantão de vendas: {BUSINESS.phone}<br />Fixo: {BUSINESS.landline}</span>
               </div>
               <div className={styles['footer__contact-item']}>
                 <MailIcon className={styles['footer__contact-icon']} />
