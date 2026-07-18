@@ -163,6 +163,82 @@ Nome:
 CPF:`;
 
 // ---------------------------------------------------------------------------
+// Checklist de pendências documentais e itens de entrega do veículo
+// ---------------------------------------------------------------------------
+// Declaração do vendedor/consignante no ato da entrega, comum aos dois
+// contratos. A PRIMEIRA opção de cada campo é sempre "A verificar": campo
+// intocado no formulário nunca declara falsamente que não há multa ou que um
+// item foi entregue — obriga o operador a confirmar cada linha.
+
+const ENTREGA_OPTS = ["A verificar", "Entregue", "Não entregue", "Não possui"];
+
+const CHECKLIST_ITENS = [
+  {
+    titulo: "SITUAÇÃO DOCUMENTAL E DE DÉBITOS",
+    itens: [
+      ["item_multas", "Multas ou autuações em aberto", ["A verificar", "Nada consta", "Consta pendência (ver observações)"]],
+      ["item_ipva", "IPVA", ["A verificar", "Quitado", "Em aberto", "Parcelado"]],
+      ["item_licenciamento", "Licenciamento", ["A verificar", "Em dia", "Vencido"]],
+      ["item_recall", "Recall pendente", ["A verificar", "Nada consta", "Consta pendência (ver observações)"]],
+    ],
+  },
+  {
+    titulo: "ITENS E ACESSÓRIOS ENTREGUES",
+    itens: [
+      ["item_manual", "Manual do proprietário", ENTREGA_OPTS],
+      ["item_chave_reserva", "Chave reserva (2ª chave)", ENTREGA_OPTS],
+      ["item_chave_roda", "Chave de roda e macaco", ENTREGA_OPTS],
+      ["item_estepe", "Estepe / pneu reserva", ENTREGA_OPTS],
+      ["item_triangulo", "Triângulo de sinalização", ENTREGA_OPTS],
+    ],
+  },
+];
+
+// Campos de formulário do checklist — idênticos nos dois contratos.
+const CHECKLIST_ITENS_FIELDS = [
+  ...CHECKLIST_ITENS.flatMap((g) =>
+    g.itens.map(([key, label, options]) => ({
+      key,
+      label,
+      type: "select",
+      options,
+      section: "Pendências e itens do veículo (checklist de entrega)",
+    }))
+  ),
+  {
+    key: "item_observacoes",
+    label: "Observações sobre pendências e itens",
+    type: "textarea",
+    section: "Pendências e itens do veículo (checklist de entrega)",
+    hint: "Detalhe multas/autuações, recall ou itens faltantes. Preencha sempre que marcar \"Consta pendência\", \"Em aberto\", \"Vencido\" ou \"Não entregue\".",
+  },
+];
+
+// Corpo do quadro: cabeçalhos de grupo (viram rótulo de seção no PDF) +
+// linhas "Rótulo: {{campo}}" (viram bloco chave-valor, como a ficha do veículo).
+function blocoChecklistItens() {
+  return CHECKLIST_ITENS.map(
+    (g) =>
+      `${g.titulo}\n\n` +
+      g.itens.map(([key, rotulo]) => `${rotulo}: {{${key}}}`).join("\n")
+  ).join("\n\n");
+}
+
+// Cláusula do checklist de entrega. `entregador`/`recebedor` são os papéis do
+// contrato; `responsabilidade` é a frase de fecho que amarra os débitos em
+// aberto à cláusula correspondente de cada contrato. Entra sempre — os
+// campos têm default "A verificar", então o quadro nunca fica em branco.
+function clausulaItensPendencias(values, { entregador, recebedor, responsabilidade }) {
+  const obs = filled(values, "item_observacoes")
+    ? "\n\nOBSERVAÇÕES\n\n{{item_observacoes}}"
+    : "";
+  return {
+    titulo: "DO ESTADO DOCUMENTAL E DOS ITENS DO VEÍCULO",
+    corpo: `O ${entregador} declara à ${recebedor}, para todos os fins, a situação documental e de débitos do veículo e relaciona os itens e acessórios entregues nesta data, conforme o quadro abaixo:\n\n${blocoChecklistItens()}${obs}\n\n${responsabilidade}`,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Contrato de Compra e Venda de Veículo
 // ---------------------------------------------------------------------------
 
@@ -265,6 +341,11 @@ function buildCompraVenda(values) {
       titulo: "DOS DÉBITOS E ENCARGOS",
       corpo: `Correm por conta do VENDEDOR ${temAnuente ? "e do PROPRIETÁRIO REGISTRAL " : ""}todos os tributos, multas, taxas e encargos (IPVA, licenciamento, infrações e demais débitos) referentes a fatos geradores ocorridos até a data da entrega do veículo. A partir da tradição, a responsabilidade por tais encargos transfere-se à COMPRADORA.`,
     },
+    clausulaItensPendencias(values, {
+      entregador: "VENDEDOR",
+      recebedor: "COMPRADORA",
+      responsabilidade: `Os tributos, multas e infrações declarados como em aberto, com fato gerador anterior à entrega, correm por conta do VENDEDOR, na forma da cláusula DOS DÉBITOS E ENCARGOS, e a COMPRADORA confirma o recebimento dos itens assinalados como "Entregue".`,
+    }),
     {
       titulo: "DA ENTREGA E DA POSSE",
       corpo: `A posse do veículo é transferida à COMPRADORA na data de assinatura deste instrumento, declarando esta tê-lo recebido e vistoriado, aceitando-o no estado em que se encontra.`,
@@ -417,6 +498,11 @@ function buildConsignacao(values) {
       titulo: "DAS MULTAS E INFRAÇÕES",
       corpo: `As infrações de trânsito cometidas no período em que o veículo estiver sob a posse da CONSIGNATÁRIA, bem como os danos causados a terceiros nesse período, são de responsabilidade exclusiva da CONSIGNATÁRIA, que se obriga a promover a indicação do condutor infrator na forma da legislação de trânsito e a reembolsar o CONSIGNANTE de qualquer valor que este venha a desembolsar em razão de tais fatos. As multas, os tributos e os demais débitos com fato gerador anterior à entrega do veículo à CONSIGNATÁRIA permanecem de responsabilidade do CONSIGNANTE.`,
     },
+    clausulaItensPendencias(values, {
+      entregador: "CONSIGNANTE",
+      recebedor: "CONSIGNATÁRIA",
+      responsabilidade: `Os tributos, multas e infrações declarados como em aberto, com fato gerador anterior à entrega, permanecem de responsabilidade do CONSIGNANTE, na forma das cláusulas DAS OBRIGAÇÕES DO CONSIGNANTE e DAS MULTAS E INFRAÇÕES, e os itens assinalados como "Entregue" deverão ser restituídos com o veículo em caso de devolução.`,
+    }),
     {
       titulo: "DA RESCISÃO",
       corpo: temTaxaRetirada
@@ -603,6 +689,7 @@ export const DEFAULT_TEMPLATES = [
       { key: "veiculo_combustivel", label: "Combustível", type: "text", section: "Veículo (dados do CRLV)" },
       { key: "veiculo_crv", label: "Nº do CRV", type: "text", section: "Veículo (dados do CRLV)" },
       { key: "veiculo_crv_codigo", label: "Código de Segurança do CRV", type: "text", section: "Veículo (dados do CRLV)" },
+      ...CHECKLIST_ITENS_FIELDS,
       {
         key: "valor_total",
         label: "Valor Total (R$)",
@@ -673,6 +760,7 @@ export const DEFAULT_TEMPLATES = [
         section: "Veículo (dados do CRLV)",
         hint: "Campo OBSERVAÇÕES DO VEÍCULO do CRLV (ex.: alienação fiduciária).",
       },
+      ...CHECKLIST_ITENS_FIELDS,
       {
         key: "alienacao_fiduciaria",
         label: "Veículo com alienação fiduciária?",
