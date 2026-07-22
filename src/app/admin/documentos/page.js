@@ -75,17 +75,21 @@ export default function DocumentosPage() {
     setValues((prev) => ({ ...prev, [key]: value }));
   }
 
-  function fillFromVehicle(vehicleId) {
+  // `prefix` escolhe qual ficha recebe os dados: veiculo (padrão) ou troca
+  // (veículo do estoque dado pela Vamaq como pagamento na compra e venda).
+  function fillFromVehicle(vehicleId, prefix = "veiculo") {
     const v = vehicles.find((veh) => veh.id === vehicleId);
     if (!v) return;
     setValues((prev) => ({
       ...prev,
-      veiculo_marca: v.brand || prev.veiculo_marca,
-      veiculo_modelo: v.model || prev.veiculo_modelo,
-      veiculo_ano: String(v.year) || prev.veiculo_ano,
-      veiculo_cor: v.color || prev.veiculo_cor,
-      veiculo_combustivel: v.fuel || prev.veiculo_combustivel,
-      veiculo_km: v.quilometragem ? v.quilometragem.toLocaleString("pt-BR") : prev.veiculo_km,
+      [`${prefix}_marca`]: v.brand || prev[`${prefix}_marca`],
+      [`${prefix}_modelo`]: v.model || prev[`${prefix}_modelo`],
+      [`${prefix}_ano`]: String(v.year) || prev[`${prefix}_ano`],
+      [`${prefix}_cor`]: v.color || prev[`${prefix}_cor`],
+      [`${prefix}_combustivel`]: v.fuel || prev[`${prefix}_combustivel`],
+      [`${prefix}_km`]: v.quilometragem
+        ? v.quilometragem.toLocaleString("pt-BR")
+        : prev[`${prefix}_km`],
     }));
   }
 
@@ -312,6 +316,23 @@ export default function DocumentosPage() {
                   </option>
                 ))}
               </select>
+              {selectedTemplate.fields.some((f) => f.key === "troca_marca") && (
+                <select
+                  className={styles.formSelect}
+                  onChange={(e) => fillFromVehicle(e.target.value, "troca")}
+                  defaultValue=""
+                  style={{ marginTop: 8 }}
+                >
+                  <option value="">
+                    Veículo dado na troca — selecione do estoque...
+                  </option>
+                  {vehicles.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.brand} {v.model} {v.year} — {v.color}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
           )}
 

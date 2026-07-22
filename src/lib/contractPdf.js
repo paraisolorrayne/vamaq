@@ -163,12 +163,23 @@ export async function buildContractDoc(preview, opts = {}) {
     const padBottom = 4.5;
     const titleGap = b.title ? 6.5 : 1;
     const lineH = 5.3;
-    const labelW = 24;
+
+    // Coluna de rótulos dimensionada pelo rótulo mais largo do bloco (com
+    // teto), para rótulos longos (ex.: checklist) não invadirem os valores.
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8.6);
+    const labelW = Math.min(
+      Math.max(
+        24,
+        ...b.items
+          .filter((it) => it.kind === "kv")
+          .map((it) => doc.getTextWidth(`${it.k}:`) + 3)
+      ),
+      60
+    );
     const valW = CONTENT_W - padX * 2 - labelW;
 
     // Pré-mede linhas (endereços podem quebrar), preservando a ordem
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8.6);
     const laid = b.items.map((it) => {
       if (it.kind === "kv") {
         return { kind: "kv", k: it.k, vlines: doc.splitTextToSize(it.v || "—", valW) };
@@ -229,10 +240,13 @@ export async function buildContractDoc(preview, opts = {}) {
     const nRows = Math.ceil(rows.length / cols);
 
     // A grade não é dividida entre páginas, então o rótulo só entra se ela
-    // couber inteira junto — evita rótulo órfão no fim da página.
-    flushHeading(9 + nRows * cellH + 4);
+    // couber inteira junto — evita rótulo órfão no fim da página. Um cabeçalho
+    // pendente (ex.: "VEÍCULO 1", "VEÍCULO DADO NA TROCA PELA COMPRADORA")
+    // vira o rótulo da grade, no lugar do genérico.
+    const label = pendingHeading || "DADOS DO VEÍCULO";
+    pendingHeading = null;
     ensure(9 + nRows * cellH + 4);
-    sectionLabel("DADOS DO VEÍCULO");
+    sectionLabel(label);
     const top = y;
 
     rows.forEach(([k, v], i) => {
