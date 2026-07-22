@@ -458,7 +458,7 @@ CPF: {{anuente_cpf}}
 ANUENTE · PROPRIETÁRIO REGISTRAL`
     : "";
 
-  return `CONTRATO DE COMPRA E VENDA DE VEÍCULO
+  return `CONTRATO DE COMPRA DE VEÍCULO
 
 Pelo presente instrumento particular de compra e venda, as partes:
 
@@ -995,7 +995,7 @@ const SECAO_DIFERENCA = "Diferença em dinheiro (volta ou saldo)";
 export const DEFAULT_TEMPLATES = [
   {
     id: "compra-venda",
-    name: "Contrato de Compra e Venda de Veículo",
+    name: "Contrato de Compra de Veículo",
     description:
       "A VAMAQ COMPRA um ou mais veículos do cliente — com troca (veículo do estoque dado como pagamento + volta), anuência opcional do proprietário registral e dados de pagamento",
     build: buildCompraVenda,
