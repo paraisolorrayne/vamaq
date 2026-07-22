@@ -316,7 +316,10 @@ export default function DocumentosPage() {
                   </option>
                 ))}
               </select>
-              {selectedTemplate.fields.some((f) => f.key === "troca_marca") && (
+              {/* Só na compra o veículo da troca sai do estoque (é o carro que a
+                  Vamaq dá como pagamento). Na venda, os veículos da troca são do
+                  cliente e vêm dos CRLVs dele. */}
+              {selectedTemplate.id === "compra-venda" && (
                 <select
                   className={styles.formSelect}
                   onChange={(e) => fillFromVehicle(e.target.value, "troca")}

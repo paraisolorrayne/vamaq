@@ -151,7 +151,9 @@ function clausulas(lista) {
     .join("\n\n");
 }
 
-const COMPRADORA_BLOCO = (papel) => `${papel}:
+// Bloco de identificação da Vamaq com o papel dela em cada contrato:
+// COMPRADORA (compra e venda), VENDEDORA (venda), CONSIGNATÁRIA (consignação).
+const VAMAQ_BLOCO = (papel) => `${papel}:
 Razão Social: ${BUSINESS.razaoSocial}
 Nome Fantasia: ${BUSINESS.tradeName}
 CNPJ: ${BUSINESS.cnpj}
@@ -234,11 +236,12 @@ function blocoChecklistItens() {
 }
 
 // Cláusula do checklist de entrega. `entregador`/`recebedor` são os papéis do
-// contrato; `responsabilidade` é a frase de fecho que amarra os débitos em
-// aberto à cláusula correspondente de cada contrato. Entra sempre — os
-// campos têm default "A verificar", então o quadro nunca fica em branco.
-// `plural` ajusta a redação quando mais de um veículo entra na negociação
-// (o quadro é único; distinções entre veículos vão nas observações).
+// contrato JÁ COM artigo/preposição ("O VENDEDOR", "à COMPRADORA"), para
+// acomodar gênero dos papéis; `responsabilidade` é a frase de fecho que amarra
+// os débitos em aberto à cláusula correspondente de cada contrato. Entra
+// sempre — os campos têm default "A verificar", então o quadro nunca fica em
+// branco. `plural` ajusta a redação quando mais de um veículo entra na
+// negociação (o quadro é único; distinções entre veículos vão nas observações).
 function clausulaItensPendencias(values, { entregador, recebedor, responsabilidade, plural = false }) {
   const obs = filled(values, "item_observacoes")
     ? "\n\nOBSERVAÇÕES\n\n{{item_observacoes}}"
@@ -248,7 +251,7 @@ function clausulaItensPendencias(values, { entregador, recebedor, responsabilida
     : "";
   return {
     titulo: `DO ESTADO DOCUMENTAL E DOS ITENS ${plural ? "DOS VEÍCULOS" : "DO VEÍCULO"}`,
-    corpo: `O ${entregador} declara à ${recebedor}, para todos os fins, a situação documental e de débitos ${plural ? "dos veículos" : "do veículo"} e relaciona os itens e acessórios entregues nesta data, conforme o quadro abaixo:\n\n${blocoChecklistItens()}${obs}${notaPlural}\n\n${responsabilidade}`,
+    corpo: `${entregador} declara ${recebedor}, para todos os fins, a situação documental e de débitos ${plural ? "dos veículos" : "do veículo"} e relaciona os itens e acessórios entregues nesta data, conforme o quadro abaixo:\n\n${blocoChecklistItens()}${obs}${notaPlural}\n\n${responsabilidade}`,
   };
 }
 
@@ -430,8 +433,8 @@ function buildCompraVenda(values) {
       corpo: `Correm por conta do VENDEDOR ${temAnuente ? "e do PROPRIETÁRIO REGISTRAL " : ""}todos os tributos, multas, taxas e encargos (IPVA, licenciamento, infrações e demais débitos) referentes a fatos geradores ocorridos até a data da entrega ${plural ? "de cada veículo" : "do veículo"}. A partir da tradição, a responsabilidade por tais encargos transfere-se à COMPRADORA.`,
     },
     clausulaItensPendencias(values, {
-      entregador: "VENDEDOR",
-      recebedor: "COMPRADORA",
+      entregador: "O VENDEDOR",
+      recebedor: "à COMPRADORA",
       plural,
       responsabilidade: `Os tributos, multas e infrações declarados como em aberto, com fato gerador anterior à entrega, correm por conta do VENDEDOR, na forma da cláusula DOS DÉBITOS E ENCARGOS, e a COMPRADORA confirma o recebimento dos itens assinalados como "Entregue".`,
     }),
@@ -461,7 +464,7 @@ Pelo presente instrumento particular de compra e venda, as partes:
 
 ${vendedor}
 
-${COMPRADORA_BLOCO("COMPRADORA")}
+${VAMAQ_BLOCO("COMPRADORA")}
 ${anuente ? `\n${anuente}\n` : ""}
 ${corpo}
 
@@ -474,6 +477,191 @@ CPF: {{vendedor_cpf}}
 VENDEDOR
 
 ${ASSINATURA_VAMAQ("COMPRADORA")}${assinaturaAnuente}
+
+${TESTEMUNHAS}`;
+}
+
+// ---------------------------------------------------------------------------
+// Contrato de Venda de Veículo (Vamaq vende ao cliente)
+// ---------------------------------------------------------------------------
+// Direção inversa da compra e venda: a Vamaq é a VENDEDORA do veículo (que
+// sai do estoque) e o COMPRADOR pode pagar com um ou mais veículos dados na
+// troca — inclusive registrados em nome de terceiros — mais volta (paga pela
+// Vamaq) ou saldo (pago pelo comprador).
+
+// Ficha de veículo recebido na troca: a ficha padrão + proprietário registral
+// quando o CRLV está em nome de terceiro (pessoa ou empresa). A linha do
+// proprietário fica separada da ficha por linha em branco de propósito: no
+// PDF ela vira um cartão próprio com quebra de linha, em vez de ser truncada
+// numa célula da grade do veículo.
+function blocoVeiculoTroca(values, prefix) {
+  const dono = filled(values, `${prefix}_proprietario`)
+    ? `\n\nProprietário registral: {{${prefix}_proprietario}}${filled(values, `${prefix}_proprietario_doc`) ? ` — CPF/CNPJ {{${prefix}_proprietario_doc}}` : ""}`
+    : "";
+  return blocoVeiculoCompra(values, prefix) + dono;
+}
+
+function buildVenda(values) {
+  const temAnuente = filled(values, "anuente_nome");
+  const temRepresentante = filled(values, "comprador_representante_nome");
+
+  const comprador = [
+    "COMPRADOR:",
+    "Nome / Razão Social: {{comprador_nome}}",
+    "CPF / CNPJ: {{comprador_cpf}}",
+    linhaCnh(values, "comprador_cnh", "comprador_cnh_categoria"),
+    temRepresentante
+      ? `Representante legal: {{comprador_representante_nome}}${filled(values, "comprador_representante_cpf") ? " — CPF {{comprador_representante_cpf}}" : ""}`
+      : null,
+    "Endereço: {{comprador_endereco}}",
+    filled(values, "comprador_telefone") ? "Telefone: {{comprador_telefone}}" : null,
+    filled(values, "comprador_email") ? "E-mail: {{comprador_email}}" : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const anuente = temAnuente
+    ? [
+        "ANUENTE (PROPRIETÁRIO REGISTRAL):",
+        "Nome: {{anuente_nome}}",
+        "CPF: {{anuente_cpf}}",
+        "Endereço: {{anuente_endereco}}",
+      ].join("\n")
+    : null;
+
+  // Veículos recebidos na troca (dados pelo comprador): até três, presentes
+  // quando marca, placa ou chassi forem preenchidos.
+  const trocas = ["troca", "troca2", "troca3"].filter(
+    (p) =>
+      filled(values, `${p}_marca`) ||
+      filled(values, `${p}_placa`) ||
+      filled(values, `${p}_chassi`)
+  );
+  const temTroca = trocas.length > 0;
+  const pluralTroca = trocas.length > 1;
+  const listaTroca = trocas
+    .map(
+      (p, i) =>
+        `${pluralTroca ? `VEÍCULO ${i + 1} RECEBIDO NA TROCA` : "VEÍCULO RECEBIDO NA TROCA"}\n${blocoVeiculoTroca(values, p)}`
+    )
+    .join("\n\n");
+  const entregaTroca = pluralTroca
+    ? `dos ${trocas.length} (${inteiroPorExtenso(trocas.length)}) veículos abaixo descritos, aceitos pelas partes pelos valores atribuídos de comum acordo indicados em suas fichas`
+    : "do veículo abaixo descrito, aceito pelas partes pelo valor atribuído de comum acordo indicado em sua ficha";
+
+  const valor = moedaComExtenso("valor_total", "valor_extenso", values);
+  const temDiferenca = filled(values, "venda_diferenca");
+  const compradorPagaSaldo = /^comprador/i.test((values.venda_diferenca_direcao || "").trim());
+  const diferencaValor = temDiferenca ? moedaAuto(values.venda_diferenca) : "R$ {{venda_diferenca}}";
+
+  // Volta paga a terceiro indicado pelo comprador (ex.: empresa dele).
+  const temFavorecidoVolta = filled(values, "volta_favorecido_nome");
+  const blocoFavorecidoVolta = [
+    "DADOS PARA PAGAMENTO DA VOLTA — FAVORECIDO:",
+    "Favorecido: {{volta_favorecido_nome}}",
+    "CPF / CNPJ: {{volta_favorecido_doc}}",
+    filled(values, "volta_favorecido_pix") ? "Chave PIX: {{volta_favorecido_pix}}" : null,
+    filled(values, "volta_favorecido_banco") ? "Banco: {{volta_favorecido_banco}}" : null,
+    filled(values, "volta_favorecido_agencia") ? "Agência: {{volta_favorecido_agencia}}" : null,
+    filled(values, "volta_favorecido_conta") ? "Conta: {{volta_favorecido_conta}}" : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  let pagamentoCorpo;
+  if (!temTroca) {
+    pagamentoCorpo = `O preço total e certo ajustado para a venda do veículo é de ${valor}, pago pelo COMPRADOR à vista, em parcela única, na data de assinatura deste instrumento, mediante transferência bancária ou PIX em favor da VENDEDORA, valendo o respectivo comprovante como recibo de pagamento e plena, geral e irrevogável quitação.`;
+  } else if (!temDiferenca) {
+    pagamentoCorpo = `O preço total e certo ajustado para a venda do veículo é de ${valor}, integralmente pago pelo COMPRADOR mediante a entrega à VENDEDORA, em dação em pagamento (troca), ${entregaTroca}, cuja soma corresponde à totalidade do preço:\n\n${listaTroca}\n\nCom a entrega ${pluralTroca ? "dos veículos dados" : "do veículo dado"} na troca, as partes dão-se mutuamente plena, geral e irrevogável quitação quanto ao preço.`;
+  } else if (compradorPagaSaldo) {
+    pagamentoCorpo = `O preço total e certo ajustado para a venda do veículo é de ${valor}, pago pelo COMPRADOR da seguinte forma:\n\na) Mediante a entrega à VENDEDORA, a título de parte do pagamento (dação em pagamento / troca), ${entregaTroca}:\n\n${listaTroca}\n\nb) Mediante o pagamento do saldo em dinheiro, no valor de ${diferencaValor}, à vista, em parcela única, na data de assinatura deste instrumento, mediante transferência bancária ou PIX em favor da VENDEDORA, valendo o respectivo comprovante como recibo de pagamento.\n\nCumpridas as obrigações das alíneas "a" e "b", a VENDEDORA dá ao COMPRADOR plena, geral e irrevogável quitação do preço.`;
+  } else {
+    const destinoVolta = temFavorecidoVolta
+      ? `, por expressa orientação e autorização do COMPRADOR, em favor de ${(values.volta_favorecido_nome || "").trim().toUpperCase()}, conforme dados abaixo, valendo o respectivo comprovante como recibo:\n\n${blocoFavorecidoVolta}`
+      : ` em favor do COMPRADOR, valendo o respectivo comprovante como recibo.`;
+    const recebimentoTroca = pluralTroca
+      ? `os ${trocas.length} (${inteiroPorExtenso(trocas.length)}) veículos abaixo descritos, entregues pelo COMPRADOR e aceitos pelas partes pelos valores atribuídos de comum acordo indicados em suas fichas`
+      : "o veículo abaixo descrito, entregue pelo COMPRADOR e aceito pelas partes pelo valor atribuído de comum acordo indicado em sua ficha";
+    const somaSupera = pluralTroca
+      ? "Como a soma dos valores atribuídos aos veículos recebidos na troca supera"
+      : "Como o valor atribuído ao veículo recebido na troca supera";
+    pagamentoCorpo = `O preço total e certo ajustado para a venda do veículo é de ${valor}, recebendo a VENDEDORA, em dação em pagamento (troca), ${recebimentoTroca}:\n\n${listaTroca}\n\n${somaSupera} o preço do veículo vendido, a VENDEDORA pagará ao COMPRADOR a diferença em dinheiro (volta), no valor de ${diferencaValor}, à vista, em parcela única, mediante transferência bancária ou PIX${destinoVolta}\n\nCumpridas essas obrigações, as partes dão-se mutuamente plena, geral e irrevogável quitação quanto ao preço.`;
+  }
+
+  const corpo = clausulas([
+    {
+      titulo: "DO OBJETO",
+      corpo: `A VENDEDORA vende ao COMPRADOR, em caráter irrevogável e irretratável${temAnuente ? ", com a anuência do PROPRIETÁRIO REGISTRAL" : ""}, o veículo automotor abaixo descrito, livre e desembaraçado de quaisquer ônus não declarados neste instrumento:\n\n${blocoVeiculoCompra(values, "veiculo")}`,
+    },
+    {
+      titulo: "DO PREÇO E DA FORMA DE PAGAMENTO",
+      corpo: pagamentoCorpo,
+    },
+    temAnuente && {
+      titulo: "DA ANUÊNCIA DO PROPRIETÁRIO REGISTRAL",
+      corpo: `O veículo objeto deste contrato encontra-se registrado, perante o órgão executivo de trânsito, em nome de ${(values.anuente_nome || "").trim().toUpperCase()}, CPF/CNPJ {{anuente_cpf}}, que comparece e assina este instrumento na qualidade de ANUENTE, declarando expressamente: a) concordar, de forma plena e irrevogável, com a venda do veículo ao COMPRADOR; b) autorizar que o preço seja recebido integralmente pela VENDEDORA, realizando com esta, em separado, os acertos que lhe couberem; c) firmar e entregar a documentação necessária à transferência da propriedade ao COMPRADOR ou a quem este vier a indicar.`,
+    },
+    temTroca && {
+      titulo: `${pluralTroca ? "DOS VEÍCULOS RECEBIDOS" : "DO VEÍCULO RECEBIDO"} NA TROCA`,
+      corpo: `O COMPRADOR declara que ${pluralTroca ? "os veículos dados na troca encontram-se livres e desembaraçados" : "o veículo dado na troca encontra-se livre e desembaraçado"} de quaisquer ônus não declarados neste instrumento, respondendo pela evicção. Obriga-se o COMPRADOR a entregar à VENDEDORA ${pluralTroca ? "os documentos de transferência (ATPV-e / CRV) de cada veículo dado na troca, devidamente preenchidos e com firma reconhecida" : "o documento de transferência (ATPV-e / CRV) do veículo dado na troca, devidamente preenchido e com firma reconhecida"} — inclusive quanto a veículo registrado em nome de terceiro, cuja documentação e anuência o COMPRADOR se obriga a providenciar —, em nome da VENDEDORA ou de terceiro por ela indicado, no prazo de 5 (cinco) dias úteis contados da assinatura deste instrumento. Os tributos, multas, taxas e encargos incidentes sobre ${pluralTroca ? "os veículos dados" : "o veículo dado"} na troca, referentes a fatos geradores ocorridos até a data da entrega, correm por conta do COMPRADOR. A VENDEDORA declara ter vistoriado ${pluralTroca ? "os veículos recebidos, aceitando-os no estado em que se encontram" : "o veículo recebido, aceitando-o no estado em que se encontra"}.`,
+    },
+    {
+      titulo: "DA TRANSFERÊNCIA E DA DOCUMENTAÇÃO",
+      corpo: `A VENDEDORA ${temAnuente ? "e o ANUENTE obrigam-se" : "obriga-se"} a entregar ao COMPRADOR o documento de transferência (ATPV-e / CRV) devidamente preenchido e com firma reconhecida, bem como toda a documentação necessária à regularização da propriedade em nome do COMPRADOR ou de terceiro por ele indicado, no prazo de 5 (cinco) dias úteis contados do pagamento integral do preço.`,
+    },
+    {
+      titulo: "DOS DÉBITOS E ENCARGOS",
+      corpo: `Correm por conta da VENDEDORA ${temAnuente ? "e do PROPRIETÁRIO REGISTRAL " : ""}todos os tributos, multas, taxas e encargos (IPVA, licenciamento, infrações e demais débitos) referentes a fatos geradores ocorridos até a data da entrega do veículo vendido. A partir da tradição, a responsabilidade por tais encargos transfere-se ao COMPRADOR.`,
+    },
+    clausulaItensPendencias(values, {
+      entregador: "A VENDEDORA",
+      recebedor: "ao COMPRADOR",
+      responsabilidade: `Os tributos, multas e infrações declarados como em aberto, com fato gerador anterior à entrega, correm por conta da VENDEDORA, na forma da cláusula DOS DÉBITOS E ENCARGOS, e o COMPRADOR confirma o recebimento dos itens assinalados como "Entregue".`,
+    }),
+    {
+      titulo: "DA ENTREGA, DA POSSE E DA GARANTIA",
+      corpo: `A posse do veículo vendido é transferida ao COMPRADOR na data de assinatura deste instrumento, declarando este tê-lo recebido e vistoriado, aceitando-o, na condição de veículo usado, no estado em que se encontra, sem prejuízo da garantia legal prevista no Código de Defesa do Consumidor.`,
+    },
+    clausulaPersonalizada(values),
+    {
+      titulo: "DO FORO",
+      corpo: `Fica eleito o foro da comarca de ${BUSINESS.address.city} - ${BUSINESS.address.state} para dirimir quaisquer dúvidas oriundas do presente contrato, com renúncia expressa a qualquer outro, por mais privilegiado que seja.`,
+    },
+  ]);
+
+  const assinaturaComprador = temRepresentante
+    ? `___________________________________________
+{{comprador_representante_nome}}
+{{comprador_nome}} · CPF/CNPJ: {{comprador_cpf}}
+COMPRADOR`
+    : `___________________________________________
+{{comprador_nome}}
+CPF/CNPJ: {{comprador_cpf}}
+COMPRADOR`;
+
+  const assinaturaAnuente = temAnuente
+    ? `\n\n___________________________________________
+{{anuente_nome}}
+CPF/CNPJ: {{anuente_cpf}}
+ANUENTE · PROPRIETÁRIO REGISTRAL`
+    : "";
+
+  return `CONTRATO DE VENDA DE VEÍCULO
+
+Pelo presente instrumento particular de compra e venda, as partes:
+
+${VAMAQ_BLOCO("VENDEDORA")}
+
+${comprador}
+${anuente ? `\n${anuente}\n` : ""}
+${corpo}
+
+${BUSINESS.address.city}, {{data_contrato}}.
+
+
+${ASSINATURA_VAMAQ("VENDEDORA")}
+
+${assinaturaComprador}${assinaturaAnuente}
 
 ${TESTEMUNHAS}`;
 }
@@ -590,8 +778,8 @@ function buildConsignacao(values) {
       corpo: `As infrações de trânsito cometidas no período em que o veículo estiver sob a posse da CONSIGNATÁRIA, bem como os danos causados a terceiros nesse período, são de responsabilidade exclusiva da CONSIGNATÁRIA, que se obriga a promover a indicação do condutor infrator na forma da legislação de trânsito e a reembolsar o CONSIGNANTE de qualquer valor que este venha a desembolsar em razão de tais fatos. As multas, os tributos e os demais débitos com fato gerador anterior à entrega do veículo à CONSIGNATÁRIA permanecem de responsabilidade do CONSIGNANTE.`,
     },
     clausulaItensPendencias(values, {
-      entregador: "CONSIGNANTE",
-      recebedor: "CONSIGNATÁRIA",
+      entregador: "O CONSIGNANTE",
+      recebedor: "à CONSIGNATÁRIA",
       responsabilidade: `Os tributos, multas e infrações declarados como em aberto, com fato gerador anterior à entrega, permanecem de responsabilidade do CONSIGNANTE, na forma das cláusulas DAS OBRIGAÇÕES DO CONSIGNANTE e DAS MULTAS E INFRAÇÕES, e os itens assinalados como "Entregue" deverão ser restituídos com o veículo em caso de devolução.`,
     }),
     {
@@ -620,7 +808,7 @@ Pelo presente instrumento particular de consignação, as partes:
 
 ${consignante}
 
-${COMPRADORA_BLOCO("CONSIGNATÁRIA")}
+${VAMAQ_BLOCO("CONSIGNATÁRIA")}
 ${anuente ? `\n${anuente}\n` : ""}
 Celebram o presente contrato de consignação, mediante as seguintes cláusulas:
 
@@ -702,7 +890,7 @@ Pelo presente termo, as partes abaixo identificadas formalizam a vistoria de ent
 
 ${consignante}
 
-${COMPRADORA_BLOCO("CONSIGNATÁRIA")}
+${VAMAQ_BLOCO("CONSIGNATÁRIA")}
 
 ${veiculo}
 
@@ -769,12 +957,47 @@ function veiculoCompraFields(prefix, section, hintMarca) {
 
 const SECAO_TROCA = "Troca — veículo dado pela Vamaq como pagamento (opcional)";
 
+// Campos de um veículo recebido na troca (contrato de venda): ficha completa
+// + valor atribuído + proprietário registral quando o CRLV é de terceiro.
+function veiculoTrocaFields(prefix, section, hintMarca) {
+  return [
+    { key: `${prefix}_marca`, label: "Marca", type: "text", section, ...(hintMarca ? { hint: hintMarca } : {}) },
+    { key: `${prefix}_modelo`, label: "Modelo / Versão", type: "text", section },
+    { key: `${prefix}_ano`, label: "Ano Fabricação / Modelo", type: "text", section },
+    { key: `${prefix}_cor`, label: "Cor", type: "text", section },
+    { key: `${prefix}_placa`, label: "Placa", type: "text", section },
+    { key: `${prefix}_chassi`, label: "Chassi", type: "text", section },
+    { key: `${prefix}_renavam`, label: "RENAVAM", type: "text", section },
+    { key: `${prefix}_km`, label: "Hodômetro (km)", type: "text", section },
+    { key: `${prefix}_combustivel`, label: "Combustível", type: "text", section },
+    { key: `${prefix}_crv`, label: "Nº do CRV", type: "text", section },
+    { key: `${prefix}_crv_codigo`, label: "Código de Segurança do CRV", type: "text", section },
+    {
+      key: `${prefix}_valor`,
+      label: "Valor atribuído (R$)",
+      type: "text",
+      section,
+      hint: "Valor pelo qual o veículo entra na negociação. Ex.: 165.000,00 — sai na ficha do veículo.",
+    },
+    {
+      key: `${prefix}_proprietario`,
+      label: "Proprietário registral (se terceiro)",
+      type: "text",
+      section,
+      hint: "Preencha se o CRLV estiver em nome de outra pessoa ou empresa (campo NOME do CRLV). O comprador se obriga a providenciar a documentação e a anuência desse terceiro.",
+    },
+    { key: `${prefix}_proprietario_doc`, label: "CPF/CNPJ do proprietário registral", type: "text", section },
+  ];
+}
+
+const SECAO_DIFERENCA = "Diferença em dinheiro (volta ou saldo)";
+
 export const DEFAULT_TEMPLATES = [
   {
     id: "compra-venda",
     name: "Contrato de Compra e Venda de Veículo",
     description:
-      "Compra de um ou mais veículos pela Vamaq, com troca (veículo dado como pagamento + volta), anuência opcional do proprietário registral e dados de pagamento",
+      "A VAMAQ COMPRA um ou mais veículos do cliente — com troca (veículo do estoque dado como pagamento + volta), anuência opcional do proprietário registral e dados de pagamento",
     build: buildCompraVenda,
     fields: [
       { key: "vendedor_nome", label: "Nome do Vendedor", type: "text", section: "Vendedor (dados da CNH)" },
@@ -863,6 +1086,106 @@ export const DEFAULT_TEMPLATES = [
       { key: "favorecido_banco", label: "Banco", type: "text", section: "Pagamento" },
       { key: "favorecido_agencia", label: "Agência", type: "text", section: "Pagamento" },
       { key: "favorecido_conta", label: "Conta Corrente", type: "text", section: "Pagamento" },
+      { key: "data_contrato", label: "Data do Contrato", type: "date", section: "Contrato" },
+      {
+        key: "clausulas_personalizadas",
+        label: "Cláusulas Personalizadas (opcional)",
+        type: "textarea",
+        section: "Contrato",
+        hint: "Condições específicas desta negociação. Entram ao final do contrato como cláusula DISPOSIÇÕES ESPECIAIS, antes do foro. Em branco, a cláusula não entra.",
+      },
+    ],
+  },
+  {
+    id: "venda",
+    name: "Contrato de Venda de Veículo",
+    description:
+      "A VAMAQ VENDE um veículo do estoque ao cliente — comprador pessoa física ou empresa, com um ou mais veículos recebidos na troca (inclusive de terceiros) e volta ou saldo em dinheiro",
+    build: buildVenda,
+    fields: [
+      {
+        key: "comprador_nome",
+        label: "Nome / Razão Social do Comprador",
+        type: "text",
+        section: "Comprador (dados da CNH ou CNPJ)",
+        hint: "Pessoa física (dados da CNH) ou empresa (razão social) que compra o veículo.",
+      },
+      { key: "comprador_cpf", label: "CPF / CNPJ do Comprador", type: "text", section: "Comprador (dados da CNH ou CNPJ)" },
+      { key: "comprador_cnh", label: "Nº de Registro da CNH", type: "text", section: "Comprador (dados da CNH ou CNPJ)" },
+      { key: "comprador_cnh_categoria", label: "Categoria da CNH", type: "text", section: "Comprador (dados da CNH ou CNPJ)" },
+      {
+        key: "comprador_representante_nome",
+        label: "Representante Legal (se empresa)",
+        type: "text",
+        section: "Comprador (dados da CNH ou CNPJ)",
+        hint: "Preencha quando o comprador for empresa — quem assina por ela. Em branco, o comprador assina em nome próprio.",
+      },
+      { key: "comprador_representante_cpf", label: "CPF do Representante", type: "text", section: "Comprador (dados da CNH ou CNPJ)" },
+      { key: "comprador_endereco", label: "Endereço do Comprador", type: "text", section: "Comprador (dados da CNH ou CNPJ)" },
+      { key: "comprador_telefone", label: "Telefone do Comprador", type: "text", section: "Comprador (dados da CNH ou CNPJ)" },
+      { key: "comprador_email", label: "E-mail do Comprador", type: "text", section: "Comprador (dados da CNH ou CNPJ)" },
+      {
+        key: "anuente_nome",
+        label: "Nome do Anuente",
+        type: "text",
+        section: "Anuente — proprietário registral do veículo vendido (opcional)",
+        hint: "Preencha somente se o veículo vendido estiver registrado em nome de outra pessoa (ex.: veículo em consignação). Em branco, o contrato sai sem anuente.",
+      },
+      { key: "anuente_cpf", label: "CPF/CNPJ do Anuente", type: "text", section: "Anuente — proprietário registral do veículo vendido (opcional)" },
+      { key: "anuente_endereco", label: "Endereço do Anuente", type: "text", section: "Anuente — proprietário registral do veículo vendido (opcional)" },
+      ...veiculoCompraFields("veiculo", "Veículo vendido (dados do CRLV)").filter(
+        (f) => f.key !== "veiculo_valor"
+      ),
+      ...CHECKLIST_ITENS_FIELDS,
+      ...veiculoTrocaFields(
+        "troca",
+        "Troca — veículo 1 recebido do comprador (opcional)",
+        "Preencha quando o comprador der um ou mais veículos como parte do pagamento. Em branco, a venda sai somente em dinheiro."
+      ),
+      ...veiculoTrocaFields(
+        "troca2",
+        "Troca — veículo 2 recebido do comprador (opcional)",
+        "Preencha somente se o comprador der um segundo veículo na troca."
+      ),
+      ...veiculoTrocaFields(
+        "troca3",
+        "Troca — veículo 3 recebido do comprador (opcional)",
+        "Preencha somente se o comprador der um terceiro veículo na troca."
+      ),
+      {
+        key: "venda_diferenca",
+        label: "Diferença em dinheiro (R$)",
+        type: "text",
+        section: SECAO_DIFERENCA,
+        hint: "Ex.: 70.000,00 — volta paga pela Vamaq quando os veículos da troca valem mais que o vendido, ou saldo pago pelo comprador no caso inverso. Em branco, a troca quita o preço integralmente.",
+      },
+      {
+        key: "venda_diferenca_direcao",
+        label: "Quem paga a diferença?",
+        type: "select",
+        options: ["VENDEDORA (Vamaq) paga a volta ao comprador", "COMPRADOR paga o saldo à Vamaq"],
+        section: SECAO_DIFERENCA,
+      },
+      {
+        key: "volta_favorecido_nome",
+        label: "Favorecido da Volta (opcional)",
+        type: "text",
+        section: SECAO_DIFERENCA,
+        hint: "Preencha para pagar a volta a terceiro indicado pelo comprador (ex.: a empresa dele). Em branco, a volta sai em favor do próprio comprador.",
+      },
+      { key: "volta_favorecido_doc", label: "CPF/CNPJ do Favorecido", type: "text", section: SECAO_DIFERENCA },
+      { key: "volta_favorecido_pix", label: "Chave PIX do Favorecido", type: "text", section: SECAO_DIFERENCA },
+      { key: "volta_favorecido_banco", label: "Banco", type: "text", section: SECAO_DIFERENCA },
+      { key: "volta_favorecido_agencia", label: "Agência", type: "text", section: SECAO_DIFERENCA },
+      { key: "volta_favorecido_conta", label: "Conta", type: "text", section: SECAO_DIFERENCA },
+      {
+        key: "valor_total",
+        label: "Preço do Veículo Vendido (R$)",
+        type: "text",
+        section: "Preço",
+        hint: "Ex.: 230.000,00 — havendo troca, deve fechar com a soma dos veículos recebidos menos a volta (ou mais o saldo). O extenso é gerado automaticamente se o campo abaixo ficar vazio.",
+      },
+      { key: "valor_extenso", label: "Preço por Extenso (opcional)", type: "text", section: "Preço" },
       { key: "data_contrato", label: "Data do Contrato", type: "date", section: "Contrato" },
       {
         key: "clausulas_personalizadas",
