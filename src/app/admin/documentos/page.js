@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import styles from "../admin.module.css";
 import { DEFAULT_TEMPLATES } from "@/lib/contractTemplates";
 import { generateContractPdf, buildContractDoc } from "@/lib/contractPdf";
@@ -130,11 +131,25 @@ export default function DocumentosPage() {
 
   return (
     <>
-      <div className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>Documentos</h1>
-        <p className={styles.pageSubtitle}>
-          Gere contratos e documentos a partir de modelos prontos
-        </p>
+      <div
+        className={styles.pageHeader}
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          gap: 12,
+        }}
+      >
+        <div>
+          <h1 className={styles.pageTitle}>Documentos</h1>
+          <p className={styles.pageSubtitle}>
+            Gere contratos e documentos a partir de modelos prontos
+          </p>
+        </div>
+        <Link href="/admin/documentos/guia" className={styles.btnSecondary}>
+          📖 Como usar
+        </Link>
       </div>
 
       {!selectedTemplate ? (

@@ -1,0 +1,270 @@
+/* Guia de uso do gerador de documentos — segue o visual do painel admin
+   (cards brancos, laranja #FF6A00, títulos em Rajdhani). */
+
+.wrap {
+  max-width: 860px;
+}
+
+.sectionTitle {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #0a0a14;
+  margin: 40px 0 12px;
+  font-family: var(--font-heading, "Rajdhani", "Inter", sans-serif);
+  letter-spacing: 0.02em;
+}
+
+.lead {
+  font-size: 0.95rem;
+  color: #444;
+  max-width: 68ch;
+  margin-bottom: 8px;
+}
+
+/* Cards de "qual modelo usar" */
+.modelGrid {
+  display: grid;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.modelCard {
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-left: 4px solid #ff6a00;
+  border-radius: 12px;
+  padding: 18px 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+.modelName {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0a0a14;
+  margin-bottom: 2px;
+}
+
+.modelDescription {
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 10px;
+}
+
+.modelWhen {
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.modelWhen strong {
+  color: #0a0a14;
+}
+
+.whenLabel {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #ff6a00;
+  margin-bottom: 4px;
+}
+
+/* Passos numerados */
+.step {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: 16px;
+  margin: 26px 0;
+}
+
+.stepNumber {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #ff6a00;
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.05rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-heading, "Rajdhani", "Inter", sans-serif);
+}
+
+.stepBody {
+  min-width: 0;
+}
+
+.stepTitle {
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: #0a0a14;
+  margin: 8px 0 6px;
+}
+
+.stepBody p {
+  font-size: 0.92rem;
+  color: #333;
+  margin: 8px 0;
+  max-width: 68ch;
+}
+
+.stepBody ul {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.stepBody li {
+  font-size: 0.92rem;
+  color: #333;
+  margin: 6px 0;
+  list-style: disc;
+  max-width: 64ch;
+}
+
+/* Caixas de destaque */
+.warning {
+  background: #fff7e8;
+  border: 1px solid #e8b84b;
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin: 14px 0;
+}
+
+.danger {
+  background: #fdf0ee;
+  border: 1px solid #d9776c;
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin: 14px 0;
+}
+
+.tip {
+  background: #eef6f0;
+  border: 1px solid #7cb08e;
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin: 14px 0;
+}
+
+.boxLabel {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 6px;
+}
+
+.warning .boxLabel {
+  color: #a8752e;
+}
+
+.danger .boxLabel {
+  color: #b3392c;
+}
+
+.tip .boxLabel {
+  color: #2e7d4f;
+}
+
+.warning p,
+.danger p,
+.tip p {
+  font-size: 0.9rem;
+  color: #333;
+  margin: 6px 0 0;
+  max-width: 68ch;
+}
+
+/* Conta da troca */
+.math {
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin: 12px 0;
+  max-width: 420px;
+  font-variant-numeric: tabular-nums;
+}
+
+.math div {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 3px 0;
+  font-size: 0.92rem;
+  color: #333;
+}
+
+.mathTotal {
+  border-top: 2px solid #0a0a14;
+  margin-top: 6px;
+  padding-top: 8px !important;
+  font-weight: 700;
+  color: #0a0a14 !important;
+}
+
+/* Checklist de conferência */
+.checklist {
+  margin: 12px 0;
+  padding: 0;
+}
+
+.checklist li {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f0f0f2;
+  font-size: 0.92rem;
+  color: #333;
+  list-style: none;
+}
+
+.checklist li:last-child {
+  border-bottom: none;
+}
+
+.checkbox {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #ff6a00;
+  border-radius: 4px;
+  margin-top: 2px;
+}
+
+/* Citações de elementos da tela */
+.uiField {
+  display: inline-block;
+  border: 1px solid #d0d0d0;
+  background: #f7f7f8;
+  padding: 0 8px;
+  border-radius: 6px;
+  font-size: 0.88em;
+  white-space: nowrap;
+}
+
+.uiButton {
+  display: inline-block;
+  background: #ff6a00;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.82em;
+  padding: 1px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .step {
+    grid-template-columns: 32px 1fr;
+    gap: 12px;
+  }
+
+  .stepNumber {
+    width: 32px;
+    height: 32px;
+    font-size: 0.95rem;
+  }
+}
