@@ -28,6 +28,10 @@ export default function DocumentosPage() {
   const [vehicles, setVehicles] = useState([]);
   const [generating, setGenerating] = useState(false);
   const [preview, setPreview] = useState(null);
+  // Rascunhos de uso único vindos de /api/admin/prefill: abrem o modelo já
+  // preenchido e são apagados do servidor quando o PDF é baixado.
+  const [prefills, setPrefills] = useState([]);
+  const [activePrefillId, setActivePrefillId] = useState(null);
   const [pdfUrl, setPdfUrl] = useState(null);
   const [viewMode, setViewMode] = useState("pdf"); // "pdf" | "texto"
 
@@ -60,17 +64,35 @@ export default function DocumentosPage() {
       .then((r) => r.json())
       .then(setVehicles)
       .catch(() => {});
+    fetch("/api/admin/prefill")
+      .then((r) => r.json())
+      .then((data) => setPrefills(data.prefills || []))
+      .catch(() => {});
   }, []);
 
   const selectTemplate = useCallback((template) => {
     setSelectedTemplate(template);
     setPreview(null);
+    setActivePrefillId(null);
     const initial = {};
     template.fields.forEach((f) => {
       initial[f.key] = f.type === "select" ? f.options?.[0] || "" : "";
     });
     setValues(initial);
   }, []);
+
+  function openPrefill(prefill) {
+    const template = templates.find((t) => t.id === prefill.templateId);
+    if (!template) return;
+    const initial = {};
+    template.fields.forEach((f) => {
+      initial[f.key] = f.type === "select" ? f.options?.[0] || "" : "";
+    });
+    setSelectedTemplate(template);
+    setPreview(null);
+    setValues({ ...initial, ...prefill.values });
+    setActivePrefillId(prefill.id);
+  }
 
   function handleFieldChange(key, value) {
     setValues((prev) => ({ ...prev, [key]: value }));
@@ -126,6 +148,16 @@ export default function DocumentosPage() {
       await generateContractPdf(preview);
     } catch (err) {
       alert("Erro ao gerar PDF: " + err.message);
+      return;
+    }
+    // Rascunho de uso único: baixou o PDF, o rascunho sai da edição.
+    if (activePrefillId) {
+      const id = activePrefillId;
+      setActivePrefillId(null);
+      setPrefills((prev) => prev.filter((p) => p.id !== id));
+      fetch(`/api/admin/prefill?id=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      }).catch(() => {});
     }
   }
 
@@ -154,6 +186,51 @@ export default function DocumentosPage() {
 
       {!selectedTemplate ? (
         <div>
+          {prefills.map((p) => (
+            <div
+              key={p.id}
+              className={styles.card}
+              style={{
+                borderLeft: "4px solid #FF6A00",
+                marginBottom: 20,
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 12,
+              }}
+            >
+              <div style={{ minWidth: 240, flex: 1 }}>
+                <div
+                  style={{
+                    fontSize: "0.7rem",
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                    color: "#FF6A00",
+                    marginBottom: 4,
+                  }}
+                >
+                  Contrato pronto para edição · uso único
+                </div>
+                <div style={{ fontSize: "1rem", fontWeight: 600 }}>
+                  {p.label || "Contrato pré-preenchido"}
+                </div>
+                {p.note && (
+                  <p style={{ fontSize: "0.85rem", color: "#666", marginTop: 4 }}>
+                    {p.note}
+                  </p>
+                )}
+                <p style={{ fontSize: "0.8rem", color: "#888", marginTop: 4 }}>
+                  Depois de clicar em &quot;Baixar PDF&quot;, este rascunho é
+                  removido daqui automaticamente.
+                </p>
+              </div>
+              <button onClick={() => openPrefill(p)} className={styles.btnPrimary}>
+                Abrir para edição
+              </button>
+            </div>
+          ))}
           <h2 style={{ fontSize: "1.1rem", fontWeight: 600, marginBottom: 16 }}>
             Selecione um Modelo
           </h2>

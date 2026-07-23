@@ -50,3 +50,6 @@ supabase/.env
 
 # uploads de fotos de veículos (dados de runtime, não versionados)
 /public/images/vehicles/
+
+# rascunhos de contrato de uso único (contêm dados pessoais — ficam só no servidor)
+/data/
