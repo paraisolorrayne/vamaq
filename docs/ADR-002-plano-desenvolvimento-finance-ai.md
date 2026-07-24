@@ -8,6 +8,23 @@ Tailwind escopado ao `/admin`), registrada fora dos ADRs.
 
 ---
 
+## 0. Verificado na VPS (recon de 2026-07-24)
+
+Levantamento read-only via SSH (`root@185.197.194.18`, app pm2 `vamaq`). Confirma os riscos do §8
+como **reais e vivos em produção**:
+
+| Fato | Valor | Implicação |
+|---|---|---|
+| Hardware | 4 vCPU · 7,9 GB RAM (6,6 GB livre) · disco 63 GB livre (14% uso) | Folga p/ o `vamaq-jobs` (D5); pouca folga de CPU sob upload concorrente (R1/R5) |
+| Postgres | 14.23, local (`127.0.0.1:5432`), db `vamaq`, roles `postgres`(super) + `vamaq`(comum). Só schema `public` | PR-C cria `vamaq_fin` + schema `fin`; base pronta |
+| Estoque | 23 veículos, 14 publicados; **497 fotos = 100 MB** em `public/images/vehicles/`, fora do git | R4 confirmado: acervo de fotos existe **só** no disco da VPS |
+| **Auth do /admin** | nginx **sem `auth_basic`**; `location /` → `proxy_pass :3000` direto. `/admin` e `/api/admin/*` **abertos na internet** | **R3 confirmado e crítico** — PR-B é urgente por si só |
+| **Backup** | **nenhum** — sem crontab root, sem `pg_dump`/`rsync` agendado, nenhum dump no disco | **R2/R4 confirmados** — PR-A é o primeiro passo, sem exceção |
+| Runtime | Node 20.20.2 · pm2 7.0.1 · app `vamaq` com 29 restarts | — |
+| R1 (event loop) | Benchmark local: os laços por pixel de `refineEdges` **travam o event loop** (0,12 s de freeze num Mac; pior caso ~0,14 s só nessa etapa). Custo dominante é a inferência ONNX de `removeBackground` (segundos em CPU), **não medida** — precisa de janela controlada na VPS | Mecanismo de R1 **confirmado**; magnitude sob a VPS de 4 vCPU pendente de medição com upload real |
+
+---
+
 ## 1. Contexto
 
 O que os três ADRs anteriores estabeleceram: o Finance AI (`chat-finances-ai`) é um SaaS financeiro
@@ -363,9 +380,9 @@ Trilha 2 acrescenta ~13–15. É estimativa de esforço, não cronograma.
 
 | # | Ação | Dono | Status |
 |---|---|---|---|
-| 1 | Rebase de `feat/integracao-finance-ai-crm` sobre a `main` (11 commits) | Claude Code | pendente |
-| 2 | Verificar na VPS: `nproc`, `free -m`, se há basic auth no nginx à frente do `/admin`, se existe algum backup hoje | Claude Code | pendente |
-| 3 | Medir R1 (latência do site durante upload com remoção de fundo) | Claude Code | pendente |
+| 1 | Rebase de `feat/integracao-finance-ai-crm` sobre a `main` (11 commits) | Claude Code | ✅ feito |
+| 2 | Verificar na VPS: `nproc`, `free -m`, basic auth no nginx, backup existente | Claude Code | ✅ feito — ver §0 (sem auth, sem backup) |
+| 3 | Medir R1 (latência do site durante upload com remoção de fundo) | Claude Code | ⏳ mecanismo confirmado (§0); magnitude na VPS pede janela controlada |
 | 4 | Validar §2 (D1–D6), §4 (contrato do core) e §6 (recorte) | Lorrayne | **decisão pendente** |
 | 5 | Responder §9-5 (provedor de IA) — destrava a Trilha 2 | Lorrayne | pendente |
 | 6 | Levar §9-1/2 ao contador da Vamaq | Lorrayne | pendente |
