@@ -286,13 +286,24 @@ Padrão Next 16 (validado em `node_modules/next/dist/docs/01-app/02-guides/authe
 
 Confirma 001a §6 e aperta: **~12 telas**, não ~50.
 
-**Entra:** lançamentos · plano de contas · centros de custo · contas bancárias · contatos ·
-dashboard · DRE · relatórios · **ficha financeira do veículo (margem por carro)** · contas a pagar
-com alçada · fechamento mensal · orçamento · CFO Digital · classificação por IA · motor
-`agent_actions` (aprovação humana).
+> **Decisão 2026-07-24 (Lorrayne): a IA fica desativada por enquanto.** Todo o valor da
+> concessionária — lançamentos, DRE, relatórios e **margem por veículo** — não depende de IA. A
+> Trilha 2 inteira (§7) sai do escopo ativo até haver decisão de ligar; nenhum PR do núcleo
+> (A→6) tem dependência de provedor de IA, então a §9-5 deixa de ser bloqueante. Consequência
+> concreta no núcleo: **PR-7 (classificação por IA) não entra** e, no form de lançamento, a
+> conta/centro de custo é escolha manual (o campo já é obrigatório só no client — 001c §1). O
+> motor `agent_actions` fica na Trilha 2, pois seus produtores (anomalias, cobrança) são de IA.
 
-**Condicional a decisão de negócio:** OCR de comprovante · WhatsApp (Avisa) · fiscal NFS-e/NF-e ·
-conciliação bancária (Pluggy ou import de extrato) · Asaas.
+**Entra (núcleo, sem IA):** lançamentos (classificação manual) · plano de contas · centros de
+custo · contas bancárias · contatos · dashboard · DRE · relatórios · **ficha financeira do veículo
+(margem por carro)** · contas a pagar com alçada · fechamento mensal · orçamento.
+
+**Adiado — Trilha 2 (IA), desativado por decisão:** classificação por IA · CFO Digital · resumo
+executivo · forecast · OCR de comprovante · motor `agent_actions` + agentes de anomalia/cobrança ·
+WhatsApp (Avisa). Retomável a qualquer momento sem tocar no núcleo.
+
+**Condicional a decisão de negócio:** fiscal NFS-e/NF-e · conciliação bancária (Pluggy ou import
+de extrato) · Asaas.
 
 **Fora:** universo PF (14 tabelas `personal_*`, `owner_transactions`) · multi-CNPJ e consolidação
 de grupo · API pública v1 · Banco Inter · Belvo · Evolution API. Mantém-se `company_id` no schema
@@ -322,9 +333,12 @@ Substitui a tabela de §6 do ADR-001c. Cada PR compila, roda e é validável soz
 | **3** | UI de Lançamentos (lista paginada 25 + busca, form, edição) em `/admin/financeiro/lancamentos` — RSC + Server Actions + **kit de UI interno** em CSS Modules (~12 componentes sobre `variables.css`) | 2 | baixo | ~3–4 dias |
 | **4** | Dashboard + DRE + Relatórios (fórmulas 001c §1, score determinístico) | 2 | baixo | ~4 dias |
 | **5** | **Ficha financeira do veículo**: lançamentos vinculados a `vehicle_id`, custo total, margem por carro, atalho a partir de `/admin/estoque`. *Aqui o financeiro paga o core business* | 3,4 | médio (lê estoque; nunca escreve) | ~2–3 dias |
-| **6** | Contas a pagar com alçada **server-side** (correção #1) + fechamento mensal (checklist + classificação em lote) | 3 | baixo | ~3 dias |
+| **6** | Contas a pagar com alçada **server-side** (correção #1) + fechamento mensal (checklist + classificação **manual** em lote — sem IA) | 3 | baixo | ~3 dias |
 
-### Trilha 2 — Inteligência (só depois do núcleo em uso real)
+### Trilha 2 — Inteligência ⏸️ **desativada por decisão (2026-07-24, §6)**
+
+Nada aqui está no escopo ativo. Fica documentado para retomada futura; nenhum PR do núcleo (A→6)
+depende desta trilha, e o provedor de IA (§9-5) só volta a ser questão quando ela for reativada.
 
 | PR | Escopo | Depende | Observação |
 |---|---|---|---|
@@ -341,8 +355,9 @@ Substitui a tabela de §6 do ADR-001c. Cada PR compila, roda e é validável soz
 | **12** | Fiscal: worker JS isolado + emissão + gaps 001c §4 (cifrar certificado, persistir XML, idempotência, cancelamento) | Resposta do contador: NF-e de venda? NFS-e de comissão? nenhuma? |
 | **13** | Conciliação bancária + tela de pendências | Banco da Vamaq definido; Pluggy vs import manual |
 
-**Caminho mínimo até valor real (A → 6):** ordem de grandeza de **20–25 dias de desenvolvimento**.
-Trilha 2 acrescenta ~13–15. É estimativa de esforço, não cronograma.
+**Caminho mínimo até valor real (A → 6):** ordem de grandeza de **20–25 dias de desenvolvimento** —
+e, com a IA fora, é também o **escopo entregável completo** por enquanto. A Trilha 2 (~13–15 dias)
+está adiada por decisão. É estimativa de esforço, não cronograma.
 
 ---
 
@@ -370,7 +385,8 @@ Trilha 2 acrescenta ~13–15. É estimativa de esforço, não cronograma.
    consignação, ambas, nenhuma? *(define PR-12 e R10)*
 3. Asaas: usa/quer? *(define agent-collections)*
 4. Conciliação: qual banco? Pluggy ou import manual de extrato? *(define PR-13)*
-5. Provedor de IA: Gemini direto ou Anthropic? *(bloqueia PR-7)*
+5. ~~Provedor de IA: Gemini direto ou Anthropic?~~ **Resolvido (2026-07-24): IA desativada por
+   enquanto (§6).** Volta a ser questão só quando a Trilha 2 for reativada.
 6. WhatsApp → lançamento por foto de comprovante é requisito? *(é construção nova)*
 7. Quem são os usuários do admin e com que papel? *(entra no PR-B)*
 
@@ -384,7 +400,8 @@ Trilha 2 acrescenta ~13–15. É estimativa de esforço, não cronograma.
 | 2 | Verificar na VPS: `nproc`, `free -m`, basic auth no nginx, backup existente | Claude Code | ✅ feito — ver §0 (sem auth, sem backup) |
 | 3 | Medir R1 (latência do site durante upload com remoção de fundo) | Claude Code | ⏳ mecanismo confirmado (§0); magnitude na VPS pede janela controlada |
 | 4 | Validar §2 (D1–D6), §4 (contrato do core) e §6 (recorte) | Lorrayne | **decisão pendente** |
-| 5 | Responder §9-5 (provedor de IA) — destrava a Trilha 2 | Lorrayne | pendente |
+| 5 | ~~Responder §9-5 (provedor de IA)~~ — **resolvido: IA desativada (§6)** | Lorrayne | ✅ decidido |
+| 5b | Escolher destino de backup externo (Backblaze B2 / Wasabi / outra VPS / Drive) — destrava o PR-A | Lorrayne | **pendente** |
 | 6 | Levar §9-1/2 ao contador da Vamaq | Lorrayne | pendente |
 | 7 | Executar PR-A → PR-B → PR-C | Claude Code | após ação 4 |
 | 8 | ADR-001b (CRM) segue pendente do export; este ADR não depende dele, mas o filtro público do §4.4-13 sim | Lorrayne | pendente |
