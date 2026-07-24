@@ -320,7 +320,7 @@ Substitui a tabela de §6 do ADR-001c. Cada PR compila, roda e é validável soz
 
 | PR | Escopo | Depende | Risco ao core | Ordem de grandeza |
 |---|---|---|---|---|
-| **A** | `pg_dump` diário + `rsync` de `public/images/vehicles/` para fora da VPS; **restore ensaiado** uma vez, documentado em `docs/RUNBOOK-BACKUP.md`. Sem isso, nenhuma migration roda em produção | — | nenhum | ~0,5 dia |
+| **A** ✅ | `pg_dump` diário (03:15) + `tar` de `public/images/vehicles/` em `/var/backups/vamaq` (14 dias); **restore ensaiado** (23 veículos conferidos num db de teste); runbook em [`docs/RUNBOOK-BACKUP.md`](./RUNBOOK-BACKUP.md), script em `scripts/backup-vamaq.sh`. **Feito 2026-07-24.** Ressalva: guarda na própria VPS (decisão da Lorrayne) — falta o envio externo p/ cobrir perda de disco | — | nenhum | — |
 | **B** | Auth do `/admin`: `users`/`sessions`, login, `src/proxy.js` (matcher só `/admin*` e `/api/admin*`), DAL com `verifySession()`, papéis. Fecha o buraco de escrita aberta | A | **alto** (mexe no acesso ao admin) — smoke test §5.4 obrigatório | ~2–3 dias |
 | **C** | Contrato do estoque: `status` aditivo (§4.4-12), `setVehicleStatus`, "Excluir"→"Desativar", role `vamaq_fin` + `DATABASE_URL_FIN`, view `fin.v_vehicles`, **primeiro teste automatizado do repo** = smoke test §5.4 | B | médio | ~1,5–2 dias |
 
@@ -401,7 +401,7 @@ está adiada por decisão. É estimativa de esforço, não cronograma.
 | 3 | Medir R1 (latência do site durante upload com remoção de fundo) | Claude Code | ⏳ mecanismo confirmado (§0); magnitude na VPS pede janela controlada |
 | 4 | Validar §2 (D1–D6), §4 (contrato do core) e §6 (recorte) | Lorrayne | **decisão pendente** |
 | 5 | ~~Responder §9-5 (provedor de IA)~~ — **resolvido: IA desativada (§6)** | Lorrayne | ✅ decidido |
-| 5b | Escolher destino de backup externo (Backblaze B2 / Wasabi / outra VPS / Drive) — destrava o PR-A | Lorrayne | **pendente** |
+| 5b | Backup: **feito na VPS** (PR-A, §0/RUNBOOK). Falta decidir se/quando somar envio externo (Backblaze B2 etc.) contra perda de disco | Lorrayne | opcional |
 | 6 | Levar §9-1/2 ao contador da Vamaq | Lorrayne | pendente |
 | 7 | Executar PR-A → PR-B → PR-C | Claude Code | após ação 4 |
 | 8 | ADR-001b (CRM) segue pendente do export; este ADR não depende dele, mas o filtro público do §4.4-13 sim | Lorrayne | pendente |
