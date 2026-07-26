@@ -321,7 +321,7 @@ Substitui a tabela de §6 do ADR-001c. Cada PR compila, roda e é validável soz
 | PR | Escopo | Depende | Risco ao core | Ordem de grandeza |
 |---|---|---|---|---|
 | **A** ✅ | `pg_dump` diário (03:15) + `tar` de `public/images/vehicles/` em `/var/backups/vamaq` (14 dias); **restore ensaiado** (23 veículos conferidos num db de teste); runbook em [`docs/RUNBOOK-BACKUP.md`](./RUNBOOK-BACKUP.md), script em `scripts/backup-vamaq.sh`. **Feito 2026-07-24.** Ressalva: guarda na própria VPS (decisão da Lorrayne) — falta o envio externo p/ cobrir perda de disco | — | nenhum | — |
-| **B** | Auth do `/admin`: `users`/`sessions`, login, `src/proxy.js` (matcher só `/admin*` e `/api/admin*`), DAL com `verifySession()`, papéis. Fecha o buraco de escrita aberta | A | **alto** (mexe no acesso ao admin) — smoke test §5.4 obrigatório | ~2–3 dias |
+| **B** ✅ | Auth do `/admin`: `db/auth-schema.sql` (`users`/`sessions`), login em `/login` (Server Action + scrypt), `src/proxy.js` (matcher `/admin*` e `/api/admin*`), DAL (`verifySession`/`requireUser`/`requireRole`) + guarda de API (`requireApiRole`) em todas as rotas `/api/admin/*`, seed `scripts/seed-admin.mjs`. **Código feito e testado local 2026-07-24** (login/logout no browser, bloqueio sem/forjado cookie, site público intacto). **Falta deploy** (aplicar schema + semear equipe + subir na VPS) — gated na lista de usuários | A | **alto** — validado por teste E2E | — |
 | **C** | Contrato do estoque: `status` aditivo (§4.4-12), `setVehicleStatus`, "Excluir"→"Desativar", role `vamaq_fin` + `DATABASE_URL_FIN`, view `fin.v_vehicles`, **primeiro teste automatizado do repo** = smoke test §5.4 | B | médio | ~1,5–2 dias |
 
 ### Trilha 1 — Núcleo financeiro
@@ -380,7 +380,9 @@ está adiada por decisão. É estimativa de esforço, não cronograma.
 
 ## 9. Perguntas em aberto (negócio — herdadas do 001c §7)
 
-1. A Vamaq é Simples Nacional?
+1. ~~A Vamaq é Simples Nacional?~~ **Resolvido (2026-07-24): NÃO.** CNPJ 45.348.469/0001-54, ME,
+   **não optante do Simples** (Lucro Presumido ou Real). Se emitir DF-e, o destaque CBS/IBS já vale
+   (prazo 03/08/2026) — mas isso é condicional à pergunta 2.
 2. O que o contador diz que a Vamaq precisa emitir — NF-e de venda de veículo, NFS-e de comissão de
    consignação, ambas, nenhuma? *(define PR-12 e R10)*
 3. Asaas: usa/quer? *(define agent-collections)*

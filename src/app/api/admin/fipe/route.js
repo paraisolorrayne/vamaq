@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
+import { requireApiRole } from "@/lib/auth/api";
 
 const FIPE_BASE = "https://parallelum.com.br/fipe/api/v1";
 const ALLOWED_TYPES = ["carros", "motos", "caminhoes"];
 
 export async function GET(request) {
+  const auth = await requireApiRole();
+  if (auth.error) return auth.error;
+
   const { searchParams } = new URL(request.url);
   const tipoRaw = searchParams.get("tipo");
   const tipo = ALLOWED_TYPES.includes(tipoRaw) ? tipoRaw : "carros";

@@ -5,8 +5,12 @@ import {
   updateVehicle,
   deleteVehicle,
 } from "@/lib/vehicleStore";
+import { requireApiRole } from "@/lib/auth/api";
 
 export async function GET(_request, { params }) {
+  const auth = await requireApiRole();
+  if (auth.error) return auth.error;
+
   const { id } = await params;
   const vehicle = await getVehicleById(id);
   if (!vehicle) {
@@ -16,6 +20,9 @@ export async function GET(_request, { params }) {
 }
 
 export async function PUT(request, { params }) {
+  const auth = await requireApiRole();
+  if (auth.error) return auth.error;
+
   try {
     const { id } = await params;
     const body = await request.json();
@@ -39,6 +46,9 @@ export async function PUT(request, { params }) {
 }
 
 export async function DELETE(_request, { params }) {
+  const auth = await requireApiRole();
+  if (auth.error) return auth.error;
+
   const { id } = await params;
   const ok = await deleteVehicle(id);
   if (!ok) {

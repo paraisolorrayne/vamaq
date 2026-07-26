@@ -1,0 +1,96 @@
+.wrap {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+  background: var(--bg-secondary, #f7f7f8);
+}
+
+.card {
+  width: 100%;
+  max-width: 380px;
+  background: var(--bg-card, #fff);
+  border: 1px solid var(--border-light, #e5e5e5);
+  border-radius: 16px;
+  box-shadow: var(--shadow-elevated, 0 12px 40px rgba(0, 0, 0, 0.12));
+  padding: 2.5rem 2rem;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary, #111);
+}
+
+.subtitle {
+  margin: 0.35rem 0 1.75rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary, #555);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary, #555);
+}
+
+.input {
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  font-size: 1rem;
+  border: 1px solid var(--border-medium, #d0d0d0);
+  border-radius: 10px;
+  background: var(--bg-primary, #fff);
+  color: var(--text-primary, #111);
+  transition: border-color 0.15s ease;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--color-accent, #ff6a00);
+}
+
+.error {
+  margin: 0;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.85rem;
+  color: #b42318;
+  background: #fef3f2;
+  border: 1px solid #fda29b;
+  border-radius: 8px;
+}
+
+.button {
+  margin-top: 0.25rem;
+  padding: 0.8rem 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-on-accent, #fff);
+  background: var(--color-accent, #ff6a00);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.button:hover:not(:disabled) {
+  background: var(--color-accent-hover, #e55e00);
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

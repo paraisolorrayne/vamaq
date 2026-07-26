@@ -5,6 +5,7 @@ import path from "path";
 import { v4 as uuidv4 } from "uuid";
 import { removeBackground } from "@imgly/background-removal-node";
 import heicConvert from "heic-convert";
+import { requireApiRole } from "@/lib/auth/api";
 
 // Fotos de iPhone chegam em HEIC, que o sharp pré-compilado do Linux não
 // decodifica (codec HEVC é patenteado). Detecta pelos magic bytes (ftyp....)
@@ -133,6 +134,9 @@ async function createDropShadow(fgBuffer, w, h) {
 }
 
 export async function POST(request) {
+  const auth = await requireApiRole();
+  if (auth.error) return auth.error;
+
   try {
     const formData = await request.formData();
     const file = formData.get("file");

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import fs from "fs/promises";
 import path from "path";
+import { requireApiRole } from "@/lib/auth/api";
 
 // Rascunhos de uso único: JSONs em data/prefill/ (fora do git — contêm dados
 // pessoais) com { id, templateId, label, note, values }. Aparecem como banner
@@ -14,6 +15,9 @@ function validId(id) {
 }
 
 export async function GET() {
+  const auth = await requireApiRole();
+  if (auth.error) return auth.error;
+
   let files;
   try {
     files = await fs.readdir(PREFILL_DIR);
@@ -36,6 +40,9 @@ export async function GET() {
 }
 
 export async function DELETE(request) {
+  const auth = await requireApiRole();
+  if (auth.error) return auth.error;
+
   const id = new URL(request.url).searchParams.get("id");
   if (!validId(id)) {
     return NextResponse.json({ error: "id inválido" }, { status: 400 });

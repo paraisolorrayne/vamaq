@@ -1,54 +1,19 @@
-"use client";
-
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import LogoVamaq from "@/components/LogoVamaq";
+import AdminNav from "./AdminNav";
+import { requireUser } from "@/lib/auth/dal";
 import styles from "./admin.module.css";
 
-const NAV_ITEMS = [
-  { href: "/admin", label: "Dashboard", icon: "📊" },
-  { href: "/admin/estoque", label: "Estoque", icon: "🚗" },
-  { href: "/admin/documentos", label: "Documentos", icon: "📄" },
-  { href: "/admin/criativos", label: "Gerar Criativos", icon: "🎨" },
-  { href: "/admin/fipe", label: "Tabela FIPE", icon: "💰" },
-];
+export const metadata = {
+  robots: { index: false, follow: false },
+};
 
-export default function AdminLayout({ children }) {
-  const pathname = usePathname();
+export default async function AdminLayout({ children }) {
+  // Gate server-side: sem sessão válida, requireUser() redireciona pro /login.
+  // O proxy já barra na borda por cookie; aqui é a checagem de verdade (§5.5).
+  const user = await requireUser();
 
   return (
     <div className={styles.layout}>
-      <aside className={styles.sidebar}>
-        <div className={styles.sidebarHeader}>
-          <Link href="/admin" className={styles.logoLink}>
-            <LogoVamaq variant="dark" className={styles.logoImage} />
-          </Link>
-          <span className={styles.logoSub}>Painel Administrativo</span>
-        </div>
-        <nav className={styles.nav}>
-          {NAV_ITEMS.map((item) => {
-            const active =
-              item.href === "/admin"
-                ? pathname === "/admin"
-                : pathname.startsWith(item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`${styles.navItem} ${active ? styles.navItemActive : ""}`}
-              >
-                <span className={styles.navIcon}>{item.icon}</span>
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
-        <div className={styles.sidebarFooter}>
-          <Link href="/" className={styles.backLink}>
-            ← Voltar ao Site
-          </Link>
-        </div>
-      </aside>
+      <AdminNav user={user} />
       <main className={styles.main}>{children}</main>
     </div>
   );

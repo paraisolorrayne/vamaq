@@ -90,6 +90,43 @@
 .sidebarFooter {
   padding: 16px 20px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.userBox {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.userName {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #fff;
+}
+.userRole {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-accent, #ff6a00);
+}
+
+.logoutBtn {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.logoutBtn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
 }
 
 .backLink {

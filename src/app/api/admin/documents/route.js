@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireApiRole } from "@/lib/auth/api";
 
 const MESES = [
   "janeiro", "fevereiro", "março", "abril", "maio", "junho",
@@ -21,6 +22,9 @@ function formatValue(value) {
 }
 
 export async function POST(request) {
+  const auth = await requireApiRole();
+  if (auth.error) return auth.error;
+
   try {
     const { templateBody, values, title } = await request.json();
 
