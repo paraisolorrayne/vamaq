@@ -21,6 +21,7 @@ const EMPTY_VEHICLE = {
   transmission: "Automático",
   power: "",
   color: "",
+  placa: "",
   bodyType: "Sedan",
   featured: false,
   published: true,
@@ -127,6 +128,7 @@ function NovoVeiculoForm() {
             price: data.price != null ? formatValorBR(data.price) : "",
             quilometragem: data.quilometragem ?? "",
             badge: data.badge || "",
+            placa: data.placa || "",
           });
         }
         setLoadingEdit(false);
@@ -486,6 +488,17 @@ function NovoVeiculoForm() {
               />
             </div>
             <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Placa (inventário — não aparece no site)</label>
+              <input
+                type="text"
+                value={form.placa}
+                onChange={(e) => handleChange("placa", e.target.value.toUpperCase())}
+                className={styles.formInput}
+                placeholder="Ex: ABC1D23"
+                maxLength={8}
+              />
+            </div>
+            <div className={styles.formGroup}>
               <label className={styles.formLabel}>Combustível</label>
               <select
                 value={form.fuel}
@@ -768,6 +781,20 @@ function NovoVeiculoForm() {
           </div>
         </div>
 
+        {/* Documentos do veículo — só no modo edição (precisa do id salvo).
+            Arquivos privados; não aparecem no site. */}
+        {editId ? <VehicleDocuments vehicleId={editId} /> : (
+          <div className={styles.card} style={{ marginBottom: 24 }}>
+            <h3 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: 8 }}>
+              Documentos do veículo
+            </h3>
+            <p style={{ fontSize: "0.85rem", color: "#666", margin: 0 }}>
+              Salve o veículo primeiro para anexar CRLV, CRV, nota fiscal e outros
+              documentos.
+            </p>
+          </div>
+        )}
+
         <div className={styles.formActions}>
           <button
             type="submit"
@@ -933,6 +960,142 @@ function FipePriceLookup({ brand, onApplyPrice }) {
             Usar este preço
           </button>
         </div>
+      )}
+    </div>
+  );
+}
+
+// Documentos do veículo (PR-Inventário). Arquivos privados (CRLV, CRV, NF…),
+// enviados/servidos por /api/admin/vehicles/[id]/documents. Não vão pro site.
+const DOC_TIPOS = ["CRLV", "CRV / ATPV-e", "Nota Fiscal", "Laudo de Vistoria", "Manual / Chave", "Outro"];
+
+function formatTamanho(bytes) {
+  if (!bytes && bytes !== 0) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function VehicleDocuments({ vehicleId }) {
+  const [docs, setDocs] = useState([]);
+  const [tipo, setTipo] = useState("CRLV");
+  const [uploading, setUploading] = useState(false);
+  const [err, setErr] = useState(null);
+  const fileRef = useRef(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/admin/vehicles/${vehicleId}/documents`)
+      .then((r) => r.json())
+      .then((d) => { if (!cancelled) setDocs(d.documentos || []); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [vehicleId]);
+
+  async function handleUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setErr(null);
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("tipo", tipo);
+    try {
+      const res = await fetch(`/api/admin/vehicles/${vehicleId}/documents`, {
+        method: "POST",
+        body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Falha no upload");
+      setDocs(data.documentos || []);
+    } catch (e2) {
+      setErr(e2.message);
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+  async function handleDeleteDoc(docId) {
+    if (!confirm("Remover este documento? A ação não pode ser desfeita.")) return;
+    const res = await fetch(`/api/admin/vehicles/${vehicleId}/documents/${docId}`, {
+      method: "DELETE",
+    });
+    const data = await res.json();
+    if (res.ok) setDocs(data.documentos || []);
+  }
+
+  return (
+    <div className={styles.card} style={{ marginBottom: 24 }}>
+      <h3 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: 4 }}>
+        Documentos do veículo
+      </h3>
+      <p style={{ fontSize: "0.85rem", color: "#666", marginTop: 0, marginBottom: 16 }}>
+        Arquivos internos (CRLV, CRV, nota fiscal…). Guardados com segurança — não
+        aparecem no site. PDF, JPG, PNG, WEBP ou HEIC, até 20 MB.
+      </p>
+
+      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", marginBottom: 16 }}>
+        <input
+          list="doc-tipos"
+          value={tipo}
+          onChange={(e) => setTipo(e.target.value)}
+          className={styles.formInput}
+          placeholder="Tipo (ex.: CRLV)"
+          style={{ maxWidth: 220 }}
+        />
+        <datalist id="doc-tipos">
+          {DOC_TIPOS.map((t) => <option key={t} value={t} />)}
+        </datalist>
+        <label className={styles.btnSecondary} style={{ cursor: uploading ? "default" : "pointer" }}>
+          {uploading ? "Enviando…" : "+ Anexar documento"}
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".pdf,.jpg,.jpeg,.png,.webp,.heic"
+            onChange={handleUpload}
+            disabled={uploading}
+            style={{ display: "none" }}
+          />
+        </label>
+      </div>
+
+      {err && <p style={{ color: "#b91c1c", fontSize: "0.85rem" }}>{err}</p>}
+
+      {docs.length === 0 ? (
+        <p style={{ fontSize: "0.85rem", color: "#a16207", background: "#fef9c3", border: "1px solid #fde68a", borderRadius: 8, padding: "10px 14px", margin: 0 }}>
+          ⚠ Nenhum documento anexado — este veículo fica com pendência no inventário.
+        </p>
+      ) : (
+        <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+          {docs.map((d) => (
+            <li
+              key={d.id}
+              style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: "1px solid #f0f0f2" }}
+            >
+              <span style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", color: "#ff6a00", minWidth: 90 }}>
+                {d.tipo}
+              </span>
+              <a
+                href={`/api/admin/vehicles/${vehicleId}/documents/${d.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ flex: 1, fontSize: "0.9rem", color: "#111", textDecoration: "underline", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+              >
+                {d.nome}
+              </a>
+              <span style={{ fontSize: "0.78rem", color: "#888" }}>{formatTamanho(d.tamanho)}</span>
+              <button
+                type="button"
+                onClick={() => handleDeleteDoc(d.id)}
+                className={styles.btnDanger}
+                style={{ padding: "2px 10px", fontSize: "0.8rem" }}
+              >
+                Remover
+              </button>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );

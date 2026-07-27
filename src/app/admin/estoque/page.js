@@ -44,12 +44,22 @@ export default function EstoquePage() {
       .includes(search.toLowerCase())
   );
 
+  const pendentes = vehicles.filter((v) => vehiclePendencias(v).length > 0).length;
+
   return (
     <>
       <div className={styles.pageHeader}>
         <h1 className={styles.pageTitle}>Estoque</h1>
         <p className={styles.pageSubtitle}>
           Gerencie os veículos disponíveis no site
+          {pendentes > 0 && (
+            <>
+              {" · "}
+              <span style={{ color: "#92400e", fontWeight: 600 }}>
+                ⚠ {pendentes} com pendência de inventário (placa/documentos)
+              </span>
+            </>
+          )}
         </p>
       </div>
 
@@ -138,6 +148,7 @@ export default function EstoquePage() {
                     <td>{v.color}</td>
                     <td>
                       <StatusBadge vehicle={v} />
+                      <PendenciaBadge vehicle={v} />
                     </td>
                     <td>
                       <div className={styles.tableActions}>
@@ -191,6 +202,7 @@ export default function EstoquePage() {
                     </span>
                     <span>
                       <StatusBadge vehicle={v} />
+                      <PendenciaBadge vehicle={v} />
                     </span>
                   </div>
                 </div>
@@ -239,6 +251,29 @@ function StatusButton({ vehicle, onSet }) {
     >
       Desativar
     </button>
+  );
+}
+
+// Pendência de inventário (PR-Inventário): falta placa e/ou documentos.
+function vehiclePendencias(v) {
+  const faltas = [];
+  if (!v.placa) faltas.push("placa");
+  if (!Array.isArray(v.documentos) || v.documentos.length === 0)
+    faltas.push("documentos");
+  return faltas;
+}
+
+function PendenciaBadge({ vehicle }) {
+  const faltas = vehiclePendencias(vehicle);
+  if (faltas.length === 0) return null;
+  return (
+    <span
+      className={styles.badgeWarning}
+      title={`Inventário incompleto — falta: ${faltas.join(", ")}`}
+      style={{ background: "#fef3c7", color: "#92400e", marginLeft: 6 }}
+    >
+      ⚠ {faltas.join(" + ")}
+    </span>
   );
 }
 

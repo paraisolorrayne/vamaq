@@ -45,6 +45,13 @@ create table if not exists vehicles (
   -- dentro da Vamaq (vendido/inativo não são apagados, só saem do site).
   status text not null default 'disponivel',
 
+  -- Inventário (PR-Inventário). Dados internos, NÃO exibidos no site público.
+  -- placa: null/'' = pendência. documentos: metadados dos arquivos (CRLV, CRV,
+  -- NF...) — os arquivos ficam em disco privado (data/vehicle-docs/), servidos
+  -- só com login. Shape: [{ id, tipo, nome, arquivo, tamanho, uploaded_at }].
+  placa text,
+  documentos jsonb not null default '[]'::jsonb,
+
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
 
@@ -54,8 +61,10 @@ create table if not exists vehicles (
   constraint status_valido check (status in ('disponivel', 'reservado', 'vendido', 'inativo'))
 );
 
--- idempotente para bancos já criados antes da coluna status existir.
+-- idempotente para bancos já criados antes das colunas existirem.
 alter table vehicles add column if not exists status text not null default 'disponivel';
+alter table vehicles add column if not exists placa text;
+alter table vehicles add column if not exists documentos jsonb not null default '[]'::jsonb;
 do $$ begin
   if not exists (select 1 from pg_constraint where conname = 'status_valido') then
     alter table vehicles add constraint status_valido

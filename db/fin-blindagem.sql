@@ -22,7 +22,7 @@ alter schema fin owner to vamaq_fin;
 -- financeiro lê o veículo (para margem por carro etc.).
 create or replace view fin.v_vehicles as
   select id, slug, brand, model, year, price, quilometragem,
-         status, published, created_at, updated_at
+         placa, status, published, created_at, updated_at
   from public.vehicles;
 
 -- Permissões do financeiro:

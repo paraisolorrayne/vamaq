@@ -44,10 +44,18 @@ else
   log "AVISO: pasta de fotos não encontrada — pulei o tar."
 fi
 
-# 3) Rotação: apaga backups com mais de RETAIN dias.
+# 3) Dados privados (data/): documentos de veículos (CRLV, CRV, NF) e rascunhos
+#    de contrato — dados sensíveis, fora do git, existem só no disco.
+if [ -d "$APP_DIR/data" ]; then
+  tar -czf "$DEST/data-$STAMP.tar.gz" -C "$APP_DIR" data
+fi
+
+# 4) Rotação: apaga backups com mais de RETAIN dias.
 find "$DEST" -maxdepth 1 -name 'db-*.dump' -mtime +"$RETAIN" -delete
 find "$DEST" -maxdepth 1 -name 'fotos-*.tar.gz' -mtime +"$RETAIN" -delete
+find "$DEST" -maxdepth 1 -name 'data-*.tar.gz' -mtime +"$RETAIN" -delete
 
 DBSZ=$(du -h "$DEST/db-$STAMP.dump" 2>/dev/null | cut -f1)
 FOTOSZ=$(du -h "$DEST/fotos-$STAMP.tar.gz" 2>/dev/null | cut -f1 || echo "-")
-log "ok: db-$STAMP.dump ($DBSZ) + fotos-$STAMP.tar.gz ($FOTOSZ)"
+DATASZ=$(du -h "$DEST/data-$STAMP.tar.gz" 2>/dev/null | cut -f1 || echo "-")
+log "ok: db-$STAMP.dump ($DBSZ) + fotos-$STAMP.tar.gz ($FOTOSZ) + data-$STAMP.tar.gz ($DATASZ)"

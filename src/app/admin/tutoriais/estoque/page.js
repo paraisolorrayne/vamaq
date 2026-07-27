@@ -116,6 +116,36 @@ export default function TutorialEstoquePage() {
       <div className={t.step}>
         <div className={t.stepNumber}>5</div>
         <div className={t.stepBody}>
+          <h3 className={t.stepTitle}>Inventário: placa e documentos</h3>
+          <p>
+            O estoque também é o <strong>inventário</strong> da loja. Preencha a{" "}
+            <span className={t.uiField}>Placa</span> e anexe os{" "}
+            <strong>documentos do veículo</strong> (CRLV, CRV, nota fiscal…) na
+            seção <span className={t.uiField}>Documentos do veículo</span>.
+          </p>
+          <div className={t.warning}>
+            <span className={t.boxLabel}>Pendências</span>
+            <p>
+              Carro <strong>sem placa ou sem documento</strong> aparece com um
+              aviso <strong>⚠ pendência</strong> na lista de estoque. É o que
+              ajuda a saber quais veículos ainda precisam ser regularizados.
+            </p>
+          </div>
+          <div className={t.tip}>
+            <span className={t.boxLabel}>Privacidade</span>
+            <p>
+              Placa e documentos são <strong>internos</strong> — não aparecem no
+              site. Os arquivos ficam guardados com segurança e só abrem para quem
+              está logado no painel. (Para anexar documentos, salve o veículo
+              primeiro.)
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className={t.step}>
+        <div className={t.stepNumber}>6</div>
+        <div className={t.stepBody}>
           <h3 className={t.stepTitle}>Destaque, selo e publicação</h3>
           <ul>
             <li>
@@ -136,7 +166,7 @@ export default function TutorialEstoquePage() {
       </div>
 
       <div className={t.step}>
-        <div className={t.stepNumber}>6</div>
+        <div className={t.stepNumber}>7</div>
         <div className={t.stepBody}>
           <h3 className={t.stepTitle}>Salve e confira no site</h3>
           <p>
@@ -145,12 +175,12 @@ export default function TutorialEstoquePage() {
             (ou a página do veículo) para conferir foto, preço e dados.
           </p>
           <div className={t.tip}>
-            <span className={t.boxLabel}>Vendeu? Não exclua — despublique</span>
+            <span className={t.boxLabel}>Vendeu? Use Desativar</span>
             <p>
-              Para tirar um carro vendido do site, use{" "}
-              <strong>Despublicar</strong> em vez de excluir. Assim o histórico
-              do veículo é preservado (importante quando o Financeiro entrar, que
-              liga cada carro à sua margem).
+              Na lista de estoque, o botão <strong>Desativar</strong> tira o carro
+              do site mas o mantém no estoque (dá para <strong>Reativar</strong>{" "}
+              depois). O histórico do veículo é preservado — importante quando o
+              Financeiro entrar, que liga cada carro à sua margem.
             </p>
           </div>
         </div>

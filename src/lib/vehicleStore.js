@@ -12,6 +12,7 @@ const SELECT_COLS = `
   id, slug, brand, model, year, price, quilometragem,
   fuel, transmission, power, color, body_type, featured, badge,
   opcionais, blindagem, images, specs, description, published, status,
+  placa, documentos,
   created_at, updated_at
 `;
 
@@ -65,6 +66,10 @@ function normalize(body) {
     },
     description: body.description || '',
     published: body.published === undefined ? true : Boolean(body.published),
+    // placa em maiúsculas; vazia = null (vira pendência no inventário).
+    // documentos NÃO entram aqui — são geridos pelas rotas de documento, para o
+    // formulário de edição não sobrescrever a lista.
+    placa: body.placa ? String(body.placa).toUpperCase().trim() : null,
   };
 }
 
@@ -96,10 +101,10 @@ export async function addVehicle(body) {
     `insert into vehicles (
        slug, brand, model, year, price, quilometragem,
        fuel, transmission, power, color, body_type, featured, badge,
-       opcionais, blindagem, images, specs, description, published
+       opcionais, blindagem, images, specs, description, published, placa
      ) values (
        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,
-       $14::jsonb,$15::jsonb,$16::jsonb,$17::jsonb,$18,$19
+       $14::jsonb,$15::jsonb,$16::jsonb,$17::jsonb,$18,$19,$20
      )
      returning ${SELECT_COLS}`,
     [
@@ -107,6 +112,7 @@ export async function addVehicle(body) {
       v.fuel, v.transmission, v.power, v.color, v.body_type, v.featured, v.badge,
       JSON.stringify(v.opcionais), JSON.stringify(v.blindagem),
       JSON.stringify(v.images), JSON.stringify(v.specs), v.description, v.published,
+      v.placa,
     ]
   );
   return rowToVehicle(rows[0]);
@@ -122,7 +128,7 @@ export async function updateVehicle(id, body) {
        fuel=$7, transmission=$8, power=$9, color=$10, body_type=$11,
        featured=$12, badge=$13,
        opcionais=$14::jsonb, blindagem=$15::jsonb, images=$16::jsonb, specs=$17::jsonb,
-       description=$18, published=$19
+       description=$18, published=$19, placa=$20
      where id=$1
      returning ${SELECT_COLS}`,
     [
@@ -130,6 +136,7 @@ export async function updateVehicle(id, body) {
       v.fuel, v.transmission, v.power, v.color, v.body_type, v.featured, v.badge,
       JSON.stringify(v.opcionais), JSON.stringify(v.blindagem),
       JSON.stringify(v.images), JSON.stringify(v.specs), v.description, v.published,
+      v.placa,
     ]
   );
   return rows.length ? rowToVehicle(rows[0]) : null;
@@ -162,6 +169,45 @@ export async function setVehicleStatus(id, status) {
     [id, status, unpublish]
   );
   return rows.length ? rowToVehicle(rows[0]) : null;
+}
+
+// --- Documentos do veículo (PR-Inventário) -------------------------------
+// Metadados ficam no jsonb `documentos`; os arquivos, em disco privado
+// (data/vehicle-docs/), geridos pelas rotas /api/admin/vehicles/[id]/documents.
+
+export async function addVehicleDocument(id, doc) {
+  const pool = getPool();
+  if (!pool) throw new Error('DATABASE_URL ausente');
+  const { rows } = await pool.query(
+    `update vehicles set documentos = documentos || $2::jsonb
+      where id = $1 returning ${SELECT_COLS}`,
+    [id, JSON.stringify([doc])]
+  );
+  return rows.length ? rowToVehicle(rows[0]) : null;
+}
+
+// Remove o doc do jsonb e devolve seus metadados (para a rota apagar o arquivo).
+export async function removeVehicleDocument(id, docId) {
+  const pool = getPool();
+  if (!pool) throw new Error('DATABASE_URL ausente');
+  const cur = await pool.query('select documentos from vehicles where id = $1', [id]);
+  if (!cur.rows.length) return { vehicle: null, removed: null };
+  const docs = Array.isArray(cur.rows[0].documentos) ? cur.rows[0].documentos : [];
+  const removed = docs.find((d) => d.id === docId) || null;
+  const kept = docs.filter((d) => d.id !== docId);
+  const { rows } = await pool.query(
+    `update vehicles set documentos = $2::jsonb where id = $1 returning ${SELECT_COLS}`,
+    [id, JSON.stringify(kept)]
+  );
+  return { vehicle: rows.length ? rowToVehicle(rows[0]) : null, removed };
+}
+
+// Um veículo tem pendência de inventário se falta placa ou não tem documentos.
+export function vehiclePendencias(v) {
+  const faltas = [];
+  if (!v.placa) faltas.push('placa');
+  if (!Array.isArray(v.documentos) || v.documentos.length === 0) faltas.push('documentos');
+  return faltas;
 }
 
 export { VEHICLE_STATUSES };
