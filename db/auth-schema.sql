@@ -20,17 +20,21 @@
 create extension if not exists "pgcrypto";
 
 create table if not exists users (
-  id            uuid primary key default gen_random_uuid(),
-  name          text not null,
-  email         text not null unique,
-  password_hash text not null,
-  role          text not null default 'vendedor',
-  active        boolean not null default true,
-  created_at    timestamptz not null default now(),
-  updated_at    timestamptz not null default now(),
+  id                   uuid primary key default gen_random_uuid(),
+  name                 text not null,
+  email                text not null unique,
+  password_hash        text not null,
+  role                 text not null default 'vendedor',
+  active               boolean not null default true,
+  must_change_password boolean not null default false,
+  created_at           timestamptz not null default now(),
+  updated_at           timestamptz not null default now(),
 
   constraint users_role_check check (role in ('admin', 'financeiro', 'vendedor'))
 );
+
+-- idempotente para bancos já criados antes desta coluna existir.
+alter table users add column if not exists must_change_password boolean not null default false;
 
 -- email sempre normalizado em minúsculas na aplicação; índice único já cobre.
 create index if not exists users_active_idx on users(active) where active = true;

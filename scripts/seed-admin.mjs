@@ -1,16 +1,19 @@
 /**
- * Cria/atualiza um usuário do /admin (PR-B do ADR-002).
+ * Cria/atualiza usuários do /admin (PR-B do ADR-002).
  *
- * Uso (na VPS ou local, com DATABASE_URL no .env.local):
- *
+ * Um usuário:
  *   node --env-file=.env.local scripts/seed-admin.mjs \
- *     --name "Lorrayne" --email lorrayne@vamaq.com --role admin --password "senhaForte123"
+ *     --name "Lorrayne" --email lorrayne@vamaq.com --role admin --password "2RcgYvMq@L"
  *
- * Papéis: admin | financeiro | vendedor. Upsert por e-mail (rodar de novo troca
- * a senha/nome/papel). Aplica db/auth-schema.sql antes, então é idempotente.
+ * Vários (arquivo JSON [{name,email,role}], senha compartilhada em --password):
+ *   node --env-file=.env.local scripts/seed-admin.mjs --file equipe.json --password "2RcgYvMq@L"
  *
- * Senha: se omitida, gera uma aleatória e imprime uma vez (anote — não fica no
- * banco em claro).
+ * Papéis: admin | financeiro | vendedor. Upsert por e-mail.
+ * Todo usuário semeado nasce com must_change_password = true (senha inicial
+ * compartilhada → troca obrigatória no primeiro acesso). Aplica db/auth-schema.sql
+ * antes, então é idempotente.
+ *
+ * Sem --password, gera uma aleatória por usuário e imprime uma vez.
  */
 import { readFile } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
@@ -27,28 +30,34 @@ function arg(flag) {
   return i >= 0 ? process.argv[i + 1] : undefined;
 }
 
-const name = arg("--name");
-const email = (arg("--email") || "").trim().toLowerCase();
-const role = arg("--role") || "admin";
-let password = arg("--password");
+const ROLES = ["admin", "financeiro", "vendedor"];
+const sharedPassword = arg("--password");
+const file = arg("--file");
 
-if (!name || !email) {
-  console.error("Faltou --name e/ou --email.");
-  process.exit(1);
+// Monta a lista de usuários a semear.
+let people = [];
+if (file) {
+  people = JSON.parse(await readFile(path.resolve(file), "utf8"));
+} else {
+  people = [{ name: arg("--name"), email: arg("--email"), role: arg("--role") || "admin" }];
 }
-if (!["admin", "financeiro", "vendedor"].includes(role)) {
-  console.error(`Papel inválido: ${role} (use admin|financeiro|vendedor).`);
-  process.exit(1);
+
+// Validação antes de tocar no banco.
+for (const p of people) {
+  p.email = String(p.email || "").trim().toLowerCase();
+  p.role = p.role || "admin";
+  if (!p.name || !p.email) {
+    console.error("Cada usuário precisa de name e email:", JSON.stringify(p));
+    process.exit(1);
+  }
+  if (!ROLES.includes(p.role)) {
+    console.error(`Papel inválido para ${p.email}: ${p.role} (use ${ROLES.join("|")}).`);
+    process.exit(1);
+  }
 }
 if (!process.env.DATABASE_URL) {
   console.error("DATABASE_URL ausente (rode com --env-file=.env.local).");
   process.exit(1);
-}
-
-let generated = false;
-if (!password) {
-  password = randomBytes(9).toString("base64url"); // ~12 chars
-  generated = true;
 }
 
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
@@ -58,26 +67,35 @@ try {
   const schema = await readFile(path.join(ROOT, "db", "auth-schema.sql"), "utf8");
   await pool.query(schema);
 
-  // 2) upsert do usuário
-  const password_hash = await hashPassword(password);
-  const { rows } = await pool.query(
-    `insert into users (name, email, password_hash, role, active)
-       values ($1, $2, $3, $4, true)
-     on conflict (email) do update
-       set name = excluded.name,
-           password_hash = excluded.password_hash,
-           role = excluded.role,
-           active = true
-     returning id, email, role`,
-    [name, email, password_hash, role]
-  );
-
-  const u = rows[0];
-  console.log(`✓ usuário ${u.email} (${u.role}) pronto.`);
-  if (generated) {
-    console.log(`  senha gerada: ${password}`);
-    console.log("  ⚠️ anote agora — não dá pra recuperar depois.");
+  // 2) upsert de cada usuário (senha inicial → troca obrigatória)
+  for (const p of people) {
+    let password = sharedPassword;
+    let generated = false;
+    if (!password) {
+      password = randomBytes(9).toString("base64url");
+      generated = true;
+    }
+    const password_hash = await hashPassword(password);
+    const { rows } = await pool.query(
+      `insert into users (name, email, password_hash, role, active, must_change_password)
+         values ($1, $2, $3, $4, true, true)
+       on conflict (email) do update
+         set name = excluded.name,
+             password_hash = excluded.password_hash,
+             role = excluded.role,
+             active = true,
+             must_change_password = true
+       returning email, role`,
+      [p.name, p.email, password_hash, p.role]
+    );
+    const u = rows[0];
+    console.log(
+      `✓ ${u.email} (${u.role})` + (generated ? ` — senha: ${password}` : "")
+    );
   }
+  console.log(
+    `\n${people.length} usuário(s) prontos. Senha inicial compartilhada; cada um troca no 1º acesso.`
+  );
 } catch (err) {
   console.error("Falha no seed:", err.message);
   process.exitCode = 1;
