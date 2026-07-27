@@ -30,11 +30,16 @@ create table if not exists users (
   created_at           timestamptz not null default now(),
   updated_at           timestamptz not null default now(),
 
-  constraint users_role_check check (role in ('admin', 'financeiro', 'vendedor'))
+  constraint users_role_check check (role in ('admin', 'estoque', 'financeiro', 'vendedor', 'secretaria'))
 );
 
 -- idempotente para bancos já criados antes desta coluna existir.
 alter table users add column if not exists must_change_password boolean not null default false;
+
+-- Papéis podem crescer; re-aplica o CHECK com o conjunto atual (idempotente).
+alter table users drop constraint if exists users_role_check;
+alter table users add constraint users_role_check
+  check (role in ('admin', 'estoque', 'financeiro', 'vendedor', 'secretaria'));
 
 -- email sempre normalizado em minúsculas na aplicação; índice único já cobre.
 create index if not exists users_active_idx on users(active) where active = true;

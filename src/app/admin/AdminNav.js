@@ -6,7 +6,8 @@ import LogoVamaq from "@/components/LogoVamaq";
 import { logoutAction } from "@/app/login/actions";
 import styles from "./admin.module.css";
 
-const NAV_ITEMS = [
+// Itens padrão (fallback). O menu real vem filtrado por papel via prop `nav`.
+const DEFAULT_NAV = [
   { href: "/admin", label: "Dashboard", icon: "📊" },
   { href: "/admin/estoque", label: "Estoque", icon: "🚗" },
   { href: "/admin/documentos", label: "Documentos", icon: "📄" },
@@ -15,8 +16,9 @@ const NAV_ITEMS = [
   { href: "/admin/tutoriais", label: "Tutoriais", icon: "📚" },
 ];
 
-export default function AdminNav({ user }) {
+export default function AdminNav({ user, nav }) {
   const pathname = usePathname();
+  const NAV_ITEMS = nav && nav.length ? nav : DEFAULT_NAV;
 
   return (
     <aside className={styles.sidebar}>

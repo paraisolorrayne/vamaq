@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import AdminNav from "./AdminNav";
 import { requireUser } from "@/lib/auth/dal";
+import { canAccessPath, navFor } from "@/lib/auth/permissions";
 import styles from "./admin.module.css";
 
 export const metadata = {
@@ -15,9 +17,17 @@ export default async function AdminLayout({ children }) {
   // Primeiro acesso (senha inicial): obriga a trocar antes de usar o admin.
   if (user.must_change_password) redirect("/trocar-senha");
 
+  // Autorização por papel: barra acesso direto a seções fora do papel.
+  const pathname = (await headers()).get("x-vamaq-pathname") || "/admin";
+  if (!canAccessPath(user.role, pathname)) {
+    redirect("/admin");
+  }
+
+  const nav = navFor(user.role);
+
   return (
     <div className={styles.layout}>
-      <AdminNav user={user} />
+      <AdminNav user={user} nav={nav} />
       <main className={styles.main}>{children}</main>
     </div>
   );

@@ -17,7 +17,14 @@ import { COOKIE_NAME } from "@/lib/auth/constants";
 export function proxy(request) {
   const { pathname } = request.nextUrl;
   const hasCookie = Boolean(request.cookies.get(COOKIE_NAME)?.value);
-  if (hasCookie) return NextResponse.next();
+
+  if (hasCookie) {
+    // Repassa o caminho num header para o layout do /admin checar o papel
+    // (o proxy não faz I/O de sessão; a autorização real é no DAL/layout).
+    const headers = new Headers(request.headers);
+    headers.set("x-vamaq-pathname", pathname);
+    return NextResponse.next({ request: { headers } });
+  }
 
   if (pathname.startsWith("/api/admin")) {
     return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
