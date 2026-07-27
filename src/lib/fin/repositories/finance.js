@@ -32,14 +32,64 @@ export async function getReferencias() {
   };
 }
 
+const CONTACT_COLS = `id, name, doc, kind, email, phone, created_at`;
+
+export async function listContacts({ search, kind } = {}) {
+  const company = await getCompanyId();
+  if (!company) return [];
+  const where = ["company_id = $1"];
+  const params = [company];
+  if (kind) { params.push(kind); where.push(`kind = $${params.length}`); }
+  if (search) { params.push(`%${search}%`); where.push(`(name ilike $${params.length} or doc ilike $${params.length})`); }
+  const { rows } = await finQuery(
+    `select ${CONTACT_COLS} from fin.contacts where ${where.join(" and ")} order by name`,
+    params
+  );
+  return rows;
+}
+
+export async function getContact(id) {
+  const company = await getCompanyId();
+  const { rows } = await finQuery(
+    `select ${CONTACT_COLS} from fin.contacts where id=$1 and company_id=$2`,
+    [id, company]
+  );
+  return rows[0] || null;
+}
+
 export async function createContact({ name, doc, kind, email, phone }) {
   const company = await getCompanyId();
   const { rows } = await finQuery(
     `insert into fin.contacts (company_id, name, doc, kind, email, phone)
-       values ($1,$2,$3,$4,$5,$6) returning id, name, doc, kind`,
+       values ($1,$2,$3,$4,$5,$6) returning ${CONTACT_COLS}`,
     [company, name, doc || null, kind || "ambos", email || null, phone || null]
   );
   return rows[0];
+}
+
+export async function updateContact(id, { name, doc, kind, email, phone }) {
+  const company = await getCompanyId();
+  const { rows } = await finQuery(
+    `update fin.contacts set name=$3, doc=$4, kind=$5, email=$6, phone=$7
+      where id=$1 and company_id=$2 returning ${CONTACT_COLS}`,
+    [id, company, name, doc || null, kind || "ambos", email || null, phone || null]
+  );
+  return rows[0] || null;
+}
+
+export async function deleteContact(id) {
+  const company = await getCompanyId();
+  try {
+    const { rowCount } = await finQuery(
+      `delete from fin.contacts where id=$1 and company_id=$2`,
+      [id, company]
+    );
+    return { ok: rowCount > 0 };
+  } catch (err) {
+    // FK: contato usado em lançamento/cobrança não pode ser apagado.
+    if (err.code === "23503") return { ok: false, error: "Contato em uso (tem lançamento ou cobrança). Não pode ser removido." };
+    throw err;
+  }
 }
 
 // ---- Lançamentos ----------------------------------------------------------

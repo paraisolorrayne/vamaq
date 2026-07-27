@@ -121,7 +121,10 @@ export default function CobrancasPage() {
           <h3 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: 16 }}>Nova cobrança</h3>
           <form onSubmit={save} className={styles.formGrid}>
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Cliente (contato salvo)</label>
+              <label className={styles.formLabel}>
+                Cliente (contato salvo){" "}
+                <Link href="/admin/financeiro/contatos" style={{ fontWeight: 400, fontSize: "0.78rem" }}>+ cadastrar</Link>
+              </label>
               <select className={styles.formSelect} value={form.contact_id} onChange={(e) => set("contact_id", e.target.value)}>
                 <option value="">— ou preencha abaixo —</option>
                 {contacts.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}

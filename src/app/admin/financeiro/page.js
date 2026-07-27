@@ -50,6 +50,7 @@ export default function FinanceiroDashboard() {
           <Link href="/admin/financeiro/lancamentos" className={styles.btnSecondary}>💸 Lançamentos</Link>
           <Link href="/admin/financeiro/margens" className={styles.btnSecondary}>🚗 Margem por veículo</Link>
           <Link href="/admin/financeiro/cobrancas" className={styles.btnSecondary}>🧾 Cobranças</Link>
+          <Link href="/admin/financeiro/contatos" className={styles.btnSecondary}>👤 Contatos</Link>
         </div>
       </div>
 
