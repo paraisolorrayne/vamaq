@@ -20,9 +20,11 @@ alter schema fin owner to vamaq_fin;
 
 -- View de leitura do estoque: fonte única = public.vehicles. É por aqui que o
 -- financeiro lê o veículo (para margem por carro etc.).
+-- placa vai no fim: `create or replace view` só permite ACRESCENTAR colunas no
+-- final (mudar a ordem exige drop). Mantém compatível com re-execução.
 create or replace view fin.v_vehicles as
   select id, slug, brand, model, year, price, quilometragem,
-         placa, status, published, created_at, updated_at
+         status, published, created_at, updated_at, placa
   from public.vehicles;
 
 -- Permissões do financeiro:
