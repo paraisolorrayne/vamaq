@@ -45,6 +45,14 @@ export default function FinanceiroDashboard() {
         <p className={styles.pageSubtitle}>Resultado do mês e margem por veículo</p>
       </div>
 
+      <div className={styles.card} style={{ marginBottom: 24 }}>
+        <div className={styles.toolbar} style={{ flexWrap: "wrap", gap: 8 }}>
+          <Link href="/admin/financeiro/lancamentos" className={styles.btnSecondary}>💸 Lançamentos</Link>
+          <Link href="/admin/financeiro/margens" className={styles.btnSecondary}>🚗 Margem por veículo</Link>
+          <Link href="/admin/financeiro/cobrancas" className={styles.btnSecondary}>🧾 Cobranças</Link>
+        </div>
+      </div>
+
       {loading ? (
         <div className={styles.loading}>Carregando…</div>
       ) : (

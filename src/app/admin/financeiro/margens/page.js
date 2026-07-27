@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import styles from "../../admin.module.css";
 import { formatValorBR } from "@/lib/money";
@@ -14,15 +14,14 @@ export default function MargensPage() {
   const [loading, setLoading] = useState(true);
   const [all, setAll] = useState(false);
 
-  const load = useCallback(() => {
-    setLoading(true);
+  useEffect(() => {
+    let active = true;
     fetch(`/api/admin/financeiro/margens?all=${all}`)
       .then((r) => r.json())
-      .then((m) => { setMargens(Array.isArray(m) ? m : []); setLoading(false); })
-      .catch(() => setLoading(false));
+      .then((m) => { if (active) { setMargens(Array.isArray(m) ? m : []); setLoading(false); } })
+      .catch(() => { if (active) setLoading(false); });
+    return () => { active = false; };
   }, [all]);
-
-  useEffect(() => { load(); }, [load]);
 
   return (
     <>
