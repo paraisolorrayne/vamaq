@@ -31,6 +31,9 @@ create or replace view fin.v_vehicles as
 grant usage on schema public to vamaq_fin;       -- enxergar o schema public
 grant select on public.vehicles to vamaq_fin;    -- só LEITURA do estoque
 grant select on fin.v_vehicles to vamaq_fin;
+-- REFERENCES permite criar a FK fin.transactions.vehicle_id → public.vehicles.
+-- NÃO dá escrita (é só para constraint de integridade) — a blindagem continua.
+grant references on public.vehicles to vamaq_fin;
 
 -- Trava explícita de escrita no core (defense-in-depth — uma role não-dona já
 -- não teria escrita, mas deixamos a intenção registrada e à prova de GRANT
