@@ -3,7 +3,7 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { computeDRE, computeVehicleMargin } from "../src/lib/fin/calc.js";
+import { computeDRE, computeVehicleMargin, icmsSeminovo } from "../src/lib/fin/calc.js";
 
 const TXS = [
   { type: "revenue", amount: 200000, code: "3.1", status: "confirmed" }, // venda
@@ -39,6 +39,17 @@ test("DRE: sem receita não divide por zero", () => {
   assert.equal(d.margemBruta, 0);
   assert.equal(d.margemOperacional, 0);
   assert.equal(d.lucroLiquido, -100);
+});
+
+test("ICMS seminovo: 5% do lucro (venda − compra)", () => {
+  // compra 150k, venda 200k → lucro 50k → ICMS 5% = 2.500
+  assert.equal(icmsSeminovo(200000, 150000, 5), 2500);
+  // sem venda → sem ICMS
+  assert.equal(icmsSeminovo(0, 150000, 5), 0);
+  // vendeu no prejuízo (venda < compra) → sem ICMS
+  assert.equal(icmsSeminovo(140000, 150000, 5), 0);
+  // alíquota default 5%
+  assert.equal(icmsSeminovo(100000, 80000), 1000);
 });
 
 test("margem de um veículo: receita − custo", () => {

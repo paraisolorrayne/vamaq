@@ -51,22 +51,32 @@ export default function MargensPage() {
             </div>
           </div>
         ) : (
+          <>
           <div className={styles.tableWrap}>
             <table className={styles.table}>
               <thead>
-                <tr><th>Veículo</th><th>Placa</th><th>Situação</th><th>Receita</th><th>Custo</th><th>Resultado</th><th>Margem</th></tr>
+                <tr>
+                  <th>Veículo</th><th>Receita</th><th>Custo total</th>
+                  <th title="ICMS estimado: 5% do lucro (venda − compra)">ICMS (5%)</th>
+                  <th>Resultado líquido</th><th>Margem líq.</th>
+                </tr>
               </thead>
               <tbody>
                 {margens.map((m) => {
-                  const margem = m.receita > 0 ? (m.resultado / m.receita) * 100 : 0;
+                  const liq = m.resultado_liquido ?? m.resultado;
+                  const margem = m.receita > 0 ? (liq / m.receita) * 100 : 0;
                   return (
                     <tr key={m.vehicle_id}>
-                      <td><strong>{m.brand} {m.model}</strong> {m.year}</td>
-                      <td>{m.placa || "—"}</td>
-                      <td style={{ fontSize: "0.8rem", color: "#666" }}>{m.status}</td>
+                      <td>
+                        <strong>{m.brand} {m.model}</strong> {m.year}
+                        <span style={{ display: "block", fontSize: "0.75rem", color: "#888" }}>
+                          {m.placa || "sem placa"} · {m.status}
+                        </span>
+                      </td>
                       <td style={{ fontVariantNumeric: "tabular-nums" }}>{money(m.receita)}</td>
                       <td style={{ fontVariantNumeric: "tabular-nums" }}>{money(m.custo_total)}</td>
-                      <td style={{ fontVariantNumeric: "tabular-nums", fontWeight: 600, color: m.resultado >= 0 ? "#15803d" : "#b91c1c" }}>{money(m.resultado)}</td>
+                      <td style={{ fontVariantNumeric: "tabular-nums", color: "#a16207" }}>{money(m.icms)}</td>
+                      <td style={{ fontVariantNumeric: "tabular-nums", fontWeight: 600, color: liq >= 0 ? "#15803d" : "#b91c1c" }}>{money(liq)}</td>
                       <td style={{ color: margem >= 0 ? "#15803d" : "#b91c1c" }}>
                         {m.receita > 0 ? margem.toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + "%" : "—"}
                       </td>
@@ -76,6 +86,11 @@ export default function MargensPage() {
               </tbody>
             </table>
           </div>
+          <p style={{ fontSize: "0.78rem", color: "#888", marginTop: 12 }}>
+            ICMS estimado do seminovo: 5% sobre o lucro (nota de venda − nota de compra),
+            conforme regime de Lucro Presumido. Resultado líquido = receita − custos − ICMS.
+          </p>
+          </>
         )}
       </div>
     </>

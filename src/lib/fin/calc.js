@@ -70,6 +70,19 @@ export function computeVehicleMargin(transactions) {
   };
 }
 
+/**
+ * ICMS do seminovo (Lucro Presumido, contador da Vamaq): base = lucro
+ * (venda − compra de aquisição), alíquota padrão 5%. Só incide quando há venda
+ * e o lucro é positivo. Retorna o valor do ICMS.
+ */
+export function icmsSeminovo(receita, custoAquisicao, aliquota = 5) {
+  const r = Number(receita) || 0;
+  const c = Number(custoAquisicao) || 0;
+  if (r <= 0) return 0;
+  const base = Math.max(0, r - c);
+  return round2((base * (Number(aliquota) || 0)) / 100);
+}
+
 function round2(n) {
   return Math.round((Number(n) + Number.EPSILON) * 100) / 100;
 }

@@ -4,7 +4,7 @@
  * pela única empresa (Vamaq).
  */
 import { finQuery } from "@/lib/fin/db";
-import { computeDRE } from "@/lib/fin/calc";
+import { computeDRE, icmsSeminovo } from "@/lib/fin/calc";
 
 let companyIdCache = null;
 export async function getCompanyId() {
@@ -216,17 +216,42 @@ export async function getDRE({ from, to } = {}) {
 export async function getVehicleMargins({ onlyWithActivity = true } = {}) {
   const company = await getCompanyId();
   if (!company) return [];
-  // A view já calcula receita/custo/resultado por veículo.
+  // Alíquota de ICMS do seminovo (base = lucro venda − compra). Contador: 5%.
+  const cfg = await finQuery(`select icms_seminovo_aliquota from fin.companies where id=$1`, [company]);
+  const aliquota = Number(cfg.rows[0]?.icms_seminovo_aliquota ?? 5);
+
+  // custo de aquisição = despesas na conta 4.1x (Custo de Aquisição de Veículos);
+  // custo_total = todas as despesas do veículo (aquisição + preparação + etc.).
   const { rows } = await finQuery(
-    `select vehicle_id, brand, model, year, placa, status, receita, custo_total, resultado
-       from fin.v_vehicle_margin
-      ${onlyWithActivity ? "where receita <> 0 or custo_total <> 0" : ""}
-      order by resultado desc`
+    `select v.id as vehicle_id, v.brand, v.model, v.year, v.placa, v.status,
+            coalesce(sum(t.amount) filter (where t.type='revenue'), 0) as receita,
+            coalesce(sum(t.amount) filter (where t.type='expense'), 0) as custo_total,
+            coalesce(sum(t.amount) filter (where t.type='expense' and a.code like '4.1%'), 0) as custo_aquisicao
+       from public.vehicles v
+       left join fin.transactions t on t.vehicle_id = v.id and t.status in ('confirmed','reconciled')
+       left join fin.chart_of_accounts a on a.id = t.account_id
+      group by v.id, v.brand, v.model, v.year, v.placa, v.status
+      ${onlyWithActivity ? "having coalesce(sum(t.amount),0) <> 0" : ""}
+      order by (coalesce(sum(t.amount) filter (where t.type='revenue'),0) - coalesce(sum(t.amount) filter (where t.type='expense'),0)) desc`
   );
-  return rows.map((r) => ({
-    ...r,
-    receita: Number(r.receita),
-    custo_total: Number(r.custo_total),
-    resultado: Number(r.resultado),
-  }));
+
+  return rows.map((r) => {
+    const receita = Number(r.receita);
+    const custo_total = Number(r.custo_total);
+    const custo_aquisicao = Number(r.custo_aquisicao);
+    const resultado = round2(receita - custo_total);
+    const icms = icmsSeminovo(receita, custo_aquisicao, aliquota);
+    return {
+      vehicle_id: r.vehicle_id, brand: r.brand, model: r.model, year: r.year,
+      placa: r.placa, status: r.status,
+      receita, custo_total, custo_aquisicao,
+      resultado,
+      icms,
+      resultado_liquido: round2(resultado - icms),
+    };
+  });
+}
+
+function round2(n) {
+  return Math.round((Number(n) + Number.EPSILON) * 100) / 100;
 }

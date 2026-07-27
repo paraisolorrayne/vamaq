@@ -26,9 +26,24 @@ create table if not exists fin.companies (
   name               text not null,
   cnpj               text unique,
   regime_tributario  text not null default 'lucro_presumido',
+  inscricao_estadual  text,
+  inscricao_municipal text,
+  -- ICMS do seminovo: base = lucro (venda − compra), alíquota 5% (contador Rodrigo).
+  icms_seminovo_aliquota numeric(5,2) not null default 5,
   created_at         timestamptz not null default now(),
   updated_at         timestamptz not null default now()
 );
+alter table fin.companies add column if not exists inscricao_estadual text;
+alter table fin.companies add column if not exists inscricao_municipal text;
+alter table fin.companies add column if not exists icms_seminovo_aliquota numeric(5,2) not null default 5;
+
+-- Dados fiscais da Vamaq (idempotente).
+update fin.companies
+   set inscricao_estadual = '005480333.00-93',
+       inscricao_municipal = '737.533-00',
+       regime_tributario = 'lucro_presumido',
+       icms_seminovo_aliquota = 5
+ where cnpj = '45.348.469/0001-54';
 
 -- Plano de contas (hierárquico opcional via parent_id; o DRE usa o code:
 -- receita = type revenue; CMV = expense com code começando em 4; despesa
