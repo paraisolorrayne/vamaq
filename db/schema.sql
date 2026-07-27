@@ -40,13 +40,28 @@ create table if not exists vehicles (
   description text not null default '',
   published boolean not null default true,    -- false = oculto no site público
 
+  -- Ciclo de vida do veículo (PR-C do ADR-002). `published` segue sendo o
+  -- único critério de exibição pública; `status` preserva o histórico do carro
+  -- dentro da Vamaq (vendido/inativo não são apagados, só saem do site).
+  status text not null default 'disponivel',
+
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
 
   constraint year_range check (year between 1950 and 2035),
   constraint quilometragem_non_negative check (quilometragem >= 0),
-  constraint price_non_negative check (price is null or price >= 0)
+  constraint price_non_negative check (price is null or price >= 0),
+  constraint status_valido check (status in ('disponivel', 'reservado', 'vendido', 'inativo'))
 );
+
+-- idempotente para bancos já criados antes da coluna status existir.
+alter table vehicles add column if not exists status text not null default 'disponivel';
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'status_valido') then
+    alter table vehicles add constraint status_valido
+      check (status in ('disponivel', 'reservado', 'vendido', 'inativo'));
+  end if;
+end $$;
 
 create index if not exists vehicles_published_idx on vehicles(published);
 create index if not exists vehicles_featured_idx on vehicles(featured) where featured = true;

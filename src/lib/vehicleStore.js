@@ -11,9 +11,11 @@ import { getPool } from '@/lib/db';
 const SELECT_COLS = `
   id, slug, brand, model, year, price, quilometragem,
   fuel, transmission, power, color, body_type, featured, badge,
-  opcionais, blindagem, images, specs, description, published,
+  opcionais, blindagem, images, specs, description, published, status,
   created_at, updated_at
 `;
+
+const VEHICLE_STATUSES = ['disponivel', 'reservado', 'vendido', 'inativo'];
 
 function rowToVehicle(row) {
   if (!row) return null;
@@ -139,3 +141,27 @@ export async function deleteVehicle(id) {
   const { rowCount } = await pool.query('delete from vehicles where id = $1', [id]);
   return rowCount > 0;
 }
+
+// Ciclo de vida por status (PR-C do ADR-002). Substitui a exclusão na UI:
+// 'vendido'/'inativo' também saem do site (published=false) na mesma operação,
+// preservando o histórico do veículo. Retorna o veículo atualizado ou null.
+export async function setVehicleStatus(id, status) {
+  const pool = getPool();
+  if (!pool) throw new Error('DATABASE_URL ausente');
+  if (!VEHICLE_STATUSES.includes(status)) {
+    throw new Error(`Status inválido: ${status}`);
+  }
+  // vendido/inativo somem do site; disponível/reservado não mexem em published.
+  const unpublish = status === 'vendido' || status === 'inativo';
+  const { rows } = await pool.query(
+    `update vehicles
+        set status = $2,
+            published = case when $3 then false else published end
+      where id = $1
+      returning ${SELECT_COLS}`,
+    [id, status, unpublish]
+  );
+  return rows.length ? rowToVehicle(rows[0]) : null;
+}
+
+export { VEHICLE_STATUSES };

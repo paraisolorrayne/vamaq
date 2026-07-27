@@ -26,9 +26,15 @@ export default function EstoquePage() {
     return () => { cancelled = true; };
   }, [refreshKey]);
 
-  async function handleDelete(id) {
-    if (!confirm("Tem certeza que deseja excluir este veículo?")) return;
-    await fetch(`/api/admin/vehicles/${id}`, { method: "DELETE" });
+  // Desativar em vez de excluir: o veículo sai do site mas fica no estoque,
+  // preservando o histórico (PR-C do ADR-002). Reativar volta pra 'disponível'.
+  async function setStatus(id, status, confirmMsg) {
+    if (confirmMsg && !confirm(confirmMsg)) return;
+    await fetch(`/api/admin/vehicles/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
     setRefreshKey((k) => k + 1);
   }
 
@@ -141,12 +147,7 @@ export default function EstoquePage() {
                         >
                           Editar
                         </Link>
-                        <button
-                          onClick={() => handleDelete(v.id)}
-                          className={styles.btnDanger}
-                        >
-                          Excluir
-                        </button>
+                        <StatusButton vehicle={v} onSet={setStatus} />
                       </div>
                     </td>
                   </tr>
@@ -200,12 +201,7 @@ export default function EstoquePage() {
                   >
                     Editar
                   </Link>
-                  <button
-                    onClick={() => handleDelete(v.id)}
-                    className={styles.btnDanger}
-                  >
-                    Excluir
-                  </button>
+                  <StatusButton vehicle={v} onSet={setStatus} />
                 </div>
               </div>
             ))}
@@ -217,7 +213,66 @@ export default function EstoquePage() {
   );
 }
 
+// Ação de ciclo de vida na lista: substitui "Excluir". Carro inativo pode ser
+// reativado; os demais podem ser desativados (saem do site, ficam no estoque).
+function StatusButton({ vehicle, onSet }) {
+  if (vehicle.status === "inativo") {
+    return (
+      <button
+        onClick={() => onSet(vehicle.id, "disponivel")}
+        className={styles.btnSecondary}
+      >
+        Reativar
+      </button>
+    );
+  }
+  return (
+    <button
+      onClick={() =>
+        onSet(
+          vehicle.id,
+          "inativo",
+          "Desativar este veículo? Ele sai do site, mas continua no estoque (histórico preservado). Dá para reativar depois."
+        )
+      }
+      className={styles.btnDanger}
+    >
+      Desativar
+    </button>
+  );
+}
+
 function StatusBadge({ vehicle }) {
+  if (vehicle.status === "vendido") {
+    return (
+      <span
+        className={styles.badgeWarning}
+        style={{ background: "#dcfce7", color: "#15803d" }}
+      >
+        Vendido
+      </span>
+    );
+  }
+  if (vehicle.status === "inativo") {
+    return (
+      <span
+        className={styles.badgeWarning}
+        style={{ background: "#f3f4f6", color: "#6b7280" }}
+      >
+        Inativo
+      </span>
+    );
+  }
+  if (vehicle.status === "reservado") {
+    return (
+      <span
+        className={styles.badgeWarning}
+        style={{ background: "#fef9c3", color: "#a16207" }}
+      >
+        Reservado
+      </span>
+    );
+  }
   if (!vehicle.published) {
     return (
       <span
