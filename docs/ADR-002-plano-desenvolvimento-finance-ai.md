@@ -188,6 +188,12 @@ rejeitado, mesmo funcionando.
 
 ### 4.4 Ciclo de vida do veículo (o que muda no estoque — e só isso)
 
+> **Entregue 2026-07-26 (PR-C + PR-Inventário):** `status` (ciclo de vida) + `placa` + `documentos`
+> (jsonb) são todos aditivos em `vehicles` — nenhuma tabela de veículo paralela. Documentos vão
+> para disco privado (`data/vehicle-docs/`, servidos só com login), **não** para `public/`. Carro
+> sem placa/documento aparece como **pendência** na lista. `fin.v_vehicles` expõe placa (não os
+> documentos). Blindagem provada por `npm test`.
+
 Único ponto em que o financeiro justifica mexer no estoque, e ainda assim de forma aditiva:
 
 12. `vehicles` ganha `status text not null default 'disponivel'` com
