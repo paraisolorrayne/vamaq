@@ -123,6 +123,31 @@ create index if not exists tx_vehicle_idx on fin.transactions(vehicle_id) where 
 create unique index if not exists tx_external_uniq
   on fin.transactions(company_id, source, external_id) where external_id is not null;
 
+-- Contas a pagar (com alçada de aprovação — ADR-001c §2).
+-- Dois eixos independentes: approval_status (fluxo de aprovação) e o "status"
+-- de pagamento (pago/a vencer/vencido) calculado a partir de paid_at + due_date.
+-- Aprovar NÃO paga; pagar NÃO gera lançamento (é uma ilha, como no original).
+create table if not exists fin.bills_payable (
+  id              uuid primary key default gen_random_uuid(),
+  company_id      uuid not null references fin.companies(id) on delete cascade,
+  description     text not null,
+  value           numeric(15,2) not null,
+  due_date        date not null,
+  contact_id      uuid references fin.contacts(id),
+  account_id      uuid references fin.chart_of_accounts(id),
+  cost_center_id  uuid references fin.cost_centers(id),
+  approval_status text not null default 'approved',
+  created_by      uuid,
+  approved_by     uuid,
+  approved_at     timestamptz,
+  paid_at         date,
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now(),
+  constraint bp_approval_check check (approval_status in ('awaiting_approval','approved','rejected'))
+);
+create index if not exists bp_company_due_idx on fin.bills_payable(company_id, due_date);
+create index if not exists bp_approval_idx on fin.bills_payable(approval_status);
+
 -- updated_at automático
 create or replace function fin.set_updated_at()
 returns trigger language plpgsql as $$
@@ -133,6 +158,9 @@ create trigger companies_set_updated_at before update on fin.companies
   for each row execute function fin.set_updated_at();
 drop trigger if exists transactions_set_updated_at on fin.transactions;
 create trigger transactions_set_updated_at before update on fin.transactions
+  for each row execute function fin.set_updated_at();
+drop trigger if exists bills_set_updated_at on fin.bills_payable;
+create trigger bills_set_updated_at before update on fin.bills_payable
   for each row execute function fin.set_updated_at();
 
 -- View de margem por veículo: junta lançamentos confirmados ao estoque.

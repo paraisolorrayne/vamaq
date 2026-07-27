@@ -3,7 +3,7 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { computeDRE, computeVehicleMargin, icmsSeminovo } from "../src/lib/fin/calc.js";
+import { computeDRE, computeVehicleMargin, icmsSeminovo, podeAprovar } from "../src/lib/fin/calc.js";
 
 const TXS = [
   { type: "revenue", amount: 200000, code: "3.1", status: "confirmed" }, // venda
@@ -50,6 +50,14 @@ test("ICMS seminovo: 5% do lucro (venda − compra)", () => {
   assert.equal(icmsSeminovo(140000, 150000, 5), 0);
   // alíquota default 5%
   assert.equal(icmsSeminovo(100000, 80000), 1000);
+});
+
+test("alçada de aprovação", () => {
+  assert.equal(podeAprovar({ role: "admin" }, 999999), true);           // admin: ilimitado
+  assert.equal(podeAprovar({ role: "financeiro", approval_limit: 5000 }, 3000), true);  // dentro
+  assert.equal(podeAprovar({ role: "financeiro", approval_limit: 5000 }, 8000), false); // acima
+  assert.equal(podeAprovar({ role: "financeiro", approval_limit: null }, 100), false);  // sem alçada
+  assert.equal(podeAprovar(null, 1), false);
 });
 
 test("margem de um veículo: receita − custo", () => {

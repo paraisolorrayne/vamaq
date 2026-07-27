@@ -7,6 +7,7 @@ import {
   resetPasswordAction,
   toggleActiveAction,
   updateRoleAction,
+  updateLimitAction,
 } from "./actions";
 
 export default function UsuariosClient({ users, roles, meId }) {
@@ -63,6 +64,12 @@ export default function UsuariosClient({ users, roles, meId }) {
   function handleRole(u, newRole) {
     startTransition(async () => {
       await updateRoleAction(u.id, newRole);
+    });
+  }
+
+  function handleLimit(u, value) {
+    startTransition(async () => {
+      await updateLimitAction(u.id, value);
     });
   }
 
@@ -167,6 +174,7 @@ export default function UsuariosClient({ users, roles, meId }) {
                 <th>Nome</th>
                 <th>Login</th>
                 <th>Papel</th>
+                <th title="Valor que aprova sozinho em Contas a Pagar">Alçada</th>
                 <th>Situação</th>
                 <th>Ações</th>
               </tr>
@@ -189,6 +197,25 @@ export default function UsuariosClient({ users, roles, meId }) {
                         <option key={key} value={key}>{label}</option>
                       ))}
                     </select>
+                  </td>
+                  <td>
+                    {u.role === "admin" ? (
+                      <span style={{ fontSize: "0.8rem", color: "#15803d" }}>ilimitado</span>
+                    ) : (
+                      <input
+                        type="number"
+                        defaultValue={u.approval_limit ?? ""}
+                        onBlur={(e) => {
+                          const v = e.target.value;
+                          if (String(u.approval_limit ?? "") !== v) handleLimit(u, v);
+                        }}
+                        disabled={isPending}
+                        placeholder="R$ 0"
+                        className={styles.formInput}
+                        style={{ padding: "4px 8px", fontSize: "0.82rem", width: 110 }}
+                        title="Valor que aprova sozinho; acima disso, precisa de aprovação"
+                      />
+                    )}
                   </td>
                   <td>
                     {!u.active ? (

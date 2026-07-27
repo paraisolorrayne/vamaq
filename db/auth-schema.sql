@@ -41,6 +41,10 @@ alter table users drop constraint if exists users_role_check;
 alter table users add constraint users_role_check
   check (role in ('admin', 'estoque', 'financeiro', 'vendedor', 'secretaria'));
 
+-- Alçada de aprovação (Contas a Pagar): valor que o usuário pode aprovar sozinho.
+-- null = sem alçada própria (admin é sempre ilimitado, tratado na aplicação).
+alter table users add column if not exists approval_limit numeric(15,2);
+
 -- email sempre normalizado em minúsculas na aplicação; índice único já cobre.
 create index if not exists users_active_idx on users(active) where active = true;
 

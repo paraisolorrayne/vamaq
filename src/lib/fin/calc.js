@@ -83,6 +83,18 @@ export function icmsSeminovo(receita, custoAquisicao, aliquota = 5) {
   return round2((base * (Number(aliquota) || 0)) / 100);
 }
 
+/**
+ * Alçada de aprovação (Contas a Pagar — ADR-001c §2, correção #1: imposta na
+ * camada de servidor, não só no hook). admin é sempre ilimitado; os demais
+ * aprovam até o próprio approval_limit (null = 0, precisa de aprovação).
+ */
+export function podeAprovar(user, value) {
+  if (!user) return false;
+  if (user.role === "admin") return true;
+  const limit = Number(user.approval_limit) || 0;
+  return Number(value) <= limit;
+}
+
 function round2(n) {
   return Math.round((Number(n) + Number.EPSILON) * 100) / 100;
 }

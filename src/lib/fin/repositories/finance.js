@@ -255,3 +255,83 @@ export async function getVehicleMargins({ onlyWithActivity = true } = {}) {
 function round2(n) {
   return Math.round((Number(n) + Number.EPSILON) * 100) / 100;
 }
+
+// ---- Contas a pagar --------------------------------------------------------
+const BILL_SELECT = `
+  select b.id, b.description, b.value, b.due_date, b.approval_status,
+         b.paid_at, b.created_by, b.approved_by, b.approved_at,
+         b.contact_id, ct.name as contact_name,
+         b.account_id, a.code as account_code, a.name as account_name,
+         b.cost_center_id, cc.name as cost_center_name
+    from fin.bills_payable b
+    left join fin.contacts ct on ct.id = b.contact_id
+    left join fin.chart_of_accounts a on a.id = b.account_id
+    left join fin.cost_centers cc on cc.id = b.cost_center_id
+`;
+
+function rowToBill(r) {
+  return { ...r, value: r.value != null ? Number(r.value) : 0 };
+}
+
+export async function listBills() {
+  const company = await getCompanyId();
+  if (!company) return [];
+  const { rows } = await finQuery(
+    `${BILL_SELECT} where b.company_id=$1 order by (b.paid_at is not null), b.due_date`,
+    [company]
+  );
+  return rows.map(rowToBill);
+}
+
+export async function getBill(id) {
+  const company = await getCompanyId();
+  const { rows } = await finQuery(`${BILL_SELECT} where b.id=$1 and b.company_id=$2`, [id, company]);
+  return rows.length ? rowToBill(rows[0]) : null;
+}
+
+// approvalStatus decidido pelo servidor (alçada) — nunca vem do cliente.
+export async function createBill(data, approvalStatus, createdBy) {
+  const company = await getCompanyId();
+  const { rows } = await finQuery(
+    `insert into fin.bills_payable
+       (company_id, description, value, due_date, contact_id, account_id, cost_center_id, approval_status, created_by)
+     values ($1,$2,$3,$4,$5,$6,$7,$8,$9) returning id`,
+    [company, data.description, data.value, data.due_date, data.contact_id || null,
+     data.account_id || null, data.cost_center_id || null, approvalStatus, createdBy || null]
+  );
+  return getBill(rows[0].id);
+}
+
+export async function setBillApproval(id, status, approverId) {
+  const company = await getCompanyId();
+  const { rows } = await finQuery(
+    `update fin.bills_payable
+        set approval_status=$3,
+            approved_by = case when $3='approved' then $4 else approved_by end,
+            approved_at = case when $3='approved' then now() else approved_at end
+      where id=$1 and company_id=$2 returning id`,
+    [id, company, status, approverId || null]
+  );
+  return rows.length ? getBill(id) : null;
+}
+
+export async function markBillPaid(id, paid) {
+  const company = await getCompanyId();
+  // só paga conta aprovada
+  const { rows } = await finQuery(
+    `update fin.bills_payable
+        set paid_at = case when $3 then coalesce(paid_at, current_date) else null end
+      where id=$1 and company_id=$2 and approval_status='approved' returning id`,
+    [id, company, Boolean(paid)]
+  );
+  return rows.length ? getBill(id) : null;
+}
+
+export async function deleteBill(id) {
+  const company = await getCompanyId();
+  const { rowCount } = await finQuery(
+    `delete from fin.bills_payable where id=$1 and company_id=$2 and paid_at is null`,
+    [id, company]
+  );
+  return rowCount > 0;
+}

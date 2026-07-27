@@ -25,10 +25,19 @@ function validRole(role) {
 
 export async function listUsers() {
   const { rows } = await query(
-    `select id, name, email, role, active, must_change_password, created_at
+    `select id, name, email, role, active, must_change_password, approval_limit, created_at
        from users order by created_at asc`
   );
   return rows;
+}
+
+export async function updateApprovalLimit(id, limit) {
+  const value = limit === null || limit === "" ? null : Number(limit);
+  const { rows } = await query(
+    `update users set approval_limit = $2 where id = $1 returning id, approval_limit`,
+    [id, Number.isFinite(value) ? value : null]
+  );
+  return rows.length ? rows[0] : null;
 }
 
 /** Cria usuário com senha temporária. Retorna { user, tempPassword } ou { error }. */

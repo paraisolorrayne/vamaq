@@ -50,7 +50,7 @@ export async function readSessionUser() {
   if (!token) return null;
 
   const { rows } = await query(
-    `select u.id, u.name, u.email, u.role, u.must_change_password
+    `select u.id, u.name, u.email, u.role, u.must_change_password, u.approval_limit
        from sessions s
        join users u on u.id = s.user_id
       where s.token_hash = $1

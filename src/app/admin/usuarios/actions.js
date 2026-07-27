@@ -7,6 +7,7 @@ import {
   resetPassword,
   setUserActive,
   updateUserRole,
+  updateApprovalLimit,
 } from "@/lib/auth/users";
 
 const LOGIN_URL = "https://vamaqmotors.com.br/login";
@@ -73,6 +74,13 @@ export async function updateRoleAction(id, role) {
   await requireRole("admin");
   const res = await updateUserRole(id, role);
   if (res.error) return { error: res.error };
+  revalidatePath("/admin/usuarios");
+  return { ok: true };
+}
+
+export async function updateLimitAction(id, limit) {
+  await requireRole("admin");
+  await updateApprovalLimit(id, limit);
   revalidatePath("/admin/usuarios");
   return { ok: true };
 }
