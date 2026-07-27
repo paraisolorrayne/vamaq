@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { href: "/admin/documentos", label: "Documentos", icon: "📄" },
   { href: "/admin/criativos", label: "Gerar Criativos", icon: "🎨" },
   { href: "/admin/fipe", label: "Tabela FIPE", icon: "💰" },
+  { href: "/admin/tutoriais", label: "Tutoriais", icon: "📚" },
 ];
 
 export default function AdminNav({ user }) {

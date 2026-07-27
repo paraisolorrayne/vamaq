@@ -1,10 +1,88 @@
-/* Guia de uso do gerador de documentos — segue o visual do painel admin
-   (cards brancos, laranja #FF6A00, títulos em Rajdhani). */
+/* Central de Tutoriais — visual do painel admin (cards brancos, laranja
+   #FF6A00, títulos em Rajdhani). Compartilhado pelo hub e por todos os
+   tutoriais. */
 
 .wrap {
   max-width: 860px;
 }
 
+/* ---------- Hub: grade de cards de tutorial ---------- */
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.card {
+  display: block;
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  text-decoration: none;
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  border-color: #ff6a00;
+}
+
+.cardSoon {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.cardIcon {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.cardTitle {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0a0a14;
+  margin: 12px 0 4px;
+  font-family: var(--font-heading, "Rajdhani", "Inter", sans-serif);
+  letter-spacing: 0.02em;
+}
+
+.cardDesc {
+  font-size: 0.88rem;
+  color: #666;
+  margin: 0;
+}
+
+.soonBadge {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #a8752e;
+  background: #fff7e8;
+  border: 1px solid #e8b84b;
+  border-radius: 999px;
+  padding: 1px 8px;
+  margin-top: 8px;
+}
+
+/* ---------- Navegação entre tutoriais ---------- */
+.backLink {
+  display: inline-block;
+  font-size: 0.85rem;
+  color: #666;
+  text-decoration: none;
+  margin-bottom: 4px;
+}
+.backLink:hover {
+  color: #ff6a00;
+}
+
+/* ---------- Conteúdo dos tutoriais ---------- */
 .sectionTitle {
   font-size: 1.2rem;
   font-weight: 700;
@@ -205,7 +283,7 @@
   color: #0a0a14 !important;
 }
 
-/* Checklist de conferência */
+/* Checklist */
 .checklist {
   margin: 12px 0;
   padding: 0;

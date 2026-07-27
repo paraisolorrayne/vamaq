@@ -179,7 +179,7 @@ export default function DocumentosPage() {
             Gere contratos e documentos a partir de modelos prontos
           </p>
         </div>
-        <Link href="/admin/documentos/guia" className={styles.btnSecondary}>
+        <Link href="/admin/tutoriais/documentos" className={styles.btnSecondary}>
           📖 Como usar
         </Link>
       </div>
