@@ -34,10 +34,10 @@ const TUTORIAIS = [
     desc: "Consultar o preço de referência de carros, motos e caminhões.",
   },
   {
+    href: "/admin/tutoriais/financeiro",
     icon: "📊",
     title: "Financeiro",
-    desc: "Lançamentos, DRE e margem por veículo.",
-    soon: true,
+    desc: "Lançamentos, DRE, margem por veículo, cobranças e contas a pagar.",
   },
 ];
 
