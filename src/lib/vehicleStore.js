@@ -12,7 +12,7 @@ const SELECT_COLS = `
   id, slug, brand, model, year, price, quilometragem,
   fuel, transmission, power, color, body_type, featured, badge,
   opcionais, blindagem, images, specs, description, published, status,
-  placa, documentos,
+  placa, documentos, renave,
   created_at, updated_at
 `;
 
@@ -70,6 +70,7 @@ function normalize(body) {
     // documentos NÃO entram aqui — são geridos pelas rotas de documento, para o
     // formulário de edição não sobrescrever a lista.
     placa: body.placa ? String(body.placa).toUpperCase().trim() : null,
+    renave: body.renave && typeof body.renave === 'object' ? body.renave : {},
   };
 }
 
@@ -101,10 +102,10 @@ export async function addVehicle(body) {
     `insert into vehicles (
        slug, brand, model, year, price, quilometragem,
        fuel, transmission, power, color, body_type, featured, badge,
-       opcionais, blindagem, images, specs, description, published, placa
+       opcionais, blindagem, images, specs, description, published, placa, renave
      ) values (
        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,
-       $14::jsonb,$15::jsonb,$16::jsonb,$17::jsonb,$18,$19,$20
+       $14::jsonb,$15::jsonb,$16::jsonb,$17::jsonb,$18,$19,$20,$21::jsonb
      )
      returning ${SELECT_COLS}`,
     [
@@ -112,7 +113,7 @@ export async function addVehicle(body) {
       v.fuel, v.transmission, v.power, v.color, v.body_type, v.featured, v.badge,
       JSON.stringify(v.opcionais), JSON.stringify(v.blindagem),
       JSON.stringify(v.images), JSON.stringify(v.specs), v.description, v.published,
-      v.placa,
+      v.placa, JSON.stringify(v.renave),
     ]
   );
   return rowToVehicle(rows[0]);
@@ -128,7 +129,7 @@ export async function updateVehicle(id, body) {
        fuel=$7, transmission=$8, power=$9, color=$10, body_type=$11,
        featured=$12, badge=$13,
        opcionais=$14::jsonb, blindagem=$15::jsonb, images=$16::jsonb, specs=$17::jsonb,
-       description=$18, published=$19, placa=$20
+       description=$18, published=$19, placa=$20, renave=$21::jsonb
      where id=$1
      returning ${SELECT_COLS}`,
     [
@@ -136,7 +137,7 @@ export async function updateVehicle(id, body) {
       v.fuel, v.transmission, v.power, v.color, v.body_type, v.featured, v.badge,
       JSON.stringify(v.opcionais), JSON.stringify(v.blindagem),
       JSON.stringify(v.images), JSON.stringify(v.specs), v.description, v.published,
-      v.placa,
+      v.placa, JSON.stringify(v.renave),
     ]
   );
   return rows.length ? rowToVehicle(rows[0]) : null;

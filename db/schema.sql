@@ -52,6 +52,11 @@ create table if not exists vehicles (
   placa text,
   documentos jsonb not null default '[]'::jsonb,
 
+  -- RENAVE (Registro Nacional de Veículos em Estoque) — Resolução Contran
+  -- 1.026/2026, obrigatório nacionalmente. Rastreamento do ciclo entrada→saída.
+  -- { status: nao_iniciado|entrada|registrado|saida, protocolo, obs }.
+  renave jsonb not null default '{}'::jsonb,
+
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
 
@@ -65,6 +70,7 @@ create table if not exists vehicles (
 alter table vehicles add column if not exists status text not null default 'disponivel';
 alter table vehicles add column if not exists placa text;
 alter table vehicles add column if not exists documentos jsonb not null default '[]'::jsonb;
+alter table vehicles add column if not exists renave jsonb not null default '{}'::jsonb;
 do $$ begin
   if not exists (select 1 from pg_constraint where conname = 'status_valido') then
     alter table vehicles add constraint status_valido

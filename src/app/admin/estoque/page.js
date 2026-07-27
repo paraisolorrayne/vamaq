@@ -56,7 +56,7 @@ export default function EstoquePage() {
             <>
               {" · "}
               <span style={{ color: "#92400e", fontWeight: 600 }}>
-                ⚠ {pendentes} com pendência de inventário (placa/documentos)
+                ⚠ {pendentes} com pendência de inventário (placa/documentos/RENAVE)
               </span>
             </>
           )}
@@ -260,6 +260,9 @@ function vehiclePendencias(v) {
   if (!v.placa) faltas.push("placa");
   if (!Array.isArray(v.documentos) || v.documentos.length === 0)
     faltas.push("documentos");
+  const renaveStatus = v.renave?.status || "nao_iniciado";
+  if (renaveStatus !== "registrado" && renaveStatus !== "saida")
+    faltas.push("RENAVE");
   return faltas;
 }
 

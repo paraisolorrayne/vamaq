@@ -31,6 +31,7 @@ const EMPTY_VEHICLE = {
   description: "",
   specs: { engine: "", acceleration: "", topSpeed: "", doors: 4, seats: 5 },
   images: { main: "", gallery: [] },
+  renave: { status: "nao_iniciado", protocolo: "", obs: "" },
 };
 
 // Fotos de celular (3–8MB, 12MP+) estouram limites de corpo do proxy e deixam
@@ -129,6 +130,7 @@ function NovoVeiculoForm() {
             quilometragem: data.quilometragem ?? "",
             badge: data.badge || "",
             placa: data.placa || "",
+            renave: { status: "nao_iniciado", protocolo: "", obs: "", ...(data.renave || {}) },
           });
         }
         setLoadingEdit(false);
@@ -147,6 +149,13 @@ function NovoVeiculoForm() {
     setForm((prev) => ({
       ...prev,
       specs: { ...prev.specs, [field]: value },
+    }));
+  }, []);
+
+  const handleRenave = useCallback((field, value) => {
+    setForm((prev) => ({
+      ...prev,
+      renave: { ...prev.renave, [field]: value },
     }));
   }, []);
 
@@ -776,6 +785,49 @@ function NovoVeiculoForm() {
                 value={form.specs.seats}
                 onChange={(e) => handleSpecChange("seats", e.target.value)}
                 className={styles.formInput}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* RENAVE — Registro Nacional de Veículos em Estoque (Res. Contran
+            1.026/2026). Interno; não aparece no site. */}
+        <div className={styles.card} style={{ marginBottom: 24 }}>
+          <h3 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: 4 }}>RENAVE</h3>
+          <p style={{ fontSize: "0.85rem", color: "#666", marginTop: 0, marginBottom: 16 }}>
+            Registro Nacional de Veículos em Estoque (obrigatório desde 2026).
+            Acompanhe aqui o ciclo entrada → registrado → saída de cada carro.
+          </p>
+          <div className={styles.formGrid}>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Situação no RENAVE</label>
+              <select
+                className={styles.formSelect}
+                value={form.renave?.status || "nao_iniciado"}
+                onChange={(e) => handleRenave("status", e.target.value)}
+              >
+                <option value="nao_iniciado">Não iniciado</option>
+                <option value="entrada">Entrada registrada</option>
+                <option value="registrado">Registrado (em estoque)</option>
+                <option value="saida">Saída / transferido (ATPV-e)</option>
+              </select>
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Protocolo / ATPV-e</label>
+              <input
+                className={styles.formInput}
+                value={form.renave?.protocolo || ""}
+                onChange={(e) => handleRenave("protocolo", e.target.value)}
+                placeholder="Nº do protocolo ou da ATPV-e"
+              />
+            </div>
+            <div className={`${styles.formGroup} ${styles.formGroupFull}`}>
+              <label className={styles.formLabel}>Observações</label>
+              <input
+                className={styles.formInput}
+                value={form.renave?.obs || ""}
+                onChange={(e) => handleRenave("obs", e.target.value)}
+                placeholder="Ex: aguardando documentação do antigo dono"
               />
             </div>
           </div>
