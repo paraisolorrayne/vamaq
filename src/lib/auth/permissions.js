@@ -44,9 +44,8 @@ export function canAccessPath(role, pathname) {
 
 /** Itens de menu que este papel deve ver, na ordem de exibição. */
 export function navFor(role) {
-  const order = ["dashboard", "estoque", "documentos", "criativos", "fipe", "financeiro", "tutoriais", "usuarios"];
-  // financeiro ainda não tem tela — some do menu até o módulo chegar.
-  const HIDDEN = new Set(["financeiro"]);
+  const order = ["dashboard", "estoque", "financeiro", "documentos", "criativos", "fipe", "tutoriais", "usuarios"];
+  const HIDDEN = new Set();
   return order
     .filter((key) => !HIDDEN.has(key))
     .map((key) => SECTIONS.find((s) => s.key === key))
