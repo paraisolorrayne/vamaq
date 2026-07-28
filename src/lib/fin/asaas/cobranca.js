@@ -78,6 +78,43 @@ const STATUS_LABEL = {
   DELETED: "Cancelada",
 };
 
+/**
+ * Ao receber pagamento (webhook), lança a receita no financeiro — uma vez só.
+ * Dedup por (source='asaas', external_id) e vínculo transaction_id, então
+ * eventos repetidos não duplicam. Só roda para cobrança paga ainda sem lançamento.
+ */
+export async function lancarRecebimentoSeNecessario(asaasId) {
+  const company = await getCompanyId();
+  const { rows } = await finQuery(
+    `select * from fin.asaas_payments where asaas_id=$1 and company_id=$2`,
+    [asaasId, company]
+  );
+  const p = rows[0];
+  if (!p) return;
+  const paid = ["RECEIVED", "CONFIRMED", "RECEIVED_IN_CASH"].includes(p.status);
+  if (!paid || p.transaction_id) return;
+
+  const ins = await finQuery(
+    `insert into fin.transactions
+       (company_id, date, description, amount, type, contact_id, vehicle_id, status, source, external_id)
+     values ($1, coalesce($2, current_date), $3, $4, 'revenue', $5, $6, 'reconciled', 'asaas', $7)
+     on conflict (company_id, source, external_id) where external_id is not null do nothing
+     returning id`,
+    [company, p.paid_at, `Recebimento Asaas ${p.asaas_id}`, p.value, p.contact_id, p.vehicle_id, p.asaas_id]
+  );
+  let txId = ins.rows[0]?.id;
+  if (!txId) {
+    const ex = await finQuery(
+      `select id from fin.transactions where company_id=$1 and source='asaas' and external_id=$2`,
+      [company, p.asaas_id]
+    );
+    txId = ex.rows[0]?.id;
+  }
+  if (txId) {
+    await finQuery(`update fin.asaas_payments set transaction_id=$2 where id=$1`, [p.id, txId]);
+  }
+}
+
 export async function listCobrancas() {
   const company = await getCompanyId();
   if (!company) return [];

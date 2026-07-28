@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { finQuery } from "@/lib/fin/db";
 import { getCompanyId } from "@/lib/fin/repositories/finance";
+import { lancarRecebimentoSeNecessario } from "@/lib/fin/asaas/cobranca";
 
 // Webhook do Asaas — recebe eventos de cobrança e espelha em fin.asaas_payments.
 // Fica FORA de /api/admin (o Asaas chama de fora), mas exige o token combinado
@@ -53,6 +54,8 @@ export async function POST(request) {
         p.invoiceUrl || p.bankSlipUrl || null, JSON.stringify(body),
       ]
     );
+    // Cobrança paga → lança a receita no financeiro (uma vez, com dedup).
+    if (paid) await lancarRecebimentoSeNecessario(p.id);
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("Asaas webhook error:", err);

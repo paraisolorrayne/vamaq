@@ -25,6 +25,7 @@ const SECTIONS = [
   { key: "criativos", prefix: "/admin/criativos", label: "Gerar Criativos", icon: "🎨", roles: ["vendedor", "secretaria"] },
   { key: "fipe", prefix: "/admin/fipe", label: "Tabela FIPE", icon: "💰", roles: ["estoque", "financeiro", "secretaria"] },
   { key: "estoque", prefix: "/admin/estoque", label: "Estoque", icon: "🚗", roles: ["estoque", "financeiro", "vendedor", "secretaria"] },
+  { key: "crm", prefix: "/admin/crm", label: "CRM (Vendas)", icon: "🤝", roles: ["vendedor", "secretaria"] },
   { key: "financeiro", prefix: "/admin/financeiro", label: "Financeiro", icon: "📊", roles: ["financeiro"] },
   { key: "tutoriais", prefix: "/admin/tutoriais", label: "Tutoriais", icon: "📚", roles: ["estoque", "financeiro", "vendedor", "secretaria"] },
   { key: "dashboard", prefix: "/admin", label: "Dashboard", icon: "📈", roles: ["estoque", "financeiro", "vendedor", "secretaria"] },
@@ -44,7 +45,7 @@ export function canAccessPath(role, pathname) {
 
 /** Itens de menu que este papel deve ver, na ordem de exibição. */
 export function navFor(role) {
-  const order = ["dashboard", "estoque", "financeiro", "documentos", "criativos", "fipe", "tutoriais", "usuarios"];
+  const order = ["dashboard", "estoque", "crm", "financeiro", "documentos", "criativos", "fipe", "tutoriais", "usuarios"];
   const HIDDEN = new Set();
   return order
     .filter((key) => !HIDDEN.has(key))
