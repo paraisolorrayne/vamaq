@@ -335,3 +335,112 @@ export async function deleteBill(id) {
   );
   return rowCount > 0;
 }
+
+// ---- Fechamento mensal -----------------------------------------------------
+function monthRange(ano, mes) {
+  const from = `${ano}-${String(mes).padStart(2, "0")}-01`;
+  const lastDay = new Date(ano, mes, 0).getDate();
+  const to = `${ano}-${String(mes).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+  return { from, to };
+}
+
+export async function getFechamentoMes(ano, mes) {
+  const company = await getCompanyId();
+  const { from, to } = monthRange(ano, mes);
+  const dre = await getDRE({ from, to });
+  // pendências do mês: lançamentos pendentes e confirmados sem conta.
+  const pend = await finQuery(
+    `select
+        count(*) filter (where status='pending')::int as pendentes,
+        count(*) filter (where status in ('confirmed','reconciled') and account_id is null)::int as sem_conta
+       from fin.transactions
+      where company_id=$1 and date >= $2 and date <= $3`,
+    [company, from, to]
+  );
+  const closed = company
+    ? (await finQuery(`select closed_at, snapshot from fin.monthly_close where company_id=$1 and ano=$2 and mes=$3`, [company, ano, mes])).rows[0] || null
+    : null;
+  return { ano, mes, dre, pendencias: pend.rows[0] || { pendentes: 0, sem_conta: 0 }, closed };
+}
+
+export async function fecharMes(ano, mes, userId) {
+  const company = await getCompanyId();
+  const { dre } = await getFechamentoMes(ano, mes);
+  await finQuery(
+    `insert into fin.monthly_close (company_id, ano, mes, snapshot, closed_by)
+       values ($1,$2,$3,$4::jsonb,$5)
+     on conflict (company_id, ano, mes) do update set snapshot=excluded.snapshot, closed_by=excluded.closed_by, closed_at=now()`,
+    [company, ano, mes, JSON.stringify(dre), userId || null]
+  );
+  return getFechamentoMes(ano, mes);
+}
+
+export async function reabrirMes(ano, mes) {
+  const company = await getCompanyId();
+  await finQuery(`delete from fin.monthly_close where company_id=$1 and ano=$2 and mes=$3`, [company, ano, mes]);
+  return getFechamentoMes(ano, mes);
+}
+
+export async function listFechamentos() {
+  const company = await getCompanyId();
+  if (!company) return [];
+  const { rows } = await finQuery(
+    `select ano, mes, snapshot, closed_at from fin.monthly_close where company_id=$1 order by ano desc, mes desc`,
+    [company]
+  );
+  return rows;
+}
+
+// ---- Orçamento -------------------------------------------------------------
+export async function getOrcamento(ano) {
+  const company = await getCompanyId();
+  const meses = Array.from({ length: 12 }, (_, i) => ({
+    mes: i + 1,
+    receita_meta: 0, custo_meta: 0, despesa_meta: 0,
+    receita: 0, custos: 0, despesas: 0,
+  }));
+  if (!company) return meses;
+
+  const metas = await finQuery(
+    `select mes, receita_meta, custo_meta, despesa_meta from fin.budgets where company_id=$1 and ano=$2`,
+    [company, ano]
+  );
+  for (const m of metas.rows) {
+    const row = meses[m.mes - 1];
+    row.receita_meta = Number(m.receita_meta);
+    row.custo_meta = Number(m.custo_meta);
+    row.despesa_meta = Number(m.despesa_meta);
+  }
+
+  // realizado por mês (regra do DRE: CMV = code 4x; despesa = restante).
+  const real = await finQuery(
+    `select extract(month from t.date)::int as mes,
+            coalesce(sum(t.amount) filter (where t.type='revenue'),0) as receita,
+            coalesce(sum(t.amount) filter (where t.type='expense' and a.code like '4%'),0) as custos,
+            coalesce(sum(t.amount) filter (where t.type='expense' and (a.code is null or a.code not like '4%')),0) as despesas
+       from fin.transactions t
+       left join fin.chart_of_accounts a on a.id = t.account_id
+      where t.company_id=$1 and extract(year from t.date)=$2 and t.status in ('confirmed','reconciled')
+      group by 1`,
+    [company, ano]
+  );
+  for (const r of real.rows) {
+    const row = meses[r.mes - 1];
+    row.receita = Number(r.receita);
+    row.custos = Number(r.custos);
+    row.despesas = Number(r.despesas);
+  }
+  return meses;
+}
+
+export async function saveOrcamentoMes(ano, mes, metas) {
+  const company = await getCompanyId();
+  await finQuery(
+    `insert into fin.budgets (company_id, ano, mes, receita_meta, custo_meta, despesa_meta)
+       values ($1,$2,$3,$4,$5,$6)
+     on conflict (company_id, ano, mes) do update set
+       receita_meta=excluded.receita_meta, custo_meta=excluded.custo_meta, despesa_meta=excluded.despesa_meta`,
+    [company, ano, mes, Number(metas.receita_meta) || 0, Number(metas.custo_meta) || 0, Number(metas.despesa_meta) || 0]
+  );
+  return true;
+}

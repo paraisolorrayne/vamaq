@@ -148,6 +148,33 @@ create table if not exists fin.bills_payable (
 create index if not exists bp_company_due_idx on fin.bills_payable(company_id, due_date);
 create index if not exists bp_approval_idx on fin.bills_payable(approval_status);
 
+-- Fechamento mensal (marco gerencial soft — ADR-001c §1). Não trava lançamentos
+-- retroativos; guarda um retrato (snapshot) do resultado do mês fechado.
+create table if not exists fin.monthly_close (
+  id          uuid primary key default gen_random_uuid(),
+  company_id  uuid not null references fin.companies(id) on delete cascade,
+  ano         integer not null,
+  mes         integer not null,
+  snapshot    jsonb not null default '{}'::jsonb,
+  closed_by   uuid,
+  closed_at   timestamptz not null default now(),
+  unique (company_id, ano, mes),
+  constraint mc_mes_check check (mes between 1 and 12)
+);
+
+-- Orçamento: metas mensais de receita/custo/despesa (comparadas com o realizado).
+create table if not exists fin.budgets (
+  id            uuid primary key default gen_random_uuid(),
+  company_id    uuid not null references fin.companies(id) on delete cascade,
+  ano           integer not null,
+  mes           integer not null,
+  receita_meta  numeric(15,2) not null default 0,
+  custo_meta    numeric(15,2) not null default 0,
+  despesa_meta  numeric(15,2) not null default 0,
+  unique (company_id, ano, mes),
+  constraint bud_mes_check check (mes between 1 and 12)
+);
+
 -- updated_at automático
 create or replace function fin.set_updated_at()
 returns trigger language plpgsql as $$
