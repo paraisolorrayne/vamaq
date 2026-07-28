@@ -22,7 +22,7 @@ export const ROLES = {
 const SECTIONS = [
   { key: "usuarios", prefix: "/admin/usuarios", label: "Usuários", icon: "👥", roles: [] },
   { key: "documentos", prefix: "/admin/documentos", label: "Documentos", icon: "📄", roles: ["vendedor", "secretaria"] },
-  { key: "criativos", prefix: "/admin/criativos", label: "Gerar Criativos", icon: "🎨", roles: ["vendedor", "secretaria"] },
+  { key: "criativos", prefix: "/admin/criativos", label: "Gerar Criativos", icon: "🎨", roles: ["estoque", "vendedor", "secretaria"] },
   { key: "fipe", prefix: "/admin/fipe", label: "Tabela FIPE", icon: "💰", roles: ["estoque", "financeiro", "secretaria"] },
   { key: "estoque", prefix: "/admin/estoque", label: "Estoque", icon: "🚗", roles: ["estoque", "financeiro", "vendedor", "secretaria"] },
   { key: "crm", prefix: "/admin/crm", label: "CRM (Vendas)", icon: "🤝", roles: ["vendedor", "secretaria"] },
