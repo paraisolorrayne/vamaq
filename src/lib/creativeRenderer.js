@@ -21,7 +21,7 @@ export const TEMPLATE_HINTS = {
     "Performance: fundo escuro, números grandes (potência, 0–100, km) e CTA laranja.",
   acervo: "Acervo: lista de até 4 carros (Story) ou 3 (Feed) em cards brancos.",
   loja:
-    "Loja: a foto da fachada da Vamaq como fundo, com o carro na entrada e o preço em destaque. Use os controles de posição para encaixar o carro na garagem.",
+    "Loja: a foto da fachada da Vamaq como fundo, com o carro num card em destaque e o preço embaixo. Funciona com a foto do estoque como está (não precisa remover fundo). Use zoom/posição para enquadrar o carro no card.",
 };
 
 // data = {
@@ -721,33 +721,46 @@ export function renderCreative(cv, data) {
     const km = val("km");
     const ano = val("ano");
 
-    // véu escuro no rodapé — palco legível para carro e texto, sem tampar a fachada
-    const scrimTop = H * 0.5;
+    // véu escuro no rodapé — deixa o texto/preço legíveis sobre a fachada
+    const scrimTop = H * 0.55;
     const g = ctx.createLinearGradient(0, scrimTop, 0, H);
     g.addColorStop(0, "rgba(10,10,10,0)");
-    g.addColorStop(0.55, "rgba(10,10,10,.55)");
-    g.addColorStop(1, "rgba(10,10,10,.94)");
+    g.addColorStop(0.6, "rgba(10,10,10,.5)");
+    g.addColorStop(1, "rgba(10,10,10,.92)");
     ctx.fillStyle = g;
     ctx.fillRect(0, scrimTop, W, H - scrimTop);
 
-    // carro (PNG recortado) flutuando na entrada — posição/zoom pelo controle f1
-    const phY = S ? H * 0.28 : H * 0.22;
-    const phH = S ? H * 0.42 : H * 0.44;
+    // A foto do estoque vem com fundo branco-gelo (não transparente). Em vez de
+    // remover o fundo, encaixamos o carro num CARD branco arredondado que se
+    // funde com esse fundo — flutua sobre a fachada, sem remoção de fundo.
+    const cardX = W * 0.07,
+      cardW = W * 0.86,
+      cardY = S ? H * 0.15 : H * 0.11,
+      cardH = S ? H * 0.46 : H * 0.44;
+    ctx.save();
+    ctx.shadowColor = "rgba(0,0,0,.4)";
+    ctx.shadowBlur = 46;
+    ctx.shadowOffsetY = 20;
+    ctx.fillStyle = "#FFFFFF";
+    rr(cardX, cardY, cardW, cardH, 42);
+    ctx.fill();
+    ctx.restore();
     if (data.images.foto1) {
-      drawPhoto(data.images.foto1, 0, phY, W, phH, data.f1, "over");
+      ctx.save();
+      rr(cardX + 6, cardY + 6, cardW - 12, cardH - 12, 36);
+      ctx.clip();
+      drawPhoto(data.images.foto1, cardX + 6, cardY + 6, cardW - 12, cardH - 12, data.f1, "cover");
+      ctx.restore();
     } else {
-      ctx.fillStyle = "rgba(255,255,255,.55)";
-      ctx.font = "500 30px Inter, sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText("Selecione um veículo", W / 2, phY + phH / 2);
+      placeholder(cardX + 6, cardY + 6, cardW - 12, cardH - 12, "FOTO DO VEÍCULO", false);
     }
 
-    // texto no rodapé, com sombra para legibilidade sobre a foto
+    // texto abaixo do card, com sombra para legibilidade sobre a foto
     ctx.save();
     ctx.shadowColor = "rgba(0,0,0,.6)";
     ctx.shadowBlur = 14;
 
-    let y = S ? H - 392 : H - 322;
+    let y = cardY + cardH + (S ? 96 : 78);
     if (marca) spacedText(marca, W / 2, y, "600 27px Inter, sans-serif", 10, ORANGE);
     y += S ? 92 : 78;
     if (modelo) {
