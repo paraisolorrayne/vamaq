@@ -764,12 +764,13 @@ export function renderCreative(cv, data) {
     // FAIXA do carro na PARTE DE BAIXO (garagem), LIMPA — só a foto, de lateral a
     // lateral (full-bleed, sem a margem branca do card). Começa mais para baixo
     // para NÃO cobrir o letreiro VAMAQ da fachada (deixa a logo respirar acima) e
-    // guarda um respiro no rodapé (não cola na base). A foto do estoque tem fundo
-    // branco-gelo que preenche a faixa (não precisa remover fundo).
+    // vai até a BASE da imagem (sem faixa da fachada embaixo — senão aparece uma
+    // emenda entre o piso da foto e o piso da fachada). A foto do estoque tem
+    // fundo branco-gelo que preenche a faixa (não precisa remover fundo).
     const bandX = 0,
       bandW = W,
       bandTop = H * (S ? 0.6 : 0.55),
-      bandBottom = H - (S ? 44 : 40),
+      bandBottom = H,
       bandH = bandBottom - bandTop;
     // sombra suave no topo da faixa para separar do fundo da fachada
     ctx.save();
