@@ -124,6 +124,7 @@ export default function CriativosPage() {
   const [foto1, setFoto1] = useState(null);
   const [customLogo, setCustomLogo] = useState(null);
   const [brandLogos, setBrandLogos] = useState({ light: null, dark: null });
+  const [fundoLoja, setFundoLoja] = useState(null);
   const [acervo, setAcervo] = useState([
     { ...EMPTY_AC },
     { ...EMPTY_AC },
@@ -156,6 +157,11 @@ export default function CriativosPage() {
     ]).then(([light, dark]) => {
       if (alive) setBrandLogos({ light, dark });
     });
+    loadImageFromUrl("/images/criativos/fundo-loja.jpg")
+      .then((img) => {
+        if (alive) setFundoLoja(img);
+      })
+      .catch(() => {});
     return () => {
       alive = false;
     };
@@ -193,6 +199,7 @@ export default function CriativosPage() {
       logo: customLogo,
       logoLight: brandLogos.light,
       logoDark: brandLogos.dark,
+      fundoLoja,
       ac: acImgs,
     },
     f1,
@@ -360,6 +367,7 @@ export default function CriativosPage() {
               [
                 ["vitrine", "Vitrine"],
                 ["performance", "Performance"],
+                ["loja", "Loja"],
                 ["acervo", "Acervo"],
               ],
               tpl,

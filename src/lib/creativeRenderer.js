@@ -20,6 +20,8 @@ export const TEMPLATE_HINTS = {
   performance:
     "Performance: fundo escuro, números grandes (potência, 0–100, km) e CTA laranja.",
   acervo: "Acervo: lista de até 4 carros (Story) ou 3 (Feed) em cards brancos.",
+  loja:
+    "Loja: a foto da fachada da Vamaq como fundo, com o carro na entrada e o preço em destaque. Use os controles de posição para encaixar o carro na garagem.",
 };
 
 // data = {
@@ -114,7 +116,9 @@ export function renderCreative(cv, data) {
     const dx = rx + (rw - dw) / 2 - ((opt.x ?? 0.5) - 0.5) * rangeX;
     const dy = ry + (rh - dh) / 2 - ((opt.y ?? 0.5) - 0.5) * rangeY;
     if (dw < rw - 1 || dh < rh - 1) {
-      if (mode === "dark") {
+      if (mode === "over") {
+        /* carro (PNG recortado) flutua sobre o fundo — sem véu nem blur */
+      } else if (mode === "dark") {
         const gd = ctx.createLinearGradient(0, ry, 0, ry + rh);
         gd.addColorStop(0, "#0a0a0a");
         gd.addColorStop(1, "#161616");
@@ -691,8 +695,95 @@ export function renderCreative(cv, data) {
     footerLine(H - fh / 2 + 10, true);
   }
 
+  /* ================================================================
+     TEMPLATE 4 — LOJA (foto da fachada como fundo, carro na entrada)
+  ================================================================ */
+  function renderLoja() {
+    const W = cv.width,
+      H = cv.height,
+      S = data.fmt === "story";
+
+    // fundo: foto da loja (cover)
+    const bg = data.images.fundoLoja;
+    if (bg) {
+      const scale = Math.max(W / bg.width, H / bg.height);
+      const dw = bg.width * scale,
+        dh = bg.height * scale;
+      ctx.drawImage(bg, (W - dw) / 2, (H - dh) / 2, dw, dh);
+    } else {
+      ctx.fillStyle = DARK;
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    const marca = val("marca").toUpperCase();
+    const modelo = val("modelo").toUpperCase();
+    const preco = val("preco");
+    const km = val("km");
+    const ano = val("ano");
+
+    // véu escuro no rodapé — palco legível para carro e texto, sem tampar a fachada
+    const scrimTop = H * 0.5;
+    const g = ctx.createLinearGradient(0, scrimTop, 0, H);
+    g.addColorStop(0, "rgba(10,10,10,0)");
+    g.addColorStop(0.55, "rgba(10,10,10,.55)");
+    g.addColorStop(1, "rgba(10,10,10,.94)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, scrimTop, W, H - scrimTop);
+
+    // carro (PNG recortado) flutuando na entrada — posição/zoom pelo controle f1
+    const phY = S ? H * 0.28 : H * 0.22;
+    const phH = S ? H * 0.42 : H * 0.44;
+    if (data.images.foto1) {
+      drawPhoto(data.images.foto1, 0, phY, W, phH, data.f1, "over");
+    } else {
+      ctx.fillStyle = "rgba(255,255,255,.55)";
+      ctx.font = "500 30px Inter, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("Selecione um veículo", W / 2, phY + phH / 2);
+    }
+
+    // texto no rodapé, com sombra para legibilidade sobre a foto
+    ctx.save();
+    ctx.shadowColor = "rgba(0,0,0,.6)";
+    ctx.shadowBlur = 14;
+
+    let y = S ? H - 392 : H - 322;
+    if (marca) spacedText(marca, W / 2, y, "600 27px Inter, sans-serif", 10, ORANGE);
+    y += S ? 92 : 78;
+    if (modelo) {
+      const size = fitSize(modelo, 700, S ? 100 : 84, 44, 960, 3);
+      const lines =
+        spacedWidth(modelo, `700 ${size}px Rajdhani, sans-serif`, 3) > 960
+          ? wrapLines(modelo, `700 ${size}px Rajdhani, sans-serif`, 960)
+          : [modelo];
+      for (const ln of lines) {
+        spacedText(ln, W / 2, y, `700 ${size}px Rajdhani, sans-serif`, 3, "#FFFFFF");
+        y += size + 6;
+      }
+      y -= size + 6;
+    }
+    y += S ? 56 : 48;
+    const meta = [ano, km ? km + " km" : ""].filter(Boolean).join("   ·   ");
+    if (meta) spacedText(meta, W / 2, y, "400 28px Inter, sans-serif", 2, "#e2e2e2");
+    ctx.restore();
+
+    // CTA / preço
+    const ctaTxt = val("ctaText").toUpperCase();
+    const ctaY = H - (S ? 150 : 120);
+    drawPill(W / 2, ctaY, ctaTxt || (preco ? "R$ " + preco : "CONSULTE O VALOR"), {
+      font: "700 30px Inter, sans-serif",
+      padX: 52,
+      h: 94,
+      bg: ORANGE,
+      color: "#fff",
+    });
+
+    footerLine(H - 42, true);
+  }
+
   if (data.tpl === "vitrine") renderVitrine();
   else if (data.tpl === "performance") renderPerformance();
+  else if (data.tpl === "loja") renderLoja();
   else renderAcervo();
 }
 
@@ -708,6 +799,10 @@ function slug(s) {
 export function exportName(data) {
   const tag = FORMATS[data.fmt].tag;
   if (data.tpl === "acervo") return `VAMAQ-ACERVO-${tag}-v1.png`;
+  if (data.tpl === "loja") {
+    const p = ["VAMAQ", "LOJA", slug(data.values.marca || ""), slug(data.values.modelo || "")].filter(Boolean);
+    return p.join("-") + `-${tag}-v1.png`;
+  }
   const parts = [
     "VAMAQ",
     slug(data.values.marca || ""),
