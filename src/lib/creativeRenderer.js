@@ -721,12 +721,13 @@ export function renderCreative(cv, data) {
     const km = val("km");
     const ano = val("ano");
 
-    // véu suave no topo (sobre o céu) para as informações ficarem legíveis
-    const gTop = ctx.createLinearGradient(0, 0, 0, H * 0.34);
-    gTop.addColorStop(0, "rgba(8,10,20,.5)");
-    gTop.addColorStop(1, "rgba(8,10,20,0)");
+    // sombra no céu para as informações do carro ganharem destaque
+    const gTop = ctx.createLinearGradient(0, 0, 0, H * 0.42);
+    gTop.addColorStop(0, "rgba(6,8,16,.68)");
+    gTop.addColorStop(0.7, "rgba(6,8,16,.34)");
+    gTop.addColorStop(1, "rgba(6,8,16,0)");
     ctx.fillStyle = gTop;
-    ctx.fillRect(0, 0, W, H * 0.34);
+    ctx.fillRect(0, 0, W, H * 0.42);
 
     // INFORMAÇÕES DO CARRO NO TOPO (aproveita o céu): marca, modelo, preço, ano·km.
     // Assim a foto do carro embaixo fica limpa, só o veículo.
@@ -760,13 +761,15 @@ export function renderCreative(cv, data) {
       color: "#fff",
     });
 
-    // Card do carro na PARTE DE BAIXO (garagem), LIMPO — só a foto. O letreiro
-    // VAMAQ da fachada fica visível acima. A foto do estoque tem fundo branco-gelo;
-    // o card branco se funde com esse fundo (sem remover fundo).
+    // Card do carro na PARTE DE BAIXO (garagem), LIMPO — só a foto, com a base
+    // COLADA no rodapé da imagem. O letreiro VAMAQ da fachada fica visível acima.
+    // A foto do estoque tem fundo branco-gelo; o card branco se funde com ele.
+    // O card estende ~40px abaixo do canvas para a base ficar reta (cantos
+    // arredondados só no topo, que aparece).
     const cardW = W * 0.86,
       cardX = (W - cardW) / 2,
       cardY = H * 0.55,
-      cardH = S ? H * 0.37 : H * 0.38;
+      cardH = H - cardY + 44;
     ctx.save();
     ctx.shadowColor = "rgba(0,0,0,.5)";
     ctx.shadowBlur = 48;
@@ -784,8 +787,7 @@ export function renderCreative(cv, data) {
     } else {
       placeholder(cardX + 6, cardY + 6, cardW - 12, cardH - 12, "FOTO DO VEÍCULO", false);
     }
-
-    footerLine(H - 42, true);
+    // sem rodapé: o card do carro vai até a base da imagem
   }
 
   if (data.tpl === "vitrine") renderVitrine();
