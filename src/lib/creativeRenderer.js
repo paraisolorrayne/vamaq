@@ -21,7 +21,7 @@ export const TEMPLATE_HINTS = {
     "Performance: fundo escuro, números grandes (potência, 0–100, km) e CTA laranja.",
   acervo: "Acervo: lista de até 4 carros (Story) ou 3 (Feed) em cards brancos.",
   loja:
-    "Loja: a foto da fachada da Vamaq como fundo, com o carro num card em destaque e o preço embaixo. Funciona com a foto do estoque como está (não precisa remover fundo). Use zoom/posição para enquadrar o carro no card.",
+    "Loja: a foto da fachada da Vamaq como fundo, as informações do carro no topo e a foto do veículo numa faixa de lateral a lateral embaixo. Funciona com a foto do estoque como está (não precisa remover fundo). Use zoom/posição para enquadrar o carro na faixa.",
 };
 
 // data = {
@@ -761,33 +761,33 @@ export function renderCreative(cv, data) {
       color: "#fff",
     });
 
-    // Card do carro na PARTE DE BAIXO (garagem), LIMPO — só a foto, com a base
-    // COLADA no rodapé da imagem. O letreiro VAMAQ da fachada fica visível acima.
-    // A foto do estoque tem fundo branco-gelo; o card branco se funde com ele.
-    // O card estende ~40px abaixo do canvas para a base ficar reta (cantos
-    // arredondados só no topo, que aparece).
-    const cardW = W * 0.86,
-      cardX = (W - cardW) / 2,
-      cardY = H * 0.55,
-      cardH = H - cardY + 44;
+    // FAIXA do carro na PARTE DE BAIXO (garagem), LIMPA — só a foto, de lateral a
+    // lateral (full-bleed, sem a margem branca do card). Fica um respiro no rodapé
+    // (não cola na base). O letreiro VAMAQ da fachada aparece acima. A foto do
+    // estoque tem fundo branco-gelo que preenche a faixa (não precisa remover fundo).
+    const bandX = 0,
+      bandW = W,
+      bandTop = H * 0.53,
+      bandBottom = H - (S ? 44 : 40),
+      bandH = bandBottom - bandTop;
+    // sombra suave no topo da faixa para separar do fundo da fachada
     ctx.save();
-    ctx.shadowColor = "rgba(0,0,0,.5)";
-    ctx.shadowBlur = 48;
-    ctx.shadowOffsetY = 22;
+    ctx.shadowColor = "rgba(0,0,0,.45)";
+    ctx.shadowBlur = 46;
+    ctx.shadowOffsetY = -6;
     ctx.fillStyle = "#FFFFFF";
-    rr(cardX, cardY, cardW, cardH, 40);
-    ctx.fill();
+    ctx.fillRect(bandX, bandTop, bandW, bandH);
     ctx.restore();
     if (data.images.foto1) {
       ctx.save();
-      rr(cardX + 6, cardY + 6, cardW - 12, cardH - 12, 34);
+      ctx.beginPath();
+      ctx.rect(bandX, bandTop, bandW, bandH);
       ctx.clip();
-      drawPhoto(data.images.foto1, cardX + 6, cardY + 6, cardW - 12, cardH - 12, data.f1, "cover");
+      drawPhoto(data.images.foto1, bandX, bandTop, bandW, bandH, data.f1, "cover");
       ctx.restore();
     } else {
-      placeholder(cardX + 6, cardY + 6, cardW - 12, cardH - 12, "FOTO DO VEÍCULO", false);
+      placeholder(bandX, bandTop, bandW, bandH, "FOTO DO VEÍCULO", false);
     }
-    // sem rodapé: o card do carro vai até a base da imagem
   }
 
   if (data.tpl === "vitrine") renderVitrine();
