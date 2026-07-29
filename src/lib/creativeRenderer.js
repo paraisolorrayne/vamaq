@@ -721,75 +721,68 @@ export function renderCreative(cv, data) {
     const km = val("km");
     const ano = val("ano");
 
-    // véu escuro no rodapé — deixa o texto/preço legíveis sobre a fachada
-    const scrimTop = H * 0.55;
-    const g = ctx.createLinearGradient(0, scrimTop, 0, H);
-    g.addColorStop(0, "rgba(10,10,10,0)");
-    g.addColorStop(0.6, "rgba(10,10,10,.5)");
-    g.addColorStop(1, "rgba(10,10,10,.92)");
-    ctx.fillStyle = g;
+    // véu leve no rodapé (abaixo do card) para o preço e o rodapé destacarem
+    const scrimTop = H * 0.8;
+    const gsc = ctx.createLinearGradient(0, scrimTop, 0, H);
+    gsc.addColorStop(0, "rgba(10,10,10,0)");
+    gsc.addColorStop(1, "rgba(10,10,10,.9)");
+    ctx.fillStyle = gsc;
     ctx.fillRect(0, scrimTop, W, H - scrimTop);
 
-    // A foto do estoque vem com fundo branco-gelo (não transparente). Em vez de
-    // remover o fundo, encaixamos o carro num CARD branco arredondado que se
-    // funde com esse fundo — flutua sobre a fachada, sem remoção de fundo.
-    const cardX = W * 0.07,
-      cardW = W * 0.86,
-      cardY = S ? H * 0.15 : H * 0.11,
-      cardH = S ? H * 0.46 : H * 0.44;
+    // Card do carro na PARTE DE BAIXO (garagem) — o letreiro VAMAQ da fachada
+    // fica visível ACIMA. A foto do estoque tem fundo branco-gelo; o card branco
+    // se funde com esse fundo (sem remover fundo). marca/modelo sobre o rodapé
+    // do card e o preço encostado na base.
+    const cardW = W * 0.86,
+      cardX = (W - cardW) / 2,
+      cardY = H * 0.55,
+      cardH = H * 0.34,
+      cardBottom = cardY + cardH;
     ctx.save();
-    ctx.shadowColor = "rgba(0,0,0,.4)";
-    ctx.shadowBlur = 46;
-    ctx.shadowOffsetY = 20;
+    ctx.shadowColor = "rgba(0,0,0,.5)";
+    ctx.shadowBlur = 48;
+    ctx.shadowOffsetY = 22;
     ctx.fillStyle = "#FFFFFF";
-    rr(cardX, cardY, cardW, cardH, 42);
+    rr(cardX, cardY, cardW, cardH, 40);
     ctx.fill();
     ctx.restore();
+
     if (data.images.foto1) {
       ctx.save();
-      rr(cardX + 6, cardY + 6, cardW - 12, cardH - 12, 36);
+      rr(cardX + 6, cardY + 6, cardW - 12, cardH - 12, 34);
       ctx.clip();
       drawPhoto(data.images.foto1, cardX + 6, cardY + 6, cardW - 12, cardH - 12, data.f1, "cover");
+      // faixa escura no rodapé do card, para marca/modelo ficarem legíveis
+      const go = ctx.createLinearGradient(0, cardBottom - 210, 0, cardBottom - 6);
+      go.addColorStop(0, "rgba(10,10,14,0)");
+      go.addColorStop(1, "rgba(10,10,14,.86)");
+      ctx.fillStyle = go;
+      ctx.fillRect(cardX + 6, cardBottom - 210, cardW - 12, 204);
       ctx.restore();
     } else {
       placeholder(cardX + 6, cardY + 6, cardW - 12, cardH - 12, "FOTO DO VEÍCULO", false);
     }
 
-    // texto abaixo do card, com sombra para legibilidade sobre a foto
-    ctx.save();
-    ctx.shadowColor = "rgba(0,0,0,.6)";
-    ctx.shadowBlur = 14;
-
-    let y = cardY + cardH + (S ? 96 : 78);
-    if (marca) spacedText(marca, W / 2, y, "600 27px Inter, sans-serif", 10, ORANGE);
-    y += S ? 92 : 78;
+    // marca / modelo sobre o rodapé do card
+    if (marca) spacedText(marca, W / 2, cardBottom - 162, "600 24px Inter, sans-serif", 8, ORANGE);
     if (modelo) {
-      const size = fitSize(modelo, 700, S ? 100 : 84, 44, 960, 3);
-      const lines =
-        spacedWidth(modelo, `700 ${size}px Rajdhani, sans-serif`, 3) > 960
-          ? wrapLines(modelo, `700 ${size}px Rajdhani, sans-serif`, 960)
-          : [modelo];
-      for (const ln of lines) {
-        spacedText(ln, W / 2, y, `700 ${size}px Rajdhani, sans-serif`, 3, "#FFFFFF");
-        y += size + 6;
-      }
-      y -= size + 6;
+      const size = fitSize(modelo, 700, S ? 70 : 60, 38, cardW - 70, 3);
+      spacedText(modelo, W / 2, cardBottom - 54, `700 ${size}px Rajdhani, sans-serif`, 3, "#FFFFFF");
     }
-    y += S ? 56 : 48;
-    const meta = [ano, km ? km + " km" : ""].filter(Boolean).join("   ·   ");
-    if (meta) spacedText(meta, W / 2, y, "400 28px Inter, sans-serif", 2, "#e2e2e2");
-    ctx.restore();
 
-    // CTA / preço
+    // preço em pílula, encostado na base do card
     const ctaTxt = val("ctaText").toUpperCase();
-    const ctaY = H - (S ? 150 : 120);
-    drawPill(W / 2, ctaY, ctaTxt || (preco ? "R$ " + preco : "CONSULTE O VALOR"), {
+    drawPill(W / 2, cardBottom + 6, ctaTxt || (preco ? "R$ " + preco : "CONSULTE O VALOR"), {
       font: "700 30px Inter, sans-serif",
       padX: 52,
-      h: 94,
+      h: 92,
       bg: ORANGE,
       color: "#fff",
     });
+
+    // ano · km abaixo do preço (só no Story, que tem espaço)
+    const meta = [ano, km ? km + " km" : ""].filter(Boolean).join("   ·   ");
+    if (meta && S) spacedText(meta, W / 2, cardBottom + 108, "400 26px Inter, sans-serif", 2, "#dcdcdc");
 
     footerLine(H - 42, true);
   }
