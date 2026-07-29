@@ -721,23 +721,52 @@ export function renderCreative(cv, data) {
     const km = val("km");
     const ano = val("ano");
 
-    // véu leve no rodapé (abaixo do card) para o preço e o rodapé destacarem
-    const scrimTop = H * 0.8;
-    const gsc = ctx.createLinearGradient(0, scrimTop, 0, H);
-    gsc.addColorStop(0, "rgba(10,10,10,0)");
-    gsc.addColorStop(1, "rgba(10,10,10,.9)");
-    ctx.fillStyle = gsc;
-    ctx.fillRect(0, scrimTop, W, H - scrimTop);
+    // véu suave no topo (sobre o céu) para as informações ficarem legíveis
+    const gTop = ctx.createLinearGradient(0, 0, 0, H * 0.34);
+    gTop.addColorStop(0, "rgba(8,10,20,.5)");
+    gTop.addColorStop(1, "rgba(8,10,20,0)");
+    ctx.fillStyle = gTop;
+    ctx.fillRect(0, 0, W, H * 0.34);
 
-    // Card do carro na PARTE DE BAIXO (garagem) — o letreiro VAMAQ da fachada
-    // fica visível ACIMA. A foto do estoque tem fundo branco-gelo; o card branco
-    // se funde com esse fundo (sem remover fundo). marca/modelo sobre o rodapé
-    // do card e o preço encostado na base.
+    // INFORMAÇÕES DO CARRO NO TOPO (aproveita o céu): marca, modelo, preço, ano·km.
+    // Assim a foto do carro embaixo fica limpa, só o veículo.
+    ctx.save();
+    ctx.shadowColor = "rgba(0,0,0,.5)";
+    ctx.shadowBlur = 16;
+    if (marca) spacedText(marca, W / 2, S ? H * 0.11 : H * 0.1, "600 28px Inter, sans-serif", 10, ORANGE);
+    if (modelo) {
+      const size = fitSize(modelo, 700, S ? 92 : 78, 44, W - 110, 3);
+      const lines =
+        spacedWidth(modelo, `700 ${size}px Rajdhani, sans-serif`, 3) > W - 110
+          ? wrapLines(modelo, `700 ${size}px Rajdhani, sans-serif`, W - 110)
+          : [modelo];
+      let my = S ? H * 0.175 : H * 0.16;
+      for (const ln of lines) {
+        spacedText(ln, W / 2, my, `700 ${size}px Rajdhani, sans-serif`, 3, "#FFFFFF");
+        my += size + 8;
+      }
+    }
+    const meta = [ano, km ? km + " km" : ""].filter(Boolean).join("   ·   ");
+    if (meta) spacedText(meta, W / 2, S ? H * 0.305 : H * 0.29, "400 27px Inter, sans-serif", 2, "#e6e6e6");
+    ctx.restore();
+
+    // preço em pílula, no topo abaixo do modelo
+    const ctaTxt = val("ctaText").toUpperCase();
+    drawPill(W / 2, S ? H * 0.255 : H * 0.24, ctaTxt || (preco ? "R$ " + preco : "CONSULTE O VALOR"), {
+      font: "700 32px Inter, sans-serif",
+      padX: 56,
+      h: 96,
+      bg: ORANGE,
+      color: "#fff",
+    });
+
+    // Card do carro na PARTE DE BAIXO (garagem), LIMPO — só a foto. O letreiro
+    // VAMAQ da fachada fica visível acima. A foto do estoque tem fundo branco-gelo;
+    // o card branco se funde com esse fundo (sem remover fundo).
     const cardW = W * 0.86,
       cardX = (W - cardW) / 2,
       cardY = H * 0.55,
-      cardH = H * 0.34,
-      cardBottom = cardY + cardH;
+      cardH = S ? H * 0.37 : H * 0.38;
     ctx.save();
     ctx.shadowColor = "rgba(0,0,0,.5)";
     ctx.shadowBlur = 48;
@@ -746,43 +775,15 @@ export function renderCreative(cv, data) {
     rr(cardX, cardY, cardW, cardH, 40);
     ctx.fill();
     ctx.restore();
-
     if (data.images.foto1) {
       ctx.save();
       rr(cardX + 6, cardY + 6, cardW - 12, cardH - 12, 34);
       ctx.clip();
       drawPhoto(data.images.foto1, cardX + 6, cardY + 6, cardW - 12, cardH - 12, data.f1, "cover");
-      // faixa escura no rodapé do card, para marca/modelo ficarem legíveis
-      const go = ctx.createLinearGradient(0, cardBottom - 210, 0, cardBottom - 6);
-      go.addColorStop(0, "rgba(10,10,14,0)");
-      go.addColorStop(1, "rgba(10,10,14,.86)");
-      ctx.fillStyle = go;
-      ctx.fillRect(cardX + 6, cardBottom - 210, cardW - 12, 204);
       ctx.restore();
     } else {
       placeholder(cardX + 6, cardY + 6, cardW - 12, cardH - 12, "FOTO DO VEÍCULO", false);
     }
-
-    // marca / modelo sobre o rodapé do card
-    if (marca) spacedText(marca, W / 2, cardBottom - 162, "600 24px Inter, sans-serif", 8, ORANGE);
-    if (modelo) {
-      const size = fitSize(modelo, 700, S ? 70 : 60, 38, cardW - 70, 3);
-      spacedText(modelo, W / 2, cardBottom - 54, `700 ${size}px Rajdhani, sans-serif`, 3, "#FFFFFF");
-    }
-
-    // preço em pílula, encostado na base do card
-    const ctaTxt = val("ctaText").toUpperCase();
-    drawPill(W / 2, cardBottom + 6, ctaTxt || (preco ? "R$ " + preco : "CONSULTE O VALOR"), {
-      font: "700 30px Inter, sans-serif",
-      padX: 52,
-      h: 92,
-      bg: ORANGE,
-      color: "#fff",
-    });
-
-    // ano · km abaixo do preço (só no Story, que tem espaço)
-    const meta = [ano, km ? km + " km" : ""].filter(Boolean).join("   ·   ");
-    if (meta && S) spacedText(meta, W / 2, cardBottom + 108, "400 26px Inter, sans-serif", 2, "#dcdcdc");
 
     footerLine(H - 42, true);
   }
