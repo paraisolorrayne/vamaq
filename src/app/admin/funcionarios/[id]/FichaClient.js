@@ -125,11 +125,11 @@ export default function FichaClient({ funcionario: f, roles }) {
             <label className={styles.formLabel}>E-mail pessoal</label>
             <input name="email_pessoal" type="email" defaultValue={f.email_pessoal || ""} className={styles.formInput} />
           </div>
-          <div className={styles.formGroupFull}>
+          <div className={`${styles.formGroup} ${styles.formGroupFull}`}>
             <label className={styles.formLabel}>Endereço</label>
             <input name="endereco" defaultValue={f.endereco || ""} className={styles.formInput} />
           </div>
-          <div className={styles.formGroupFull}>
+          <div className={`${styles.formGroup} ${styles.formGroupFull}`}>
             <label className={styles.formLabel}>Observações</label>
             <textarea name="obs" rows={2} defaultValue={f.obs || ""} className={styles.formTextarea} />
           </div>
@@ -170,7 +170,7 @@ export default function FichaClient({ funcionario: f, roles }) {
         </div>
 
         {aberto ? (
-          <form onSubmit={desligarSubmit} className={styles.formGrid} style={{ marginTop: 16 }}>
+          <form key="desligar" onSubmit={desligarSubmit} className={styles.formGrid} style={{ marginTop: 16 }}>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Data de saída *</label>
               <input name="saida" type="date" className={styles.formInput} required />
@@ -184,7 +184,7 @@ export default function FichaClient({ funcionario: f, roles }) {
             </div>
           </form>
         ) : (
-          <form onSubmit={admitirSubmit} className={styles.formGrid} style={{ marginTop: 16 }}>
+          <form key="admitir" onSubmit={admitirSubmit} className={styles.formGrid} style={{ marginTop: 16 }}>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Cargo *</label>
               <input name="cargo" className={styles.formInput} placeholder="Vendedor, mecânico…" required />
@@ -216,7 +216,7 @@ export default function FichaClient({ funcionario: f, roles }) {
               Copie e envie para a pessoa. A senha só aparece aqui, agora.
             </p>
             <textarea readOnly value={acesso.accessText} rows={7} className={styles.formTextarea}
-              style={{ fontFamily: "monospace", fontSize: "0.85rem" }} />
+              style={{ fontFamily: "monospace", fontSize: "0.85rem", display: "block", width: "100%" }} />
             <button
               className={styles.btnPrimary}
               style={{ marginTop: 8 }}

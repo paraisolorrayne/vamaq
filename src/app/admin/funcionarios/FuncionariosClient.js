@@ -69,11 +69,11 @@ export default function FuncionariosClient({ funcionarios }) {
               <label className={styles.formLabel}>E-mail pessoal</label>
               <input name="email_pessoal" type="email" className={styles.formInput} />
             </div>
-            <div className={styles.formGroupFull}>
+            <div className={`${styles.formGroup} ${styles.formGroupFull}`}>
               <label className={styles.formLabel}>Endereço</label>
               <input name="endereco" className={styles.formInput} />
             </div>
-            <div className={styles.formGroupFull}>
+            <div className={`${styles.formGroup} ${styles.formGroupFull}`}>
               <label className={styles.formLabel}>Observações</label>
               <textarea name="obs" rows={2} className={styles.formTextarea} />
             </div>
