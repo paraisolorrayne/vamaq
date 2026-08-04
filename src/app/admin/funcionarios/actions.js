@@ -9,20 +9,7 @@ import {
   desligar,
 } from "@/lib/rh/funcionarios";
 import { createUser } from "@/lib/auth/users";
-
-const LOGIN_URL = "https://vamaqmotors.com.br/login";
-
-function buildAccessText({ name, email, tempPassword }) {
-  return [
-    `Olá, ${name}! Seu acesso ao Painel Vamaq Motors:`,
-    ``,
-    `Link: ${LOGIN_URL}`,
-    `Usuário: ${email}`,
-    `Senha temporária: ${tempPassword}`,
-    ``,
-    `No primeiro acesso o sistema vai pedir para você criar uma senha nova.`,
-  ].join("\n");
-}
+import { buildAccessText } from "@/lib/auth/accessText";
 
 /** Campos da ficha lidos do formulário. */
 function fichaFrom(formData) {

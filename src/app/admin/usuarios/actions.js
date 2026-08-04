@@ -10,21 +10,7 @@ import {
   updateApprovalLimit,
   setUserFuncionario,
 } from "@/lib/auth/users";
-
-const LOGIN_URL = "https://vamaqmotors.com.br/login";
-
-// Texto pronto para o admin copiar e enviar (WhatsApp, e-mail...) à pessoa.
-function buildAccessText({ name, email, tempPassword }) {
-  return [
-    `Olá, ${name}! Seu acesso ao Painel Vamaq Motors:`,
-    ``,
-    `Link: ${LOGIN_URL}`,
-    `Usuário: ${email}`,
-    `Senha temporária: ${tempPassword}`,
-    ``,
-    `No primeiro acesso o sistema vai pedir para você criar uma senha nova.`,
-  ].join("\n");
-}
+import { buildAccessText } from "@/lib/auth/accessText";
 
 export async function createUserAction(_prev, formData) {
   await requireRole("admin");
