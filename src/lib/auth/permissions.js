@@ -20,6 +20,7 @@ export const ROLES = {
 // Cada seção do /admin: prefixo de rota + papéis com acesso (além de admin).
 // Ordem importa: do mais específico para o mais genérico (/admin por último).
 const SECTIONS = [
+  { key: "funcionarios", prefix: "/admin/funcionarios", label: "Funcionários", icon: "🧑‍🔧", roles: [] },
   { key: "usuarios", prefix: "/admin/usuarios", label: "Usuários", icon: "👥", roles: [] },
   { key: "documentos", prefix: "/admin/documentos", label: "Documentos", icon: "📄", roles: ["vendedor", "secretaria"] },
   { key: "criativos", prefix: "/admin/criativos", label: "Gerar Criativos", icon: "🎨", roles: ["estoque", "vendedor", "secretaria"] },
@@ -45,7 +46,7 @@ export function canAccessPath(role, pathname) {
 
 /** Itens de menu que este papel deve ver, na ordem de exibição. */
 export function navFor(role) {
-  const order = ["dashboard", "estoque", "crm", "financeiro", "documentos", "criativos", "fipe", "tutoriais", "usuarios"];
+  const order = ["dashboard", "estoque", "crm", "financeiro", "documentos", "criativos", "fipe", "tutoriais", "funcionarios", "usuarios"];
   const HIDDEN = new Set();
   return order
     .filter((key) => !HIDDEN.has(key))
