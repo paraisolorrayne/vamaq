@@ -25,8 +25,10 @@ function validRole(role) {
 
 export async function listUsers() {
   const { rows } = await query(
-    `select id, name, email, role, active, must_change_password, approval_limit, created_at
-       from users order by created_at asc`
+    `select u.id, u.name, u.email, u.role, u.active, u.must_change_password,
+            u.approval_limit, u.created_at, u.funcionario_id
+       from users u
+      order by u.created_at asc`
   );
   return rows;
 }
@@ -41,7 +43,7 @@ export async function updateApprovalLimit(id, limit) {
 }
 
 /** Cria usuário com senha temporária. Retorna { user, tempPassword } ou { error }. */
-export async function createUser({ name, email, role }) {
+export async function createUser({ name, email, role, funcionario_id = null }) {
   name = String(name || "").trim();
   email = String(email || "").trim().toLowerCase();
   if (!name || !email) return { error: "Nome e e-mail são obrigatórios." };
@@ -54,10 +56,10 @@ export async function createUser({ name, email, role }) {
   const tempPassword = generateTempPassword();
   const password_hash = await hashPassword(tempPassword);
   const { rows } = await query(
-    `insert into users (name, email, password_hash, role, active, must_change_password)
-       values ($1, $2, $3, $4, true, true)
-     returning id, name, email, role, active`,
-    [name, email, password_hash, role]
+    `insert into users (name, email, password_hash, role, active, must_change_password, funcionario_id)
+       values ($1, $2, $3, $4, true, true, $5)
+     returning id, name, email, role, active, funcionario_id`,
+    [name, email, password_hash, role, funcionario_id || null]
   );
   return { user: rows[0], tempPassword };
 }
@@ -92,4 +94,14 @@ export async function updateUserRole(id, role) {
   );
   if (!rows.length) return { error: "Usuário não encontrado." };
   return { user: rows[0] };
+}
+
+/** Liga (ou desliga) o login de uma ficha de funcionário. */
+export async function setUserFuncionario(userId, funcionarioId) {
+  const { rows } = await query(
+    `update users set funcionario_id = $2 where id = $1
+     returning id, funcionario_id`,
+    [userId, funcionarioId || null]
+  );
+  return rows.length ? rows[0] : null;
 }
