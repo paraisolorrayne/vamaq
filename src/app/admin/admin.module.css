@@ -139,6 +139,20 @@
   color: #fff;
 }
 
+/* Back-link para uso na área de conteúdo clara (.main), onde .backLink
+   (feito para a barra lateral escura) fica ilegível. */
+.backLinkContent {
+  display: inline-block;
+  font-size: 0.85rem;
+  color: #666;
+  text-decoration: none;
+  margin-bottom: 12px;
+  transition: color 0.15s;
+}
+.backLinkContent:hover {
+  color: #FF6A00;
+}
+
 /* ---------- Main ---------- */
 .main {
   flex: 1;

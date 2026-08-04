@@ -21,6 +21,17 @@ export default function FichaClient({ funcionario: f, roles }) {
   const [copiado, setCopiado] = useState(false);
   const aberto = f.vinculoAberto;
 
+  // Três estados possíveis, alinhados com a lista (FuncionariosClient):
+  // vínculo aberto → o cargo; sem vínculo aberto mas com histórico →
+  // "Desligado"; nenhum vínculo → "Sem admissão" (ficha recém-criada).
+  const situacao = aberto ? (
+    <span className={styles.badgeSuccess}>{aberto.cargo}</span>
+  ) : f.vinculos.length > 0 ? (
+    <span className={styles.badgeWarning} style={{ background: "#f3f4f6", color: "#6b7280" }}>Desligado</span>
+  ) : (
+    <span className={styles.badgeWarning} style={{ background: "#fef9c3", color: "#a16207" }}>Sem admissão</span>
+  );
+
   function run(fn) {
     setErr(null);
     startTransition(async () => {
@@ -63,15 +74,22 @@ export default function FichaClient({ funcionario: f, roles }) {
     }));
   }
 
+  async function copiarAcesso() {
+    try {
+      await navigator.clipboard.writeText(acesso.accessText);
+      setCopiado(true);
+    } catch {
+      setCopiado(false);
+    }
+  }
+
   return (
     <>
-      <Link href="/admin/funcionarios" className={styles.backLink}>← Funcionários</Link>
-      <h2 style={{ fontSize: "1.3rem", fontWeight: 600, margin: "12px 0 20px" }}>
-        {f.nome}{" "}
-        {aberto
-          ? <span className={styles.badgeSuccess}>{aberto.cargo}</span>
-          : <span className={styles.badgeWarning} style={{ background: "#f3f4f6", color: "#6b7280" }}>Desligado</span>}
-      </h2>
+      <Link href="/admin/funcionarios" className={styles.backLinkContent}>← Funcionários</Link>
+      <div className={styles.pageHeader} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+        <h1 className={styles.pageTitle} style={{ marginBottom: 0 }}>{f.nome}</h1>
+        {situacao}
+      </div>
 
       {err && (
         <div className={styles.card} style={{ marginBottom: 16, borderLeft: "4px solid #b91c1c" }}>
@@ -202,10 +220,7 @@ export default function FichaClient({ funcionario: f, roles }) {
             <button
               className={styles.btnPrimary}
               style={{ marginTop: 8 }}
-              onClick={() => {
-                navigator.clipboard.writeText(acesso.accessText);
-                setCopiado(true);
-              }}
+              onClick={copiarAcesso}
             >
               {copiado ? "✓ Copiado!" : "Copiar instruções"}
             </button>

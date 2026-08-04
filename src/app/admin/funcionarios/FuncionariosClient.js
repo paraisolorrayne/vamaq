@@ -30,8 +30,13 @@ export default function FuncionariosClient({ funcionarios }) {
 
   return (
     <>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <h2 style={{ fontSize: "1.2rem", fontWeight: 600 }}>Funcionários</h2>
+      <div className={styles.pageHeader} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
+        <div>
+          <h1 className={styles.pageTitle}>Funcionários</h1>
+          <p className={styles.pageSubtitle}>
+            Quadro de pessoal e histórico de passagens pela loja
+          </p>
+        </div>
         <button onClick={() => setAberto((v) => !v)} className={styles.btnPrimary}>
           {aberto ? "Cancelar" : "+ Nova ficha"}
         </button>

@@ -9,7 +9,7 @@ import { DESLIGAR_SQL } from "@/lib/rh/sql";
 /** Lista com o vínculo mais recente e o login, se houver. */
 export async function listFuncionarios() {
   const { rows } = await query(
-    `select f.id, f.nome, f.cpf, f.telefone,
+    `select f.id, f.nome,
             v.cargo, v.admissao, v.saida,
             u.id as user_id, u.email as user_email, u.active as user_active
        from funcionarios f
