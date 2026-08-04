@@ -14,6 +14,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
+import { DESLIGAR_SQL } from "../src/lib/rh/sql.js";
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const ADMIN_URL =
@@ -144,4 +145,63 @@ test("um login por ficha; apagar a ficha não apaga o login", async () => {
   );
   assert.equal(rows.length, 1);
   assert.equal(rows[0].funcionario_id, null);
+});
+
+test("desligar fecha o vínculo e desativa o login na mesma instrução", async () => {
+  const id = await novaFicha("Elis Teste");
+  await pool.query(
+    `insert into funcionario_vinculos (funcionario_id, cargo, admissao)
+     values ($1, 'Vendedora', '2026-01-02')`,
+    [id]
+  );
+  await pool.query(
+    `insert into users (name, email, password_hash, role, funcionario_id, active)
+     values ('Elis Teste','elis@vamaqmotors.com.br','x','vendedor',$1,true)`,
+    [id]
+  );
+
+  const { rows } = await pool.query(DESLIGAR_SQL, [id, "2026-06-30", "Fim de contrato"]);
+  assert.ok(rows[0].vinculo_id, "devolve o vínculo fechado");
+  assert.ok(rows[0].user_id, "devolve o login desativado");
+
+  const v = await pool.query(
+    `select saida, motivo_saida from funcionario_vinculos where funcionario_id=$1`,
+    [id]
+  );
+  assert.equal(v.rows[0].motivo_saida, "Fim de contrato");
+  assert.ok(v.rows[0].saida, "gravou a data de saída");
+
+  const u = await pool.query(`select active from users where funcionario_id=$1`, [id]);
+  assert.equal(u.rows[0].active, false);
+});
+
+test("desligar sem vínculo aberto devolve vinculo_id nulo", async () => {
+  const id = await novaFicha("Fabio Teste");
+  const { rows } = await pool.query(DESLIGAR_SQL, [id, "2026-06-30", null]);
+  assert.equal(rows[0].vinculo_id, null);
+});
+
+test("desligar funcionário sem login devolve user_id nulo", async () => {
+  const id = await novaFicha("Gil Teste");
+  await pool.query(
+    `insert into funcionario_vinculos (funcionario_id, cargo, admissao)
+     values ($1, 'Mecânico', '2026-01-02')`,
+    [id]
+  );
+  const { rows } = await pool.query(DESLIGAR_SQL, [id, "2026-07-01", null]);
+  assert.ok(rows[0].vinculo_id);
+  assert.equal(rows[0].user_id, null);
+});
+
+test("desligar com data anterior à admissão é rejeitado pelo CHECK", async () => {
+  const id = await novaFicha("Hugo Teste");
+  await pool.query(
+    `insert into funcionario_vinculos (funcionario_id, cargo, admissao)
+     values ($1, 'Lavador', '2026-05-01')`,
+    [id]
+  );
+  await assert.rejects(
+    () => pool.query(DESLIGAR_SQL, [id, "2026-04-01", null]),
+    /vinculo_datas_check/
+  );
 });
