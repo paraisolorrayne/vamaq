@@ -8,6 +8,7 @@ import {
   setUserActive,
   updateUserRole,
   updateApprovalLimit,
+  setUserFuncionario,
 } from "@/lib/auth/users";
 
 const LOGIN_URL = "https://vamaqmotors.com.br/login";
@@ -82,5 +83,20 @@ export async function updateLimitAction(id, limit) {
   await requireRole("admin");
   await updateApprovalLimit(id, limit);
   revalidatePath("/admin/usuarios");
+  return { ok: true };
+}
+
+export async function vincularFuncionarioAction(userId, funcionarioId) {
+  await requireRole("admin");
+  try {
+    await setUserFuncionario(userId, funcionarioId || null);
+  } catch (err) {
+    if (err?.constraint === "users_funcionario_idx") {
+      return { error: "Essa ficha já está ligada a outro login." };
+    }
+    throw err;
+  }
+  revalidatePath("/admin/usuarios");
+  revalidatePath("/admin/funcionarios");
   return { ok: true };
 }

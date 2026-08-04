@@ -8,9 +8,10 @@ import {
   toggleActiveAction,
   updateRoleAction,
   updateLimitAction,
+  vincularFuncionarioAction,
 } from "./actions";
 
-export default function UsuariosClient({ users, roles, meId }) {
+export default function UsuariosClient({ users, roles, meId, funcionarios }) {
   const [isPending, startTransition] = useTransition();
   const [err, setErr] = useState(null);
   const [access, setAccess] = useState(null); // { email, accessText, kind }
@@ -70,6 +71,14 @@ export default function UsuariosClient({ users, roles, meId }) {
   function handleLimit(u, value) {
     startTransition(async () => {
       await updateLimitAction(u.id, value);
+    });
+  }
+
+  function handleFuncionario(u, funcionarioId) {
+    setErr(null);
+    startTransition(async () => {
+      const r = await vincularFuncionarioAction(u.id, funcionarioId || null);
+      if (r?.error) setErr(r.error);
     });
   }
 
@@ -173,6 +182,7 @@ export default function UsuariosClient({ users, roles, meId }) {
               <tr>
                 <th>Nome</th>
                 <th>Login</th>
+                <th>Funcionário</th>
                 <th>Papel</th>
                 <th title="Valor que aprova sozinho em Contas a Pagar">Alçada</th>
                 <th>Situação</th>
@@ -184,6 +194,21 @@ export default function UsuariosClient({ users, roles, meId }) {
                 <tr key={u.id} style={{ opacity: u.active ? 1 : 0.55 }}>
                   <td><strong>{u.name}</strong></td>
                   <td>{u.email}</td>
+                  <td>
+                    <select
+                      value={u.funcionario_id || ""}
+                      onChange={(e) => handleFuncionario(u, e.target.value)}
+                      disabled={isPending}
+                      className={styles.formSelect}
+                      style={{ padding: "4px 8px", fontSize: "0.82rem" }}
+                      title="Ficha de funcionário ligada a este login"
+                    >
+                      <option value="">— sem ficha —</option>
+                      {funcionarios.map((f) => (
+                        <option key={f.id} value={f.id}>{f.nome}</option>
+                      ))}
+                    </select>
+                  </td>
                   <td>
                     <select
                       value={u.role}
