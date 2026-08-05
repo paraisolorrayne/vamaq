@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import styles from "../admin.module.css";
 import { DEFAULT_TEMPLATES } from "@/lib/contractTemplates";
+import { clienteDoDocumento } from "@/lib/documentosCliente";
 import { generateContractPdf, buildContractDoc } from "@/lib/contractPdf";
 
 // Agrupa os campos por seção preservando a ordem de declaração do modelo.
@@ -34,6 +35,8 @@ export default function DocumentosPage() {
   const [activePrefillId, setActivePrefillId] = useState(null);
   const [pdfUrl, setPdfUrl] = useState(null);
   const [viewMode, setViewMode] = useState("pdf"); // "pdf" | "texto"
+  const [vehicleIdSel, setVehicleIdSel] = useState("");
+  const [avisoCopia, setAvisoCopia] = useState(null);
 
   // Pré-visualização fiel: gera o PDF real (mesmo do "Baixar PDF") e exibe
   // num iframe. O texto puro fica disponível como visão alternativa.
@@ -101,6 +104,7 @@ export default function DocumentosPage() {
   // `prefix` escolhe qual ficha recebe os dados: veiculo (padrão) ou troca
   // (veículo do estoque dado pela Vamaq como pagamento na compra e venda).
   function fillFromVehicle(vehicleId, prefix = "veiculo") {
+    if (prefix === "veiculo") setVehicleIdSel(vehicleId || "");
     const v = vehicles.find((veh) => veh.id === vehicleId);
     if (!v) return;
     setValues((prev) => ({
@@ -144,12 +148,34 @@ export default function DocumentosPage() {
 
   async function handleDownloadPdf() {
     if (!preview) return;
+    let blob;
     try {
-      await generateContractPdf(preview);
+      blob = await generateContractPdf(preview);
     } catch (err) {
       alert("Erro ao gerar PDF: " + err.message);
       return;
     }
+
+    // O download já aconteceu. Guardar a cópia no servidor é o passo seguinte e
+    // NUNCA pode derrubar a geração do contrato — falhou, o operador é avisado
+    // e segue com o arquivo na mão.
+    setAvisoCopia(null);
+    try {
+      const fd = new FormData();
+      fd.set("file", blob, "contrato.pdf");
+      fd.set("tipo", selectedTemplate.id);
+      fd.set("titulo", preview.title);
+      const cliente = clienteDoDocumento(selectedTemplate.id, values);
+      if (cliente) fd.set("cliente", cliente);
+      if (vehicleIdSel) fd.set("vehicleId", vehicleIdSel);
+      const res = await fetch("/api/admin/documentos-gerados", { method: "POST", body: fd });
+      if (!res.ok) throw new Error();
+    } catch {
+      setAvisoCopia(
+        "O PDF foi baixado, mas não deu para guardar a cópia no sistema. Guarde o arquivo e avise o suporte."
+      );
+    }
+
     // Rascunho de uso único: baixou o PDF, o rascunho sai da edição.
     if (activePrefillId) {
       const id = activePrefillId;
@@ -319,6 +345,9 @@ export default function DocumentosPage() {
               </button>
             </div>
           </div>
+          {avisoCopia && (
+            <p style={{ color: "#a16207", fontSize: "0.85rem" }}>{avisoCopia}</p>
+          )}
           {viewMode === "pdf" ? (
             pdfUrl ? (
               <iframe

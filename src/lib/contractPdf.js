@@ -22,6 +22,9 @@ const BOTTOM_LIMIT = PAGE_H - 20; // conteúdo não passa daqui (espaço p/ roda
 export async function generateContractPdf(preview) {
   const doc = await buildContractDoc(preview);
   doc.save(`${preview.title.replace(/\s+/g, "_")}.pdf`);
+  // Devolve o mesmo PDF já montado, para a tela guardar uma cópia no servidor
+  // sem precisar montar de novo.
+  return doc.output("blob");
 }
 
 // Constrói o documento jsPDF (sem salvar) — separado para permitir testes.
