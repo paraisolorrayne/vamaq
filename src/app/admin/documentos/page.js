@@ -205,9 +205,14 @@ export default function DocumentosPage() {
             Gere contratos e documentos a partir de modelos prontos
           </p>
         </div>
-        <Link href="/admin/tutoriais/documentos" className={styles.btnSecondary}>
-          📖 Como usar
-        </Link>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <Link href="/admin/documentos/gerados" className={styles.btnSecondary}>
+            Documentos gerados
+          </Link>
+          <Link href="/admin/tutoriais/documentos" className={styles.btnSecondary}>
+            📖 Como usar
+          </Link>
+        </div>
       </div>
 
       {!selectedTemplate ? (
