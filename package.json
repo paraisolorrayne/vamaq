@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "node --loader ./node-loader.mjs --test --test-concurrency=1 tests/*.test.mjs",
+    "test": "node --test --test-concurrency=1 tests/*.test.mjs",
     "lint": "eslint",
     "seed": "node --env-file=.env.local scripts/seed-estoque.mjs"
   },

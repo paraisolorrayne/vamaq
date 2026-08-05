@@ -4,7 +4,7 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { clienteDoDocumento } from "../src/lib/contractTemplates.js";
+import { clienteDoDocumento } from "../src/lib/documentosCliente.js";
 
 test("compra e venda: a outra parte é o vendedor", () => {
   assert.equal(
