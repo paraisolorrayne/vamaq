@@ -8,17 +8,19 @@ import {
   admitirAction,
   desligarAction,
   criarAcessoAction,
+  vincularUsuarioAction,
 } from "../actions";
 
 const fmtData = (d) =>
   d ? new Date(d).toLocaleDateString("pt-BR", { timeZone: "UTC" }) : "—";
 const paraInput = (d) => (d ? new Date(d).toISOString().slice(0, 10) : "");
 
-export default function FichaClient({ funcionario: f, roles }) {
+export default function FichaClient({ funcionario: f, roles, usuariosLivres }) {
   const [isPending, startTransition] = useTransition();
   const [err, setErr] = useState(null);
   const [acesso, setAcesso] = useState(null); // { email, accessText }
   const [copiado, setCopiado] = useState(false);
+  const [usuarioSel, setUsuarioSel] = useState("");
   const aberto = f.vinculoAberto;
 
   // Três estados possíveis, alinhados com a lista (FuncionariosClient):
@@ -240,23 +242,62 @@ export default function FichaClient({ funcionario: f, roles }) {
             )}
           </p>
         ) : !acesso ? (
-          <form onSubmit={criarAcessoSubmit} className={styles.formGrid}>
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Login</label>
-              <input name="login" className={styles.formInput} placeholder="victor  →  victor@vamaqmotors.com.br" required />
-            </div>
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Papel</label>
-              <select name="role" className={styles.formSelect} defaultValue="vendedor">
-                {Object.entries(roles).map(([k, label]) => (
-                  <option key={k} value={k}>{label}</option>
-                ))}
-              </select>
-            </div>
-            <div className={styles.formActions}>
-              <button type="submit" className={styles.btnPrimary} disabled={isPending}>Criar acesso</button>
-            </div>
-          </form>
+          <>
+            {usuariosLivres.length > 0 && (
+              <div style={{ marginBottom: 20 }}>
+                <p style={{ fontSize: "0.85rem", color: "#666", marginTop: 0 }}>
+                  Se esta pessoa já entra no sistema, ligue o acesso que ela usa hoje.
+                </p>
+                <div className={styles.formGrid}>
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Acesso existente</label>
+                    <select
+                      className={styles.formSelect}
+                      value={usuarioSel}
+                      onChange={(e) => setUsuarioSel(e.target.value)}
+                    >
+                      <option value="">— escolha —</option>
+                      {usuariosLivres.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.email} — {roles[u.role] || u.role}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className={styles.formActions}>
+                    <button
+                      type="button"
+                      className={styles.btnPrimary}
+                      disabled={isPending || !usuarioSel}
+                      onClick={() => run(() => vincularUsuarioAction(f.id, usuarioSel))}
+                    >
+                      Vincular
+                    </button>
+                  </div>
+                </div>
+                <p style={{ fontSize: "0.85rem", color: "#666", marginBottom: 0 }}>
+                  Ou crie um acesso novo:
+                </p>
+              </div>
+            )}
+            <form onSubmit={criarAcessoSubmit} className={styles.formGrid}>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Login</label>
+                <input name="login" className={styles.formInput} placeholder="victor  →  victor@vamaqmotors.com.br" required />
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Papel</label>
+                <select name="role" className={styles.formSelect} defaultValue="vendedor">
+                  {Object.entries(roles).map(([k, label]) => (
+                    <option key={k} value={k}>{label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className={styles.formActions}>
+                <button type="submit" className={styles.btnPrimary} disabled={isPending}>Criar acesso</button>
+              </div>
+            </form>
+          </>
         ) : null}
       </div>
     </>

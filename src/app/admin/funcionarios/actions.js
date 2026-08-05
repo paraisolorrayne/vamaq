@@ -8,7 +8,7 @@ import {
   admitir,
   desligar,
 } from "@/lib/rh/funcionarios";
-import { createUser } from "@/lib/auth/users";
+import { createUser, setUserFuncionario } from "@/lib/auth/users";
 import { buildAccessText } from "@/lib/auth/accessText";
 
 /** Campos da ficha lidos do formulário. */
@@ -78,4 +78,26 @@ export async function criarAcessoAction(funcionarioId, { nome, login, role }) {
     email: res.user.email,
     accessText: buildAccessText({ name: nome, email: res.user.email, tempPassword: res.tempPassword }),
   };
+}
+
+/**
+ * Liga um login que já existe a esta ficha. O caso real: quem já trabalhava na
+ * loja teve o acesso criado antes de existir cadastro de funcionário.
+ * Desvincular continua em /admin/usuarios.
+ */
+export async function vincularUsuarioAction(funcionarioId, userId) {
+  await requireRole("admin");
+  if (!userId) return { error: "Escolha um acesso para vincular." };
+  try {
+    await setUserFuncionario(userId, funcionarioId);
+  } catch (err) {
+    if (err?.constraint === "users_funcionario_idx") {
+      return { error: "Essa ficha já está ligada a outro login." };
+    }
+    throw err;
+  }
+  revalidatePath(`/admin/funcionarios/${funcionarioId}`);
+  revalidatePath("/admin/funcionarios");
+  revalidatePath("/admin/usuarios");
+  return { ok: true };
 }
