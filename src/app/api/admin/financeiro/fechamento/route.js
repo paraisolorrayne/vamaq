@@ -12,14 +12,14 @@ function parseYm(sp) {
 }
 
 export async function GET(request) {
-  const auth = await requireApiRole(["financeiro"]);
+  const auth = await requireApiRole(["financeiro", "secretaria"]);
   if (auth.error) return auth.error;
   const { ano, mes } = parseYm(new URL(request.url).searchParams);
   return NextResponse.json(await getFechamentoMes(ano, mes));
 }
 
 export async function POST(request) {
-  const auth = await requireApiRole(["financeiro"]);
+  const auth = await requireApiRole(["financeiro", "secretaria"]);
   if (auth.error) return auth.error;
   const { ano, mes, action } = await request.json();
   if (!ano || !mes) return NextResponse.json({ error: "ano/mes obrigatórios" }, { status: 400 });

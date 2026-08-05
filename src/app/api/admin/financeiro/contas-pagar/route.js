@@ -7,13 +7,13 @@ import { listBills, createBill } from "@/lib/fin/repositories/finance";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const auth = await requireApiRole(["financeiro"]);
+  const auth = await requireApiRole(["financeiro", "secretaria"]);
   if (auth.error) return auth.error;
   return NextResponse.json({ bills: await listBills() });
 }
 
 export async function POST(request) {
-  const auth = await requireApiRole(["financeiro"]);
+  const auth = await requireApiRole(["financeiro", "secretaria"]);
   if (auth.error) return auth.error;
   try {
     const body = await request.json();

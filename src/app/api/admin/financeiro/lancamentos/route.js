@@ -6,7 +6,7 @@ import { listTransactions, createTransaction } from "@/lib/fin/repositories/fina
 export const dynamic = "force-dynamic";
 
 export async function GET(request) {
-  const auth = await requireApiRole(["financeiro"]);
+  const auth = await requireApiRole(["financeiro", "secretaria"]);
   if (auth.error) return auth.error;
   const sp = new URL(request.url).searchParams;
   const page = Math.max(1, parseInt(sp.get("page") || "1", 10));
@@ -23,7 +23,7 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
-  const auth = await requireApiRole(["financeiro"]);
+  const auth = await requireApiRole(["financeiro", "secretaria"]);
   if (auth.error) return auth.error;
   try {
     const body = await request.json();

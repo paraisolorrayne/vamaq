@@ -9,7 +9,7 @@ import {
 } from "@/lib/fin/repositories/finance";
 
 export async function GET(_request, { params }) {
-  const auth = await requireApiRole(["financeiro"]);
+  const auth = await requireApiRole(["financeiro", "secretaria"]);
   if (auth.error) return auth.error;
   const { id } = await params;
   const tx = await getTransaction(id);
@@ -18,7 +18,7 @@ export async function GET(_request, { params }) {
 }
 
 export async function PUT(request, { params }) {
-  const auth = await requireApiRole(["financeiro"]);
+  const auth = await requireApiRole(["financeiro", "secretaria"]);
   if (auth.error) return auth.error;
   try {
     const { id } = await params;
@@ -37,7 +37,7 @@ export async function PUT(request, { params }) {
 }
 
 export async function PATCH(request, { params }) {
-  const auth = await requireApiRole(["financeiro"]);
+  const auth = await requireApiRole(["financeiro", "secretaria"]);
   if (auth.error) return auth.error;
   const { id } = await params;
   const { status } = await request.json();
@@ -50,7 +50,7 @@ export async function PATCH(request, { params }) {
 }
 
 export async function DELETE(_request, { params }) {
-  const auth = await requireApiRole(["financeiro"]);
+  const auth = await requireApiRole(["financeiro", "secretaria"]);
   if (auth.error) return auth.error;
   const { id } = await params;
   const ok = await deleteTransaction(id);

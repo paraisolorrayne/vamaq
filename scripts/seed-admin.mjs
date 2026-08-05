@@ -8,7 +8,9 @@
  * Vários (arquivo JSON [{name,email,role}], senha compartilhada em --password):
  *   node --env-file=.env.local scripts/seed-admin.mjs --file equipe.json --password "2RcgYvMq@L"
  *
- * Papéis: admin | financeiro | vendedor. Upsert por e-mail.
+ * Papéis: os mesmos de src/lib/auth/permissions.js (admin, estoque,
+ * financeiro, vendedor, secretaria) — a lista vem de lá para não dessincronizar.
+ * Upsert por e-mail.
  * Todo usuário semeado nasce com must_change_password = true (senha inicial
  * compartilhada → troca obrigatória no primeiro acesso). Aplica db/auth-schema.sql
  * antes, então é idempotente.
@@ -21,6 +23,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 import { hashPassword } from "../src/lib/auth/password.js";
+import { ROLES as ROLE_LABELS } from "../src/lib/auth/permissions.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, "..");
@@ -30,7 +33,10 @@ function arg(flag) {
   return i >= 0 ? process.argv[i + 1] : undefined;
 }
 
-const ROLES = ["admin", "financeiro", "vendedor"];
+// Fonte de verdade única: os papéis do painel (permissions.js), que por sua vez
+// batem com o CHECK de db/auth-schema.sql. Antes esta lista era fixa aqui e
+// ficou para trás — não aceitava `estoque` nem `secretaria`.
+const ROLES = Object.keys(ROLE_LABELS);
 const sharedPassword = arg("--password");
 const file = arg("--file");
 

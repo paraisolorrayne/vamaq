@@ -6,7 +6,7 @@ import { getBill, setBillApproval, markBillPaid, deleteBill } from "@/lib/fin/re
 // Ações: approve | reject | pay | unpay. Aprovar exige alçada suficiente
 // (correção #1). Aprovar NÃO paga; pagar só conta aprovada.
 export async function PATCH(request, { params }) {
-  const auth = await requireApiRole(["financeiro"]);
+  const auth = await requireApiRole(["financeiro", "secretaria"]);
   if (auth.error) return auth.error;
   const { id } = await params;
   const { action } = await request.json();
@@ -35,7 +35,7 @@ export async function PATCH(request, { params }) {
 }
 
 export async function DELETE(_request, { params }) {
-  const auth = await requireApiRole(["financeiro"]);
+  const auth = await requireApiRole(["financeiro", "secretaria"]);
   if (auth.error) return auth.error;
   const { id } = await params;
   const ok = await deleteBill(id);

@@ -5,7 +5,7 @@ import { getReferencias } from "@/lib/fin/repositories/finance";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const auth = await requireApiRole(["financeiro"]);
+  const auth = await requireApiRole(["financeiro", "secretaria"]);
   if (auth.error) return auth.error;
   return NextResponse.json(await getReferencias());
 }

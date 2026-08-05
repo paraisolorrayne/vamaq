@@ -6,13 +6,13 @@ import { emitirCobranca, listCobrancas, asaasEnabled } from "@/lib/fin/asaas/cob
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const auth = await requireApiRole(["financeiro"]);
+  const auth = await requireApiRole(["financeiro", "secretaria"]);
   if (auth.error) return auth.error;
   return NextResponse.json({ enabled: asaasEnabled(), cobrancas: await listCobrancas() });
 }
 
 export async function POST(request) {
-  const auth = await requireApiRole(["financeiro"]);
+  const auth = await requireApiRole(["financeiro", "secretaria"]);
   if (auth.error) return auth.error;
   if (!asaasEnabled()) {
     return NextResponse.json(

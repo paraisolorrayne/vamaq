@@ -27,7 +27,7 @@ const SECTIONS = [
   { key: "fipe", prefix: "/admin/fipe", label: "Tabela FIPE", icon: "💰", roles: ["estoque", "financeiro", "secretaria"] },
   { key: "estoque", prefix: "/admin/estoque", label: "Estoque", icon: "🚗", roles: ["estoque", "financeiro", "vendedor", "secretaria"] },
   { key: "crm", prefix: "/admin/crm", label: "CRM (Vendas)", icon: "🤝", roles: ["vendedor", "secretaria"] },
-  { key: "financeiro", prefix: "/admin/financeiro", label: "Financeiro", icon: "📊", roles: ["financeiro"] },
+  { key: "financeiro", prefix: "/admin/financeiro", label: "Financeiro", icon: "📊", roles: ["financeiro", "secretaria"] },
   { key: "fiscal", prefix: "/admin/fiscal", label: "Notas Fiscais", icon: "🧾", roles: ["financeiro"] },
   { key: "tutoriais", prefix: "/admin/tutoriais", label: "Tutoriais", icon: "📚", roles: ["estoque", "financeiro", "vendedor", "secretaria"] },
   { key: "dashboard", prefix: "/admin", label: "Dashboard", icon: "📈", roles: ["estoque", "financeiro", "vendedor", "secretaria"] },

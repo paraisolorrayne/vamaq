@@ -3,7 +3,7 @@ import { requireApiRole } from "@/lib/auth/api";
 import { getContact, updateContact, deleteContact } from "@/lib/fin/repositories/finance";
 
 export async function GET(_request, { params }) {
-  const auth = await requireApiRole(["financeiro"]);
+  const auth = await requireApiRole(["financeiro", "secretaria"]);
   if (auth.error) return auth.error;
   const { id } = await params;
   const c = await getContact(id);
@@ -12,7 +12,7 @@ export async function GET(_request, { params }) {
 }
 
 export async function PUT(request, { params }) {
-  const auth = await requireApiRole(["financeiro"]);
+  const auth = await requireApiRole(["financeiro", "secretaria"]);
   if (auth.error) return auth.error;
   try {
     const { id } = await params;
@@ -30,7 +30,7 @@ export async function PUT(request, { params }) {
 }
 
 export async function DELETE(_request, { params }) {
-  const auth = await requireApiRole(["financeiro"]);
+  const auth = await requireApiRole(["financeiro", "secretaria"]);
   if (auth.error) return auth.error;
   const { id } = await params;
   const res = await deleteContact(id);
