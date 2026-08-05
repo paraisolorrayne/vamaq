@@ -1186,17 +1186,35 @@ const fmtDataContrato = (d) =>
 
 function ContratosGerados({ vehicleId }) {
   const [contratos, setContratos] = useState([]);
-  const [carregando, setCarregando] = useState(true);
+  // "carregando" | "ok" | "erro" | "sem-permissao"
+  const [estado, setEstado] = useState("carregando");
 
   useEffect(() => {
     let cancelled = false;
+    setEstado("carregando");
     fetch(`/api/admin/documentos-gerados?vehicleId=${vehicleId}`)
-      .then((r) => r.json())
-      .then((d) => { if (!cancelled) setContratos(d.documentos || []); })
-      .catch(() => {})
-      .finally(() => { if (!cancelled) setCarregando(false); });
+      .then((r) => {
+        if (r.status === 403) {
+          if (!cancelled) setEstado("sem-permissao");
+          return null;
+        }
+        if (!r.ok) throw new Error("Falha ao carregar contratos");
+        return r.json();
+      })
+      .then((d) => {
+        if (cancelled || d === null) return;
+        setContratos(d.documentos || []);
+        setEstado("ok");
+      })
+      .catch(() => {
+        if (!cancelled) setEstado("erro");
+      });
     return () => { cancelled = true; };
   }, [vehicleId]);
+
+  // Quem não tem permissão de ver contratos gerados não deve ver nem uma
+  // caixa vazia, nem um erro — o bloco inteiro some para esse papel.
+  if (estado === "sem-permissao") return null;
 
   return (
     <div className={styles.card} style={{ marginBottom: 24 }}>
@@ -1207,8 +1225,12 @@ function ContratosGerados({ vehicleId }) {
         Gerados pelo sistema — não são os documentos digitalizados acima.
       </p>
 
-      {carregando ? (
+      {estado === "carregando" ? (
         <p style={{ fontSize: "0.85rem", color: "#666", margin: 0 }}>Carregando...</p>
+      ) : estado === "erro" ? (
+        <p style={{ fontSize: "0.85rem", color: "#b91c1c", margin: 0 }}>
+          Não foi possível carregar os contratos agora.
+        </p>
       ) : contratos.length === 0 ? (
         <p style={{ fontSize: "0.85rem", color: "#666", margin: 0 }}>
           Nenhum contrato gerado para este veículo.

@@ -77,6 +77,7 @@ export default function DocumentosPage() {
     setSelectedTemplate(template);
     setPreview(null);
     setActivePrefillId(null);
+    setVehicleIdSel("");
     const initial = {};
     template.fields.forEach((f) => {
       initial[f.key] = f.type === "select" ? f.options?.[0] || "" : "";
@@ -93,6 +94,7 @@ export default function DocumentosPage() {
     });
     setSelectedTemplate(template);
     setPreview(null);
+    setVehicleIdSel("");
     setValues({ ...initial, ...prefill.values });
     setActivePrefillId(prefill.id);
   }

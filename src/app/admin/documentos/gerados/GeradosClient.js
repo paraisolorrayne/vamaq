@@ -30,7 +30,14 @@ export default function GeradosClient({ documentos }) {
     return documentos.filter((d) => {
       const cliente = (d.cliente || "").toLowerCase();
       const placa = (d.placa || "").toLowerCase();
-      return cliente.includes(termo) || placa.includes(termo);
+      const tipo = (TIPO_LABEL[d.tipo] || d.tipo || "").toLowerCase();
+      const data = fmtData(d.created_at).toLowerCase();
+      return (
+        cliente.includes(termo) ||
+        placa.includes(termo) ||
+        tipo.includes(termo) ||
+        data.includes(termo)
+      );
     });
   }, [documentos, busca]);
 
