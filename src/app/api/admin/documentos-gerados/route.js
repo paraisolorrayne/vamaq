@@ -1,15 +1,20 @@
 import { NextResponse } from "next/server";
 import { requireApiRole } from "@/lib/auth/api";
-import { salvarDocumento, listDocumentos } from "@/lib/documentos";
+import { salvarDocumento, listDocumentos, listDocumentosDoVeiculo } from "@/lib/documentos";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request) {
   const auth = await requireApiRole(["vendedor", "secretaria"]);
   if (auth.error) return auth.error;
-  const busca = new URL(request.url).searchParams.get("busca") || "";
+  const params = new URL(request.url).searchParams;
+  const vehicleId = params.get("vehicleId") || "";
+  const busca = params.get("busca") || "";
   try {
-    return NextResponse.json({ documentos: await listDocumentos({ busca }) });
+    const documentos = vehicleId
+      ? await listDocumentosDoVeiculo(vehicleId)
+      : await listDocumentos({ busca });
+    return NextResponse.json({ documentos });
   } catch (err) {
     console.error("Falha ao listar documentos:", err);
     return NextResponse.json({ error: "Falha ao listar os documentos" }, { status: 500 });

@@ -860,6 +860,11 @@ function NovoVeiculoForm() {
           </div>
         )}
 
+        {/* Contratos gerados pelo sistema (Compra e venda, Consignação, Termo de
+            vistoria...) para este veículo — somente leitura, mesma fonte da tela
+            /admin/documentos/gerados. Só no modo edição. */}
+        {editId ? <ContratosGerados vehicleId={editId} /> : null}
+
         <div className={styles.formActions}>
           <button
             type="submit"
@@ -1158,6 +1163,80 @@ function VehicleDocuments({ vehicleId }) {
               >
                 Remover
               </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+// Contratos gerados pelo sistema (PR-Documentos persistidos) para este veículo.
+// Somente leitura — quem gera/anexa é a tela de emissão do contrato; aqui é só
+// consulta, mesmos rótulos da tela /admin/documentos/gerados (TIPO_LABEL).
+const TIPO_LABEL_CONTRATO = {
+  "compra-venda": "Compra e venda",
+  venda: "Venda",
+  consignacao: "Consignação",
+  "termo-vistoria": "Termo de vistoria",
+};
+
+const fmtDataContrato = (d) =>
+  d ? new Date(d).toLocaleDateString("pt-BR") : "—";
+
+function ContratosGerados({ vehicleId }) {
+  const [contratos, setContratos] = useState([]);
+  const [carregando, setCarregando] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/admin/documentos-gerados?vehicleId=${vehicleId}`)
+      .then((r) => r.json())
+      .then((d) => { if (!cancelled) setContratos(d.documentos || []); })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setCarregando(false); });
+    return () => { cancelled = true; };
+  }, [vehicleId]);
+
+  return (
+    <div className={styles.card} style={{ marginBottom: 24 }}>
+      <h3 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: 4 }}>
+        Contratos gerados
+      </h3>
+      <p style={{ fontSize: "0.85rem", color: "#666", marginTop: 0, marginBottom: 16 }}>
+        Gerados pelo sistema — não são os documentos digitalizados acima.
+      </p>
+
+      {carregando ? (
+        <p style={{ fontSize: "0.85rem", color: "#666", margin: 0 }}>Carregando...</p>
+      ) : contratos.length === 0 ? (
+        <p style={{ fontSize: "0.85rem", color: "#666", margin: 0 }}>
+          Nenhum contrato gerado para este veículo.
+        </p>
+      ) : (
+        <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+          {contratos.map((c) => (
+            <li
+              key={c.id}
+              style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: "1px solid #f0f0f2" }}
+            >
+              <span style={{ fontSize: "0.85rem", color: "#666", minWidth: 90 }}>
+                {fmtDataContrato(c.created_at)}
+              </span>
+              <span style={{ fontSize: "0.7rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", color: "#ff6a00", minWidth: 110 }}>
+                {TIPO_LABEL_CONTRATO[c.tipo] || c.tipo}
+              </span>
+              <span style={{ flex: 1, fontSize: "0.9rem", color: "#111", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {c.cliente || "—"}
+              </span>
+              <a
+                href={`/api/admin/documentos-gerados/${c.id}/arquivo`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.btnSecondary}
+              >
+                Abrir
+              </a>
             </li>
           ))}
         </ul>
