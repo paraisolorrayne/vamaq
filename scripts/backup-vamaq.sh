@@ -35,7 +35,14 @@ if [ -z "${DBURL:-}" ]; then
 fi
 
 # 1) Banco — formato custom (-Fc): restaurável com pg_restore, já comprimido.
-pg_dump "$DBURL" -Fc -f "$DEST/db-$STAMP.dump"
+#    Roda como SUPERUSUÁRIO do Postgres, não com a role do app: o schema `fin`
+#    pertence a vamaq_fin, e a role do app não o enxerga (é a blindagem que
+#    impede o financeiro de escrever no estoque). Com a role do app o pg_dump
+#    falha em `fin` e, por causa do `set -e`, o script inteiro aborta — o dump
+#    sai VAZIO e as fotos nem chegam a ser copiadas. Foi o que aconteceu, sem
+#    ninguém perceber, de 28/07 a 05/08/2026.
+DBNAME=$(echo "$DBURL" | sed -E 's#.*/([^/?]+).*#\1#')
+sudo -u postgres pg_dump "$DBNAME" -Fc > "$DEST/db-$STAMP.dump"
 
 # 2) Fotos de veículos (gravadas em runtime, não versionadas).
 if [ -d "$APP_DIR/public/images/vehicles" ]; then
