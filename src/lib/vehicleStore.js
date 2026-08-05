@@ -12,7 +12,7 @@ const SELECT_COLS = `
   id, slug, brand, model, year, price, quilometragem,
   fuel, transmission, power, color, body_type, featured, badge,
   opcionais, blindagem, images, specs, description, published, status,
-  placa, documentos, renave,
+  placa, chassi, documentos, renave,
   created_at, updated_at
 `;
 
@@ -66,10 +66,11 @@ function normalize(body) {
     },
     description: body.description || '',
     published: body.published === undefined ? true : Boolean(body.published),
-    // placa em maiúsculas; vazia = null (vira pendência no inventário).
+    // placa/chassi em maiúsculas; vazia = null (vira pendência no inventário).
     // documentos NÃO entram aqui — são geridos pelas rotas de documento, para o
     // formulário de edição não sobrescrever a lista.
     placa: body.placa ? String(body.placa).toUpperCase().trim() : null,
+    chassi: body.chassi ? String(body.chassi).toUpperCase().trim() : null,
     renave: body.renave && typeof body.renave === 'object' ? body.renave : {},
   };
 }
@@ -102,10 +103,10 @@ export async function addVehicle(body) {
     `insert into vehicles (
        slug, brand, model, year, price, quilometragem,
        fuel, transmission, power, color, body_type, featured, badge,
-       opcionais, blindagem, images, specs, description, published, placa, renave
+       opcionais, blindagem, images, specs, description, published, placa, chassi, renave
      ) values (
        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,
-       $14::jsonb,$15::jsonb,$16::jsonb,$17::jsonb,$18,$19,$20,$21::jsonb
+       $14::jsonb,$15::jsonb,$16::jsonb,$17::jsonb,$18,$19,$20,$21,$22::jsonb
      )
      returning ${SELECT_COLS}`,
     [
@@ -113,7 +114,7 @@ export async function addVehicle(body) {
       v.fuel, v.transmission, v.power, v.color, v.body_type, v.featured, v.badge,
       JSON.stringify(v.opcionais), JSON.stringify(v.blindagem),
       JSON.stringify(v.images), JSON.stringify(v.specs), v.description, v.published,
-      v.placa, JSON.stringify(v.renave),
+      v.placa, v.chassi, JSON.stringify(v.renave),
     ]
   );
   return rowToVehicle(rows[0]);
@@ -129,7 +130,7 @@ export async function updateVehicle(id, body) {
        fuel=$7, transmission=$8, power=$9, color=$10, body_type=$11,
        featured=$12, badge=$13,
        opcionais=$14::jsonb, blindagem=$15::jsonb, images=$16::jsonb, specs=$17::jsonb,
-       description=$18, published=$19, placa=$20, renave=$21::jsonb
+       description=$18, published=$19, placa=$20, chassi=$21, renave=$22::jsonb
      where id=$1
      returning ${SELECT_COLS}`,
     [
@@ -137,7 +138,7 @@ export async function updateVehicle(id, body) {
       v.fuel, v.transmission, v.power, v.color, v.body_type, v.featured, v.badge,
       JSON.stringify(v.opcionais), JSON.stringify(v.blindagem),
       JSON.stringify(v.images), JSON.stringify(v.specs), v.description, v.published,
-      v.placa, JSON.stringify(v.renave),
+      v.placa, v.chassi, JSON.stringify(v.renave),
     ]
   );
   return rows.length ? rowToVehicle(rows[0]) : null;

@@ -22,6 +22,7 @@ const EMPTY_VEHICLE = {
   power: "",
   color: "",
   placa: "",
+  chassi: "",
   bodyType: "Sedan",
   featured: false,
   published: true,
@@ -130,6 +131,7 @@ function NovoVeiculoForm() {
             quilometragem: data.quilometragem ?? "",
             badge: data.badge || "",
             placa: data.placa || "",
+            chassi: data.chassi || "",
             renave: { status: "nao_iniciado", protocolo: "", obs: "", ...(data.renave || {}) },
           });
         }
@@ -505,6 +507,16 @@ function NovoVeiculoForm() {
                 className={styles.formInput}
                 placeholder="Ex: ABC1D23"
                 maxLength={8}
+              />
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Chassi</label>
+              <input
+                type="text"
+                value={form.chassi}
+                onChange={(e) => handleChange("chassi", e.target.value.toUpperCase())}
+                className={styles.formInput}
+                placeholder="9BWZZZ377VT004251"
               />
             </div>
             <div className={styles.formGroup}>
