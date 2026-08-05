@@ -8,7 +8,12 @@ export async function GET(request) {
   const auth = await requireApiRole(["vendedor", "secretaria"]);
   if (auth.error) return auth.error;
   const busca = new URL(request.url).searchParams.get("busca") || "";
-  return NextResponse.json({ documentos: await listDocumentos({ busca }) });
+  try {
+    return NextResponse.json({ documentos: await listDocumentos({ busca }) });
+  } catch (err) {
+    console.error("Falha ao listar documentos:", err);
+    return NextResponse.json({ error: "Falha ao listar os documentos" }, { status: 500 });
+  }
 }
 
 export async function POST(request) {
@@ -25,7 +30,7 @@ export async function POST(request) {
       tipo: String(formData.get("tipo") || ""),
       titulo: String(formData.get("titulo") || "").slice(0, 200),
       cliente: String(formData.get("cliente") || "").slice(0, 200) || null,
-      vehicleId: formData.get("vehicleId") || null,
+      vehicleId: String(formData.get("vehicleId") || "").slice(0, 200) || null,
       criadoPor: auth.user.id,
       buffer: Buffer.from(await file.arrayBuffer()),
     });

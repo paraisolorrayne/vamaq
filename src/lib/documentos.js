@@ -24,12 +24,26 @@ export async function salvarDocumento({ tipo, titulo, cliente, vehicleId, criado
   await fs.mkdir(path.join(DOCS_ROOT, ano), { recursive: true });
   await fs.writeFile(path.join(DOCS_ROOT, relativo), buffer);
 
-  const { rows } = await query(
-    `insert into documentos_gerados (tipo, titulo, cliente, vehicle_id, arquivo, tamanho, criado_por)
-     values ($1,$2,$3,$4,$5,$6,$7) returning *`,
-    [tipo, titulo, cliente || null, vehicleId || null, relativo, buffer.length, criadoPor || null]
-  );
-  return { documento: rows[0] };
+  try {
+    const { rows } = await query(
+      `insert into documentos_gerados (tipo, titulo, cliente, vehicle_id, arquivo, tamanho, criado_por)
+       values ($1,$2,$3,$4,$5,$6,$7) returning *`,
+      [tipo, titulo, cliente || null, vehicleId || null, relativo, buffer.length, criadoPor || null]
+    );
+    return { documento: rows[0] };
+  } catch (err) {
+    // insert falhou (vehicleId inválido, banco fora do ar etc.) — sem a linha
+    // no banco o arquivo fica órfão e inalcançável, então apaga antes de propagar.
+    // catch vazio no unlink é proposital: falha ao limpar não pode esconder o erro original.
+    await fs.unlink(path.join(DOCS_ROOT, relativo)).catch(() => {});
+    throw err;
+  }
+}
+
+// Escapa os curingas do LIKE (% e _) e o próprio escape (\) antes de montar o
+// padrão — sem isso, buscar por "%" ou "_" lista tudo em vez de nada.
+function escapeCuringasLike(str) {
+  return str.replace(/[\\%_]/g, (c) => `\\${c}`);
 }
 
 const SELECT = `
@@ -45,7 +59,7 @@ export async function listDocumentos({ busca } = {}) {
     ? await query(
         `${SELECT} where lower(d.cliente) like lower($1) or lower(coalesce(v.placa,'')) like lower($1)
          order by d.created_at desc`,
-        [`%${termo}%`]
+        [`%${escapeCuringasLike(termo)}%`]
       )
     : await query(`${SELECT} order by d.created_at desc`);
   return rows;
@@ -59,6 +73,13 @@ export async function listDocumentosDoVeiculo(vehicleId) {
   return rows;
 }
 
+// O `arquivo` sempre é gerado pelo servidor no formato <ano>/<uuid>.pdf (ver
+// salvarDocumento). Hoje não há como essa coluna vir de outra fonte, mas
+// blindar aqui evita que um path.join com valor fora desse formato algum dia
+// escape de DOCS_ROOT (path traversal) — não é paranoia, é não depender para
+// sempre da invariante de quem escreve na tabela.
+const ARQUIVO_VALIDO = /^\d{4}\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.pdf$/i;
+
 /** Caminho absoluto do PDF, ou null se a linha ou o arquivo não existirem. */
 export async function getDocumentoArquivo(id) {
   const { rows } = await query(
@@ -66,6 +87,7 @@ export async function getDocumentoArquivo(id) {
     [id]
   );
   if (!rows.length) return null;
+  if (!ARQUIVO_VALIDO.test(rows[0].arquivo)) return null;
   const caminhoAbsoluto = path.join(DOCS_ROOT, rows[0].arquivo);
   try {
     await fs.access(caminhoAbsoluto);
