@@ -11,7 +11,20 @@ function money(n) {
   return "R$ " + formatValorBR(Number(n) || 0);
 }
 
-export default function EmitirClient({ veiculo, config, custoAquisicao, custoOrigem, ativo, vehicleId }) {
+const STATUS_LABEL = {
+  processando: "processando",
+  autorizada: "autorizada",
+};
+
+export default function EmitirClient({
+  veiculo,
+  config,
+  custoAquisicao,
+  custoOrigem,
+  notaExistente,
+  ativo,
+  vehicleId,
+}) {
   const [isPending, startTransition] = useTransition();
   const [err, setErr] = useState(null);
   const [resultado, setResultado] = useState(null);
@@ -31,8 +44,35 @@ export default function EmitirClient({ veiculo, config, custoAquisicao, custoOri
         >
           <strong style={{ color: "#a8752e" }}>Emissor fiscal ainda não ativado</strong>
           <p style={{ fontSize: "0.9rem", color: "#666", margin: "6px 0 0" }}>
-            Para emitir notas fiscais, ative a integração com a Focus NFe (token do
-            certificado) com o time técnico.
+            Para emitir notas fiscais, é preciso cadastrar na Focus NFe o token
+            da conta e enviar o certificado digital A1 da Vamaq. São duas coisas
+            diferentes: o token libera o acesso à Focus; o certificado é o que
+            assina a nota perante a SEFAZ.
+          </p>
+        </div>
+      </>
+    );
+  }
+
+  if (notaExistente) {
+    return (
+      <>
+        <Link href="/admin/fiscal" className={styles.backLinkContent}>← Notas Fiscais</Link>
+        <div className={styles.pageHeader}>
+          <h1 className={styles.pageTitle}>Emitir nota fiscal</h1>
+        </div>
+        <div
+          className={styles.card}
+          style={{ borderLeft: "4px solid #e8b84b", background: "#fff7e8" }}
+        >
+          <strong style={{ color: "#a8752e" }}>Este veículo já tem nota fiscal</strong>
+          <p style={{ fontSize: "0.9rem", color: "#666", margin: "6px 0 0" }}>
+            {veiculo.brand} {veiculo.model} {veiculo.year} já tem uma nota{" "}
+            {STATUS_LABEL[notaExistente.status] || notaExistente.status} (referência{" "}
+            {notaExistente.ref}). Para emitir outra, cancele a nota atual primeiro.
+          </p>
+          <p style={{ margin: "16px 0 0" }}>
+            <Link href="/admin/fiscal" className={styles.btnPrimary}>Ver em Notas Fiscais</Link>
           </p>
         </div>
       </>
@@ -42,6 +82,7 @@ export default function EmitirClient({ veiculo, config, custoAquisicao, custoOri
   const semChassi = !veiculo.chassi;
   const aliquota = Number(config?.icms_seminovo_aliquota ?? 5);
   const vendaNum = Number(venda) || 0;
+  const custoPreenchido = String(custo).trim() !== "";
   const custoNum = Number(custo) || 0;
   const base = Math.max(0, vendaNum - custoNum);
   const icms = icmsSeminovo(vendaNum, custoNum, aliquota);
@@ -185,7 +226,9 @@ export default function EmitirClient({ veiculo, config, custoAquisicao, custoOri
             <div className={styles.formGrid}>
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>Base de cálculo</label>
-                <p style={{ margin: 0, fontWeight: 600 }}>{money(base)}</p>
+                <p style={{ margin: 0, fontWeight: 600 }}>
+                  {custoPreenchido ? money(base) : "—"}
+                </p>
               </div>
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>Alíquota</label>
@@ -193,9 +236,16 @@ export default function EmitirClient({ veiculo, config, custoAquisicao, custoOri
               </div>
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>ICMS</label>
-                <p style={{ margin: 0, fontWeight: 600 }}>{money(icms)}</p>
+                <p style={{ margin: 0, fontWeight: 600 }}>
+                  {custoPreenchido ? money(icms) : "—"}
+                </p>
               </div>
             </div>
+            {!custoPreenchido && (
+              <p style={{ fontSize: "0.78rem", color: "#666", margin: "8px 0 0" }}>
+                informe o custo de aquisição para calcular
+              </p>
+            )}
           </div>
 
           {/* Destinatário */}

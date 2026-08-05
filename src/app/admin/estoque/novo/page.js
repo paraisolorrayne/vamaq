@@ -517,6 +517,7 @@ function NovoVeiculoForm() {
                 onChange={(e) => handleChange("chassi", e.target.value.toUpperCase())}
                 className={styles.formInput}
                 placeholder="9BWZZZ377VT004251"
+                maxLength={17}
               />
             </div>
             <div className={styles.formGroup}>

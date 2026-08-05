@@ -95,6 +95,6 @@ export function podeAprovar(user, value) {
   return Number(value) <= limit;
 }
 
-function round2(n) {
+export function round2(n) {
   return Math.round((Number(n) + Number.EPSILON) * 100) / 100;
 }

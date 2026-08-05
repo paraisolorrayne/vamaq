@@ -75,9 +75,11 @@ export default function FiscalClient({ notas, ativo }) {
         >
           <strong style={{ color: "#a8752e" }}>Emissor fiscal ainda não ativado</strong>
           <p style={{ fontSize: "0.9rem", color: "#666", margin: "6px 0 0" }}>
-            A tela está pronta. Para emitir notas fiscais, ative a integração com a
-            Focus NFe (token do certificado) com o time técnico. Enquanto isso, não há
-            notas para mostrar aqui.
+            A tela está pronta. Para emitir notas fiscais, é preciso cadastrar na
+            Focus NFe o token da conta e enviar o certificado digital A1 da Vamaq.
+            São duas coisas diferentes: o token libera o acesso à Focus; o
+            certificado é o que assina a nota perante a SEFAZ. Enquanto isso, não
+            há notas para mostrar aqui.
           </p>
         </div>
       )}

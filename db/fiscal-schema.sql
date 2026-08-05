@@ -49,12 +49,19 @@ create table if not exists fiscal_config (
   regime_tributario text,
   cfop          text,
   cst           text,
+  origem        text,       -- origem da mercadoria (grupo ICMS, 0-8)
+  icms_modalidade_base_calculo text,
   ncm           text,
   serie         text,
   icms_seminovo_aliquota numeric(5,2) not null default 5,
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now()
 );
+
+-- Singleton: corrigir o CFOP/CST é UPDATE, não INSERT — um segundo INSERT
+-- deixava o sistema emitindo com a config antiga, sem sinal nenhum
+-- (getFiscalConfig lia a linha mais antiga por created_at).
+create unique index if not exists fiscal_config_singleton on fiscal_config ((true));
 
 -- reusa set_updated_at() de db/schema.sql
 drop trigger if exists notas_fiscais_set_updated_at on notas_fiscais;

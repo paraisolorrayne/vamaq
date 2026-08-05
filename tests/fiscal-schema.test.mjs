@@ -108,3 +108,20 @@ test("fiscal_config guarda os parâmetros do contador", async () => {
   assert.equal(rows[0].cfop, "5102");
   assert.equal(Number(rows[0].icms_seminovo_aliquota), 5);
 });
+
+test("fiscal_config é singleton: um segundo insert é rejeitado", async () => {
+  // Isola de testes anteriores para não depender da ordem de execução.
+  await pool.query(`delete from fiscal_config`);
+  await pool.query(
+    `insert into fiscal_config (cnpj, cfop, cst, ncm, serie)
+     values ('45348469000154','5102','000','87032310','1')`
+  );
+  await assert.rejects(
+    () =>
+      pool.query(
+        `insert into fiscal_config (cnpj, cfop, cst, ncm, serie)
+         values ('45348469000154','5102','000','87032310','2')`
+      ),
+    /fiscal_config_singleton/
+  );
+});

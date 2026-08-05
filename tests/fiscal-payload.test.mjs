@@ -41,6 +41,14 @@ test("monta o payload com emitente, destinatário e um item", () => {
   assert.equal(payload.items[0].valor_unitario_comercial, 200000);
 });
 
+test("payload traz os três campos estruturais exigidos pela Focus", () => {
+  const { payload } = montarPayloadNfe(args());
+  assert.equal(payload.tipo_documento, 1);
+  assert.equal(payload.finalidade_emissao, 1);
+  assert.ok(payload.data_emissao, "data_emissao ausente");
+  assert.doesNotThrow(() => new Date(payload.data_emissao).toISOString());
+});
+
 test("a descrição do item identifica o carro, com placa e chassi", () => {
   const { payload } = montarPayloadNfe(args());
   const d = payload.items[0].descricao;
@@ -72,6 +80,22 @@ test("CNPJ no destinatário vai no campo de CNPJ, não no de CPF", () => {
   );
   assert.equal(payload.cnpj_destinatario, "45348469000154");
   assert.equal(payload.cpf_destinatario, undefined);
+});
+
+test("recusa CPF/CNPJ do destinatário com tamanho inválido", () => {
+  const { error } = montarPayloadNfe(
+    args({ destinatario: { ...DESTINATARIO, doc: "123456789012" } }) // 12 dígitos
+  );
+  assert.match(error, /CPF\/CNPJ.*inválido/i);
+});
+
+test("base do ICMS não carrega ponto flutuante sujo (arredonda para 2 casas)", () => {
+  const { payload, impostos } = montarPayloadNfe(
+    args({ valorVenda: 100000.1, custoAquisicao: 50000.001 })
+  );
+  const casasDecimais = (n) => (String(n).split(".")[1] || "").length;
+  assert.ok(casasDecimais(payload.items[0].icms_base_calculo) <= 2);
+  assert.ok(casasDecimais(impostos.base) <= 2);
 });
 
 test("recusa quando falta chassi", () => {

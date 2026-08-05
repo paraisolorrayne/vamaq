@@ -330,6 +330,15 @@
   font-size: 0.8rem;
 }
 
+/* Botão desabilitado precisa PARECER desabilitado — sem isto o laranja cheio
+   e o cursor de mão convidam o clique mesmo quando disabled=true não faz nada. */
+.btnPrimary:disabled,
+.btnSecondary:disabled,
+.btnDanger:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 /* ---------- Forms ---------- */
 .formGrid {
   display: grid;

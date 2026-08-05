@@ -8,7 +8,7 @@
  * `fiscal_config`, preenchida pelo contador. Faltou parâmetro, a função recusa
  * em vez de chutar.
  */
-import { icmsSeminovo } from "../fin/calc.js";
+import { icmsSeminovo, round2 } from "../fin/calc.js";
 
 const so_digitos = (v) => String(v ?? "").replace(/\D/g, "");
 
@@ -48,10 +48,13 @@ export function montarPayloadNfe({ config, veiculo, destinatario, valorVenda, cu
 
   const aliquota = Number(config.icms_seminovo_aliquota ?? 5);
   const custo = Number(custoAquisicao) || 0;
-  const base = Math.max(0, venda - custo);
+  const base = round2(Math.max(0, venda - custo));
   const icms = icmsSeminovo(venda, custo, aliquota);
 
   const doc = so_digitos(destinatario.doc);
+  if (doc.length !== 11 && doc.length !== 14) {
+    return { error: "CPF/CNPJ do destinatário inválido." };
+  }
   const ehCnpj = doc.length === 14;
 
   const descricao = [
@@ -62,6 +65,10 @@ export function montarPayloadNfe({ config, veiculo, destinatario, valorVenda, cu
 
   const payload = {
     natureza_operacao: "Venda de mercadoria",
+    // Estruturais da NF-e de venda (não vêm do contador, são constantes do domínio):
+    data_emissao: new Date().toISOString(),
+    tipo_documento: 1, // 1 = saída
+    finalidade_emissao: 1, // 1 = normal
     serie: String(config.serie),
     cnpj_emitente: so_digitos(config.cnpj),
     nome_destinatario: destinatario.nome,
@@ -88,6 +95,10 @@ export function montarPayloadNfe({ config, veiculo, destinatario, valorVenda, cu
         icms_base_calculo: base,
         icms_aliquota: aliquota,
         icms_valor: icms,
+        ...(config.origem ? { icms_origem: String(config.origem) } : {}),
+        ...(config.icms_modalidade_base_calculo
+          ? { icms_modalidade_base_calculo: String(config.icms_modalidade_base_calculo) }
+          : {}),
       },
     ],
   };

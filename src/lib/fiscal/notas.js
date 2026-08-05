@@ -5,7 +5,7 @@
 import { randomUUID } from "node:crypto";
 import { query } from "@/lib/db";
 import { montarPayloadNfe } from "@/lib/fiscal/payload";
-import { focusEnabled, emitirNfe, consultarNfe, cancelarNfe } from "@/lib/fiscal/focus/client";
+import { focusEnabled, emitirNfe, consultarNfe, cancelarNfe, focusFileUrl } from "@/lib/fiscal/focus/client";
 import { getVehicleMargins } from "@/lib/fin/repositories/finance";
 
 export { focusEnabled };
@@ -43,7 +43,20 @@ export async function getDadosEmissao(vehicleId) {
     custoOrigem = "ausente";
   }
 
-  return { veiculo: v.rows[0], config: await getFiscalConfig(), custoAquisicao, custoOrigem };
+  const { rows: notasAtivas } = await query(
+    `select ref, status from notas_fiscais
+      where vehicle_id = $1 and status in ('processando','autorizada')
+      order by created_at desc limit 1`,
+    [vehicleId]
+  );
+
+  return {
+    veiculo: v.rows[0],
+    config: await getFiscalConfig(),
+    custoAquisicao,
+    custoOrigem,
+    notaExistente: notasAtivas[0] || null,
+  };
 }
 
 /** Traduz o status da Focus para o nosso. */
@@ -59,15 +72,15 @@ async function salvarRetorno(ref, retorno) {
   const status = traduzStatus(retorno?.status);
   const { rows } = await query(
     `update notas_fiscais set
-       status = $2, numero = $3, serie = $4, chave = $5,
+       status = $2, numero = $3, serie = coalesce($4, serie), chave = $5,
        mensagem = $6, xml_url = $7, danfe_url = $8, raw = $9::jsonb
      where ref = $1 returning *`,
     [
       ref, status,
       retorno?.numero || null, retorno?.serie || null, retorno?.chave_nfe || null,
       retorno?.mensagem_sefaz || retorno?.mensagem || null,
-      retorno?.caminho_xml_nota_fiscal || null,
-      retorno?.caminho_danfe || null,
+      focusFileUrl(retorno?.caminho_xml_nota_fiscal),
+      focusFileUrl(retorno?.caminho_danfe),
       JSON.stringify(retorno || {}),
     ]
   );
@@ -81,12 +94,35 @@ export async function emitirNotaVeiculo(vehicleId, { destinatario, valorVenda, c
   if (!dados) return { error: "Veículo não encontrado." };
   if (!dados.config) return { error: "Parâmetros fiscais não cadastrados. Peça ao contador." };
 
+  if (dados.veiculo.status !== "vendido") {
+    return { error: "Só é possível emitir nota de veículo vendido." };
+  }
+  const { rows: existentes } = await query(
+    `select ref, status from notas_fiscais
+      where vehicle_id=$1 and status in ('processando','autorizada')`,
+    [vehicleId]
+  );
+  if (existentes.length) {
+    return {
+      error: `Este veículo já tem nota (${existentes[0].status}). Cancele antes de reemitir.`,
+    };
+  }
+
+  // O custo de aquisição é a base do ICMS: quando o financeiro já tem o valor
+  // lançado, ele é AUTORITATIVO — o que a tela manda (readOnly não é validação
+  // de servidor) é ignorado para não deixar o cliente escolher a própria base.
+  const custo =
+    dados.custoOrigem === "financeiro" ? dados.custoAquisicao : Number(custoAquisicao) || 0;
+  if (custo <= 0) {
+    return { error: "Informe o custo de aquisição — sem ele o ICMS incide sobre a venda inteira." };
+  }
+
   const montado = montarPayloadNfe({
     config: dados.config,
     veiculo: dados.veiculo,
     destinatario,
     valorVenda,
-    custoAquisicao,
+    custoAquisicao: custo,
   });
   if (montado.error) return { error: montado.error };
 
