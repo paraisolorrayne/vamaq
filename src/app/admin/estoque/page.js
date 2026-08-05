@@ -158,6 +158,14 @@ export default function EstoquePage() {
                         >
                           Editar
                         </Link>
+                        {v.status === "vendido" && (
+                          <Link
+                            href={`/admin/fiscal/emitir/${v.id}`}
+                            className={`${styles.btnSecondary} ${styles.btnSmall}`}
+                          >
+                            Emitir nota
+                          </Link>
+                        )}
                         <StatusButton vehicle={v} onSet={setStatus} />
                       </div>
                     </td>
@@ -213,6 +221,14 @@ export default function EstoquePage() {
                   >
                     Editar
                   </Link>
+                  {v.status === "vendido" && (
+                    <Link
+                      href={`/admin/fiscal/emitir/${v.id}`}
+                      className={`${styles.btnSecondary} ${styles.btnSmall}`}
+                    >
+                      Emitir nota
+                    </Link>
+                  )}
                   <StatusButton vehicle={v} onSet={setStatus} />
                 </div>
               </div>
