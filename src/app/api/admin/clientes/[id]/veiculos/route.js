@@ -42,6 +42,16 @@ export async function POST(request, { params }) {
     if (res.error) return NextResponse.json({ error: res.error }, { status: 400 });
     return NextResponse.json({ vinculo: res.vinculo });
   } catch (err) {
+    // vehicleId pode ser um UUID válido que não existe mais em `vehicles`
+    // (carro removido do estoque enquanto a ficha estava aberta) — a FK
+    // estoura no banco. Isso é escolha inválida do operador, não falha de
+    // servidor: 400 com mensagem, igual ao resto deste arquivo.
+    if (err.code === "23503") {
+      return NextResponse.json(
+        { error: "Veículo não encontrado — ele pode ter sido removido do estoque." },
+        { status: 400 }
+      );
+    }
     console.error("Falha ao vincular veículo ao cliente:", err);
     return NextResponse.json({ error: "Falha ao vincular o veículo ao cliente" }, { status: 500 });
   }

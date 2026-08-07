@@ -105,20 +105,28 @@ export default function FichaClient({ cliente: clienteInicial }) {
     });
   }
 
-  function desativarCliente() {
-    if (!confirm(`Desativar ${cliente.nome}? Ele some das buscas, mas o histórico continua.`)) return;
+  function alternarAtivo() {
+    const vaiAtivar = cliente.ativo === false;
+    const pergunta = vaiAtivar
+      ? `Reativar ${cliente.nome}? Ele volta a aparecer nas buscas.`
+      : `Desativar ${cliente.nome}? Ele some das buscas, mas o histórico continua.`;
+    if (!confirm(pergunta)) return;
     setDadosErr(null);
     startTransition(async () => {
       try {
-        const res = await fetch(`/api/admin/clientes/${cliente.id}`, { method: "DELETE" });
+        const res = await fetch(`/api/admin/clientes/${cliente.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ativo: vaiAtivar }),
+        });
         const data = await res.json();
         if (!res.ok) {
-          setDadosErr(data.error || "Falha ao desativar o cliente.");
+          setDadosErr(data.error || (vaiAtivar ? "Falha ao reativar o cliente." : "Falha ao desativar o cliente."));
           return;
         }
-        setCliente((c) => ({ ...c, ativo: false }));
+        setCliente((c) => ({ ...c, ativo: vaiAtivar }));
       } catch {
-        setDadosErr("Falha ao desativar o cliente.");
+        setDadosErr(vaiAtivar ? "Falha ao reativar o cliente." : "Falha ao desativar o cliente.");
       }
     });
   }
@@ -313,12 +321,17 @@ export default function FichaClient({ cliente: clienteInicial }) {
         </form>
 
         {cliente.ativo === false ? (
-          <p style={{ marginTop: 16, marginBottom: 0, fontSize: "0.85rem", color: "#6b7280" }}>
-            Cliente inativo — some das buscas, mas segue no histórico.
-          </p>
+          <div style={{ marginTop: 16 }}>
+            <p style={{ marginTop: 0, marginBottom: 12, fontSize: "0.85rem", color: "#6b7280" }}>
+              Cliente inativo — some das buscas, mas segue no histórico.
+            </p>
+            <button type="button" className={styles.btnPrimary} onClick={alternarAtivo} disabled={isPending}>
+              Reativar cliente
+            </button>
+          </div>
         ) : (
           <div style={{ marginTop: 16 }}>
-            <button type="button" className={styles.btnDanger} onClick={desativarCliente} disabled={isPending}>
+            <button type="button" className={styles.btnDanger} onClick={alternarAtivo} disabled={isPending}>
               Desativar cliente
             </button>
           </div>

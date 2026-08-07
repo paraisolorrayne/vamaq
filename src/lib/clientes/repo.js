@@ -201,7 +201,7 @@ export async function ligarVeiculo({ clienteId, vehicleId, papel, data, origem, 
      values ($1,$2,$3,$4,$5,$6,$7)
      on conflict (cliente_id, vehicle_id, papel) do nothing
      returning *`,
-    [clienteId, vehicleId, papel, data || null, origem || "manual", documentoId || null, obs?.trim() || null]
+    [clienteId, vehicleId, papel, data || null, origem || "manual", documentoId || null, String(obs || "").trim() || null]
   );
   if (rows.length) return { vinculo: rows[0] };
 

@@ -62,6 +62,30 @@ export async function PUT(request, { params }) {
   }
 }
 
+// Separado do PUT de propósito: `ativo` não é campo de formulário, é uma
+// ação. Se ele entrasse em CAMPOS e fosse salvo junto com o resto, um PUT
+// comum (ex.: um form antigo em cache mandando `ativo: false` sem querer)
+// poderia desativar o cliente como efeito colateral de uma edição normal.
+// Aqui vira o único caminho pra mudar esse campo — reativar inclusive.
+export async function PATCH(request, { params }) {
+  const auth = await requireApiRole(["secretaria", "financeiro"]);
+  if (auth.error) return auth.error;
+
+  const { id } = await params;
+  if (!UUID_VALIDO.test(id)) {
+    return NextResponse.json({ error: "Cliente não encontrado" }, { status: 404 });
+  }
+
+  try {
+    const body = await request.json();
+    await setClienteAtivo(id, Boolean(body.ativo));
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error("Falha ao atualizar status do cliente:", err);
+    return NextResponse.json({ error: "Falha ao atualizar o status do cliente" }, { status: 500 });
+  }
+}
+
 // Não apaga o registro: cliente com contrato ou nota fiscal é histórico, e
 // apagar de verdade derrubaria o vínculo com o veículo por cascade. Em vez
 // disso, só marca como inativo (some das listas, mas continua na base).
