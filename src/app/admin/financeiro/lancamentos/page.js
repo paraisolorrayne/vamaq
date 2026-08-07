@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import styles from "../../admin.module.css";
 import { formatValorBR } from "@/lib/money";
+import { anoVeiculo } from "@/lib/anoVeiculo";
 
 function money(n) {
   return "R$ " + formatValorBR(Number(n) || 0);
@@ -166,7 +167,7 @@ export default function LancamentosPage() {
               <label className={styles.formLabel}>Veículo (para margem)</label>
               <select className={styles.formSelect} value={form.vehicle_id} onChange={(e) => set("vehicle_id", e.target.value)}>
                 <option value="">— nenhum —</option>
-                {vehicles.map((v) => <option key={v.id} value={v.id}>{v.brand} {v.model} {v.year}{v.placa ? ` · ${v.placa}` : ""}</option>)}
+                {vehicles.map((v) => <option key={v.id} value={v.id}>{v.brand} {v.model} {anoVeiculo(v)}{v.placa ? ` · ${v.placa}` : ""}</option>)}
               </select>
             </div>
             <div className={styles.formGroup}>

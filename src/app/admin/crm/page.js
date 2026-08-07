@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import styles from "../admin.module.css";
 import crm from "./crm.module.css";
 import { formatValorBR } from "@/lib/money";
+import { anoVeiculo } from "@/lib/anoVeiculo";
 
 function money(n) { return n != null ? "R$ " + formatValorBR(Number(n)) : "—"; }
 
@@ -113,7 +114,7 @@ export default function CrmPage() {
               <label className={styles.formLabel}>Veículo de interesse</label>
               <select className={styles.formSelect} value={form.vehicle_id} onChange={(e) => set("vehicle_id", e.target.value)}>
                 <option value="">—</option>
-                {vehicles.map((v) => <option key={v.id} value={v.id}>{v.brand} {v.model} {v.year}</option>)}
+                {vehicles.map((v) => <option key={v.id} value={v.id}>{v.brand} {v.model} {anoVeiculo(v)}</option>)}
               </select>
             </div>
             <div className={styles.formGroup}>

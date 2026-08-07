@@ -172,7 +172,7 @@ export default function EmitirClient({
                 <p style={{ margin: 0, fontWeight: 600 }}>{veiculo.brand} {veiculo.model}</p>
               </div>
               <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Ano</label>
+                <label className={styles.formLabel}>Ano de fabricação</label>
                 <p style={{ margin: 0, fontWeight: 600 }}>{veiculo.year}</p>
               </div>
               <div className={styles.formGroup}>

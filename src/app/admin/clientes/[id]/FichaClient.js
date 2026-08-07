@@ -5,6 +5,7 @@ import Link from "next/link";
 import styles from "../../admin.module.css";
 import { formataDoc } from "@/lib/clientes/doc";
 import { formatValorBR } from "@/lib/money";
+import { anoVeiculo } from "@/lib/anoVeiculo";
 
 const fmtData = (d) =>
   d ? new Date(d).toLocaleDateString("pt-BR", { timeZone: "UTC" }) : "—";
@@ -361,7 +362,7 @@ export default function FichaClient({ cliente: clienteInicial }) {
                 <tr key={v.vinculo_id}>
                   <td>
                     <strong>{v.brand} {v.model}</strong>
-                    {v.year ? ` (${v.year})` : ""}
+                    {anoVeiculo(v) ? ` (${anoVeiculo(v)})` : ""}
                   </td>
                   <td>{v.placa || "—"}</td>
                   <td>{PAPEL_LABEL[v.papel] || v.papel}</td>
@@ -406,7 +407,7 @@ export default function FichaClient({ cliente: clienteInicial }) {
               <option value="" disabled>— escolha —</option>
               {vehicles.map((v) => (
                 <option key={v.id} value={v.id}>
-                  {v.brand} {v.model} {v.year}{v.placa ? ` — ${v.placa}` : ""}
+                  {v.brand} {v.model} {anoVeiculo(v)}{v.placa ? ` — ${v.placa}` : ""}
                 </option>
               ))}
             </select>

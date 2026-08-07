@@ -223,6 +223,12 @@ function NovoVeiculoForm() {
 
   async function handleSubmit(e) {
     e.preventDefault();
+
+    if (form.ano_modelo !== "" && Number(form.ano_modelo) < Number(form.year)) {
+      alert("O ano do modelo não pode ser anterior ao ano de fabricação.");
+      return;
+    }
+
     setSaving(true);
 
     const parsedPrice = parseValorBR(form.price);

@@ -85,9 +85,11 @@ end $$;
 alter table vehicles add column if not exists ano_modelo integer;
 do $$ begin
   if not exists (select 1 from pg_constraint where conname = 'ano_modelo_check') then
-    -- O ano do modelo nunca é anterior ao de fabricação. Não travamos em
-    -- year + 1: existe carro fabricado em dezembro com modelo dois anos à
-    -- frente, e uma trava esperta aqui vira chamado de suporte depois.
+    -- O ano do modelo nunca é anterior ao de fabricação — é a única regra de
+    -- negócio aqui. Não travamos em year + 1: existe carro fabricado em
+    -- dezembro com modelo dois anos à frente. O teto 2036 é o de year_range
+    -- (2035) mais um; os dois sobem juntos, e no limite (year = 2035) o
+    -- modelo só pode ir um ano à frente.
     alter table vehicles add constraint ano_modelo_check
       check (ano_modelo is null or (ano_modelo between 1950 and 2036 and ano_modelo >= year));
   end if;
