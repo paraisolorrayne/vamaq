@@ -180,8 +180,7 @@ export default function UsuariosClient({ users, roles, meId, funcionarios }) {
           <table className={styles.table}>
             <thead>
               <tr>
-                <th>Nome</th>
-                <th>Login</th>
+                <th>Usuário</th>
                 <th>Funcionário</th>
                 <th>Papel</th>
                 <th title="Valor que aprova sozinho em Contas a Pagar">Alçada</th>
@@ -192,15 +191,17 @@ export default function UsuariosClient({ users, roles, meId, funcionarios }) {
             <tbody>
               {users.map((u) => (
                 <tr key={u.id} style={{ opacity: u.active ? 1 : 0.55 }}>
-                  <td><strong>{u.name}</strong></td>
-                  <td>{u.email}</td>
+                  <td>
+                    <strong>{u.name}</strong>
+                    <div style={{ fontSize: "0.82rem", color: "#666" }}>{u.email}</div>
+                  </td>
                   <td>
                     <select
                       value={u.funcionario_id || ""}
                       onChange={(e) => handleFuncionario(u, e.target.value)}
                       disabled={isPending}
                       className={styles.formSelect}
-                      style={{ padding: "4px 8px", fontSize: "0.82rem" }}
+                      style={{ padding: "4px 8px", fontSize: "0.82rem", maxWidth: 180 }}
                       title="Ficha de funcionário ligada a este login"
                     >
                       <option value="">— sem ficha —</option>
@@ -215,8 +216,8 @@ export default function UsuariosClient({ users, roles, meId, funcionarios }) {
                       onChange={(e) => handleRole(u, e.target.value)}
                       disabled={isPending || u.id === meId}
                       className={styles.formSelect}
-                      style={{ padding: "4px 8px", fontSize: "0.82rem" }}
-                      title={u.id === meId ? "Você não pode mudar o próprio papel" : ""}
+                      style={{ padding: "4px 8px", fontSize: "0.82rem", maxWidth: 200 }}
+                      title={u.id === meId ? "Você não pode mudar o próprio papel" : roles[u.role] || ""}
                     >
                       {Object.entries(roles).map(([key, label]) => (
                         <option key={key} value={key}>{label}</option>

@@ -156,6 +156,12 @@
 /* ---------- Main ---------- */
 .main {
   flex: 1;
+  /* Item de flex tem min-width: auto — ele se recusa a encolher abaixo do
+     conteúdo. Uma tabela larga (Usuários, com 7 colunas) empurrava o .main
+     para além da viewport, e como o <html> não rola na horizontal a coluna
+     Ações ficava inalcançável. Com min-width: 0 o .main respeita a largura
+     disponível e o .tableWrap volta a fazer o seu papel: rolar por dentro. */
+  min-width: 0;
   margin-left: 240px;
   padding: 32px;
   min-height: 100vh;
