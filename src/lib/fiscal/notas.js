@@ -11,6 +11,14 @@ import { ligarVeiculo } from "@/lib/clientes/repo";
 
 export { focusEnabled };
 
+// Mesma checagem de src/app/api/admin/clientes/[id]/route.js. `cliente_id` é
+// FK para `clientes`; sem essa validação, um id malformado ou de um cliente
+// apagado estoura no insert (código 23503) fora de qualquer try/catch, e a
+// exceção sobe crua até a tela de emissão.
+const UUID_VALIDO = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const ERRO_CLIENTE_REMOVIDO =
+  "Cliente não encontrado — o cadastro pode ter sido removido. Desmarque o cliente e emita novamente.";
+
 export async function getFiscalConfig() {
   const { rows } = await query(`select * from fiscal_config order by created_at limit 1`);
   return rows[0] || null;
@@ -117,6 +125,9 @@ export async function emitirNotaVeiculo(vehicleId, { destinatario, valorVenda, c
   if (custo <= 0) {
     return { error: "Informe o custo de aquisição — sem ele o ICMS incide sobre a venda inteira." };
   }
+  if (clienteId && !UUID_VALIDO.test(clienteId)) {
+    return { error: ERRO_CLIENTE_REMOVIDO };
+  }
 
   const montado = montarPayloadNfe({
     config: dados.config,
@@ -129,11 +140,22 @@ export async function emitirNotaVeiculo(vehicleId, { destinatario, valorVenda, c
 
   // ref única e imutável: nota rejeitada é reemitida com ref NOVA.
   const ref = `vamaq-${randomUUID()}`;
-  await query(
-    `insert into notas_fiscais (ref, vehicle_id, status, valor, destinatario, serie, cliente_id)
-     values ($1,$2,'processando',$3,$4::jsonb,$5,$6)`,
-    [ref, vehicleId, Number(valorVenda), JSON.stringify(destinatario), String(dados.config.serie), clienteId || null]
-  );
+  try {
+    await query(
+      `insert into notas_fiscais (ref, vehicle_id, status, valor, destinatario, serie, cliente_id)
+       values ($1,$2,'processando',$3,$4::jsonb,$5,$6)`,
+      [ref, vehicleId, Number(valorVenda), JSON.stringify(destinatario), String(dados.config.serie), clienteId || null]
+    );
+  } catch (err) {
+    // Formato válido mas cliente apagado entre a tela abrir e o operador
+    // emitir: a FK só estoura aqui. Fiscalmente é seguro — isso acontece
+    // antes de qualquer chamada à Focus, nenhuma nota foi enviada — mas o
+    // operador não tem como saber disso sem essa mensagem.
+    if (err.code === "23503") {
+      return { error: ERRO_CLIENTE_REMOVIDO };
+    }
+    throw err;
+  }
 
   try {
     const retorno = await emitirNfe(ref, montado.payload);
