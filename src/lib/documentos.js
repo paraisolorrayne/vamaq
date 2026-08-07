@@ -8,12 +8,14 @@ import fs from "fs/promises";
 import path from "path";
 import { v4 as uuidv4 } from "uuid";
 import { query } from "@/lib/db";
+import { papelPorTemplate } from "@/lib/clientes/prefill";
+import { ligarVeiculo } from "@/lib/clientes/repo";
 
 const DOCS_ROOT = path.join(process.cwd(), "data", "documentos");
 const MAX_BYTES = 20 * 1024 * 1024; // 20 MB — um contrato em PDF vetorial tem poucos KB
 const TIPOS = ["compra-venda", "venda", "consignacao", "termo-vistoria"];
 
-export async function salvarDocumento({ tipo, titulo, cliente, vehicleId, criadoPor, buffer }) {
+export async function salvarDocumento({ tipo, titulo, cliente, clienteId, vehicleId, criadoPor, buffer }) {
   if (!TIPOS.includes(tipo)) return { error: "Tipo de documento desconhecido." };
   if (!titulo) return { error: "Documento sem título." };
   if (!buffer?.length) return { error: "Arquivo vazio." };
@@ -24,13 +26,13 @@ export async function salvarDocumento({ tipo, titulo, cliente, vehicleId, criado
   await fs.mkdir(path.join(DOCS_ROOT, ano), { recursive: true });
   await fs.writeFile(path.join(DOCS_ROOT, relativo), buffer);
 
+  let rows;
   try {
-    const { rows } = await query(
-      `insert into documentos_gerados (tipo, titulo, cliente, vehicle_id, arquivo, tamanho, criado_por)
-       values ($1,$2,$3,$4,$5,$6,$7) returning *`,
-      [tipo, titulo, cliente || null, vehicleId || null, relativo, buffer.length, criadoPor || null]
-    );
-    return { documento: rows[0] };
+    ({ rows } = await query(
+      `insert into documentos_gerados (tipo, titulo, cliente, cliente_id, vehicle_id, arquivo, tamanho, criado_por)
+       values ($1,$2,$3,$4,$5,$6,$7,$8) returning *`,
+      [tipo, titulo, cliente || null, clienteId || null, vehicleId || null, relativo, buffer.length, criadoPor || null]
+    ));
   } catch (err) {
     // insert falhou (vehicleId inválido, banco fora do ar etc.) — sem a linha
     // no banco o arquivo fica órfão e inalcançável, então apaga antes de propagar.
@@ -38,6 +40,21 @@ export async function salvarDocumento({ tipo, titulo, cliente, vehicleId, criado
     await fs.unlink(path.join(DOCS_ROOT, relativo)).catch(() => {});
     throw err;
   }
+
+  const papel = papelPorTemplate(tipo);
+  if (clienteId && vehicleId && papel) {
+    // O vínculo é um efeito colateral desejável, não a razão de existir do
+    // contrato: falhar aqui não pode desfazer um documento já gravado.
+    try {
+      await ligarVeiculo({
+        clienteId, vehicleId, papel, origem: "contrato", documentoId: rows[0].id,
+      });
+    } catch (err) {
+      console.error("Contrato gravado, mas o vínculo cliente-veículo falhou:", err);
+    }
+  }
+
+  return { documento: rows[0] };
 }
 
 // Escapa os curingas do LIKE (% e _) e o próprio escape (\) antes de montar o

@@ -35,6 +35,7 @@ export async function POST(request) {
       tipo: String(formData.get("tipo") || ""),
       titulo: String(formData.get("titulo") || "").slice(0, 200),
       cliente: String(formData.get("cliente") || "").slice(0, 200) || null,
+      clienteId: String(formData.get("clienteId") || "").slice(0, 200) || null,
       vehicleId: String(formData.get("vehicleId") || "").slice(0, 200) || null,
       criadoPor: auth.user.id,
       buffer: Buffer.from(await file.arrayBuffer()),
