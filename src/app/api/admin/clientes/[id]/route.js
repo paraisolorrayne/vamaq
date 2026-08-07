@@ -4,12 +4,25 @@ import { getCliente, updateCliente, setClienteAtivo } from "@/lib/clientes/repo"
 
 export const dynamic = "force-dynamic";
 
+// Mesmo formato usado em ARQUIVO_VALIDO (src/lib/documentos.js): um `id` que
+// nem bate com a forma de um UUID nunca vai achar linha no banco. Sem essa
+// checagem, o Postgres rejeita o tipo antes da query rodar e isso vira 500
+// genérico — mas um id malformado na URL não é erro de servidor, é o mesmo
+// "não encontrado" que um UUID válido porém inexistente. Tratamos os dois
+// igual, inclusive para não revelar a diferença entre "não existe" e "nem é
+// id" pra quem estiver adivinhando ids na URL.
+const UUID_VALIDO = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function GET(_request, { params }) {
   const auth = await requireApiRole(["secretaria", "financeiro", "vendedor"]);
   if (auth.error) return auth.error;
 
+  const { id } = await params;
+  if (!UUID_VALIDO.test(id)) {
+    return NextResponse.json({ error: "Cliente não encontrado" }, { status: 404 });
+  }
+
   try {
-    const { id } = await params;
     const cliente = await getCliente(id);
     if (!cliente) {
       return NextResponse.json({ error: "Cliente não encontrado" }, { status: 404 });
@@ -25,8 +38,12 @@ export async function PUT(request, { params }) {
   const auth = await requireApiRole(["secretaria", "financeiro"]);
   if (auth.error) return auth.error;
 
+  const { id } = await params;
+  if (!UUID_VALIDO.test(id)) {
+    return NextResponse.json({ error: "Cliente não encontrado" }, { status: 404 });
+  }
+
   try {
-    const { id } = await params;
     const body = await request.json();
     const res = await updateCliente(id, body);
     if (res.error) return NextResponse.json({ error: res.error }, { status: 400 });
@@ -52,8 +69,12 @@ export async function DELETE(_request, { params }) {
   const auth = await requireApiRole(["secretaria", "financeiro"]);
   if (auth.error) return auth.error;
 
+  const { id } = await params;
+  if (!UUID_VALIDO.test(id)) {
+    return NextResponse.json({ error: "Cliente não encontrado" }, { status: 404 });
+  }
+
   try {
-    const { id } = await params;
     await setClienteAtivo(id, false);
     return NextResponse.json({ ok: true });
   } catch (err) {

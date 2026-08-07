@@ -4,6 +4,13 @@ import { getCliente, ligarVeiculo, desligarVeiculo } from "@/lib/clientes/repo";
 
 export const dynamic = "force-dynamic";
 
+// Mesmo formato usado em ARQUIVO_VALIDO (src/lib/documentos.js): um `id` de
+// cliente que nem bate com a forma de um UUID nunca vai achar linha no
+// banco. Sem essa checagem, o Postgres rejeita o tipo antes da query rodar e
+// isso vira 500 genérico — tratamos como "não encontrado" (404), igual a um
+// UUID válido porém inexistente.
+const UUID_VALIDO = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 // A tela nunca escolhe a origem: todo vínculo criado por aqui é "manual". Se
 // deixássemos o corpo da requisição informar a origem, um vínculo manual
 // poderia se disfarçar de vínculo nascido de contrato/nota.
@@ -11,8 +18,12 @@ export async function POST(request, { params }) {
   const auth = await requireApiRole(["secretaria", "financeiro"]);
   if (auth.error) return auth.error;
 
+  const { id } = await params;
+  if (!UUID_VALIDO.test(id)) {
+    return NextResponse.json({ error: "Cliente não encontrado" }, { status: 404 });
+  }
+
   try {
-    const { id } = await params;
     const body = await request.json();
     const vehicleId = String(body.vehicleId || "").trim();
     if (!vehicleId) {
@@ -26,6 +37,7 @@ export async function POST(request, { params }) {
       data: body.data,
       origem: "manual",
       documentoId: null,
+      obs: body.obs,
     });
     if (res.error) return NextResponse.json({ error: res.error }, { status: 400 });
     return NextResponse.json({ vinculo: res.vinculo });
@@ -39,8 +51,12 @@ export async function DELETE(request, { params }) {
   const auth = await requireApiRole(["secretaria", "financeiro"]);
   if (auth.error) return auth.error;
 
+  const { id } = await params;
+  if (!UUID_VALIDO.test(id)) {
+    return NextResponse.json({ error: "Cliente não encontrado" }, { status: 404 });
+  }
+
   try {
-    const { id } = await params;
     const vinculoId = new URL(request.url).searchParams.get("vinculoId") || "";
     if (!vinculoId) {
       return NextResponse.json({ error: "vinculoId é obrigatório." }, { status: 400 });

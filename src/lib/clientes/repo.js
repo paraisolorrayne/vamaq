@@ -190,15 +190,18 @@ export async function setClienteAtivo(id, ativo) {
 }
 
 /** Liga o cliente a um veículo. Se o vínculo já existe, devolve o existente. */
-export async function ligarVeiculo({ clienteId, vehicleId, papel, data, origem, documentoId }) {
+export async function ligarVeiculo({ clienteId, vehicleId, papel, data, origem, documentoId, obs }) {
   if (!PAPEIS.includes(papel)) return { error: "Papel inválido." };
 
+  // No conflito (vínculo já existe), o "do nothing" descarta o `obs` que
+  // veio nesta chamada — de propósito: religar um cliente a um veículo que
+  // ele já teve não deve sobrescrever uma observação que já estava lá.
   const { rows } = await query(
-    `insert into cliente_veiculos (cliente_id, vehicle_id, papel, data, origem, documento_id)
-     values ($1,$2,$3,$4,$5,$6)
+    `insert into cliente_veiculos (cliente_id, vehicle_id, papel, data, origem, documento_id, obs)
+     values ($1,$2,$3,$4,$5,$6,$7)
      on conflict (cliente_id, vehicle_id, papel) do nothing
      returning *`,
-    [clienteId, vehicleId, papel, data || null, origem || "manual", documentoId || null]
+    [clienteId, vehicleId, papel, data || null, origem || "manual", documentoId || null, obs?.trim() || null]
   );
   if (rows.length) return { vinculo: rows[0] };
 
