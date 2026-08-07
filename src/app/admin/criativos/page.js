@@ -380,7 +380,7 @@ export default function CriativosPage() {
           </div>
 
           {showVeiculo && (
-            <div className={styles.card}>
+            <div className={`${styles.card} ${styles.creativeCardVeiculo}`}>
               <h3 style={{ fontSize: "0.9rem", fontWeight: 700, marginBottom: 12 }}>
                 Veículo
               </h3>
@@ -448,7 +448,7 @@ export default function CriativosPage() {
           )}
 
           {showVeiculo && (
-            <div className={styles.card}>
+            <div className={`${styles.card} ${styles.creativeCardFoto}`}>
               <h3 style={{ fontSize: "0.9rem", fontWeight: 700, marginBottom: 12 }}>
                 Foto principal
               </h3>

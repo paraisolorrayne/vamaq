@@ -737,6 +737,15 @@
   .creativeCanvas {
     max-height: 52vh;
   }
+  /* Em coluna única a pré-visualização vai para o topo; a foto principal vem
+     logo abaixo dela, porque é o campo que mais conversa com o que se vê.
+     O formulário do veículo desce. No desktop (2 colunas) nada muda. */
+  .creativeCardFoto {
+    order: 1;
+  }
+  .creativeCardVeiculo {
+    order: 2;
+  }
 }
 
 @media (max-width: 768px) {
