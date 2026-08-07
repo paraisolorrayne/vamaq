@@ -20,7 +20,11 @@ const CLIENTE_PF = {
   bairro: "Centro",
   municipio: "Uberlândia",
   uf: "MG",
-  cep: "38400-100",
+  // O repositório normaliza CEP para só dígitos antes de gravar (ver
+  // repo.js/campos.js) — "38400-100" nunca chega assim vindo do banco. Este
+  // fixture reflete o dado real; a máscara "38400-100" na linha de endereço
+  // é aplicada na saída por enderecoEmUmaLinha (ver clientes-endereco.test.mjs).
+  cep: "38400100",
 };
 
 const CLIENTE_PJ = {
