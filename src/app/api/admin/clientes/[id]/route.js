@@ -66,7 +66,10 @@ export async function PUT(request, { params }) {
 // ação. Se ele entrasse em CAMPOS e fosse salvo junto com o resto, um PUT
 // comum (ex.: um form antigo em cache mandando `ativo: false` sem querer)
 // poderia desativar o cliente como efeito colateral de uma edição normal.
-// Aqui vira o único caminho pra mudar esse campo — reativar inclusive.
+// Aqui vira o único caminho pra mudar esse campo — reativar inclusive. Por
+// isso `ativo` é exigido como booleano explícito: um corpo sem a chave (ou
+// com o nome errado, tipo `ativa`) não pode cair em `Boolean(undefined) ===
+// false` e desativar o cliente em silêncio.
 export async function PATCH(request, { params }) {
   const auth = await requireApiRole(["secretaria", "financeiro"]);
   if (auth.error) return auth.error;
@@ -78,7 +81,13 @@ export async function PATCH(request, { params }) {
 
   try {
     const body = await request.json();
-    await setClienteAtivo(id, Boolean(body.ativo));
+    if (typeof body.ativo !== "boolean") {
+      return NextResponse.json(
+        { error: "Informe 'ativo' como verdadeiro ou falso." },
+        { status: 400 }
+      );
+    }
+    await setClienteAtivo(id, body.ativo);
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("Falha ao atualizar status do cliente:", err);
