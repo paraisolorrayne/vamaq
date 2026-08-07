@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { getWhatsAppUrl } from '@/lib/whatsapp';
+import { anoVeiculo } from '@/lib/anoVeiculo';
 import styles from './VehicleCard.module.css';
 
 function formatKm(km) {
@@ -29,7 +30,7 @@ export default function VehicleCard({ vehicle }) {
         {vehicle.images?.main ? (
           <img
             src={vehicle.images.main}
-            alt={`${vehicle.brand} ${vehicle.model} ${vehicle.year}`}
+            alt={`${vehicle.brand} ${vehicle.model} ${anoVeiculo(vehicle)}`}
             className={styles.image}
             loading="lazy"
           />
@@ -66,7 +67,7 @@ export default function VehicleCard({ vehicle }) {
         </Link>
 
         <p className={styles.meta}>
-          {vehicle.year} &middot; {formatKm(vehicle.mileage)} km
+          {anoVeiculo(vehicle)} &middot; {formatKm(vehicle.mileage)} km
         </p>
 
         <div className={styles.specs}>

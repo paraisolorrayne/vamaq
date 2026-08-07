@@ -7,6 +7,7 @@ import {
   getVehicleBySlug,
   getRelatedVehicles,
 } from "@/lib/repositories/vehicles";
+import { anoVeiculo } from "@/lib/anoVeiculo";
 
 // Render dinâmico: a página lê o veículo direto do Postgres. Com ISR estático
 // as edições do admin não refletiam e slugs novos não eram pré-gerados.
@@ -18,10 +19,10 @@ export async function generateMetadata({ params }) {
   const vehicle = await getVehicleBySlug(slug);
   if (!vehicle) return {};
   return {
-    title: `${vehicle.brand} ${vehicle.model} ${vehicle.year}`,
+    title: `${vehicle.brand} ${vehicle.model} ${anoVeiculo(vehicle)}`,
     description: vehicle.description,
     openGraph: {
-      title: `${vehicle.brand} ${vehicle.model} ${vehicle.year} — Vamaq Motors`,
+      title: `${vehicle.brand} ${vehicle.model} ${anoVeiculo(vehicle)} — Vamaq Motors`,
       description: vehicle.description,
     },
   };

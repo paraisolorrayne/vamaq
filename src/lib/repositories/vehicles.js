@@ -9,7 +9,7 @@
 import { query } from '@/lib/db';
 
 const SELECT = `
-  select id, slug, brand, model, year, price, quilometragem,
+  select id, slug, brand, model, year, ano_modelo, price, quilometragem,
          fuel, transmission, power, color, body_type, featured, badge,
          images, specs, description
   from vehicles
@@ -27,6 +27,7 @@ function rowToVehicle(row) {
     brand: row.brand,
     model: row.model,
     year: row.year,
+    ano_modelo: row.ano_modelo,
     bodyType: row.body_type,
     color: row.color,
     price: row.price !== null && row.price !== undefined ? Number(row.price) : null,
