@@ -78,6 +78,21 @@ do $$ begin
   end if;
 end $$;
 
+-- Ano de modelo (opcional). `year` continua sendo o ano de FABRICAÇÃO e o
+-- único usado em filtro, ordenação e slug — ano_modelo só entra na exibição
+-- (ver src/lib/anoVeiculo.js). Sem essa coluna preenchida, nada muda em
+-- nenhuma tela.
+alter table vehicles add column if not exists ano_modelo integer;
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'ano_modelo_check') then
+    -- O ano do modelo nunca é anterior ao de fabricação. Não travamos em
+    -- year + 1: existe carro fabricado em dezembro com modelo dois anos à
+    -- frente, e uma trava esperta aqui vira chamado de suporte depois.
+    alter table vehicles add constraint ano_modelo_check
+      check (ano_modelo is null or (ano_modelo between 1950 and 2036 and ano_modelo >= year));
+  end if;
+end $$;
+
 create index if not exists vehicles_published_idx on vehicles(published);
 create index if not exists vehicles_featured_idx on vehicles(featured) where featured = true;
 create index if not exists vehicles_brand_idx on vehicles(brand);
