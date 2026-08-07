@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import styles from "../admin.module.css";
 import { atualizarStatusAction, cancelarNotaAction } from "./actions";
 import { formatValorBR } from "@/lib/money";
@@ -26,10 +27,11 @@ const STATUS_STYLE = {
   cancelada: { background: "#f3f4f6", color: "#6b7280" },
 };
 
-export default function FiscalClient({ notas, ativo }) {
+export default function FiscalClient({ notas, ativo, vendidos }) {
   const [isPending, startTransition] = useTransition();
   const [err, setErr] = useState(null);
   const [pendingRef, setPendingRef] = useState(null);
+  const [veiculoSel, setVeiculoSel] = useState("");
 
   function handleAtualizar(ref) {
     setErr(null);
@@ -67,6 +69,49 @@ export default function FiscalClient({ notas, ativo }) {
           NF-e emitidas na venda dos veículos, com status, DANFE e XML
         </p>
       </div>
+
+      {ativo && (
+        <div className={styles.card} style={{ marginBottom: 24 }}>
+          <h3 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: 12 }}>
+            Emitir nota
+          </h3>
+          {vendidos.length === 0 ? (
+            <p style={{ fontSize: "0.9rem", color: "#666", margin: 0 }}>
+              Nenhum veículo vendido no momento — a nota nasce da venda. Marque o
+              carro como vendido no Estoque para poder emitir.
+            </p>
+          ) : (
+            <div className={styles.formGrid}>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Veículo vendido</label>
+                <select
+                  className={styles.formSelect}
+                  value={veiculoSel}
+                  onChange={(e) => setVeiculoSel(e.target.value)}
+                >
+                  <option value="">— escolha —</option>
+                  {vendidos.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.brand} {v.model} {v.year}
+                      {v.placa ? ` — ${v.placa}` : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className={styles.formActions}>
+                <Link
+                  href={veiculoSel ? `/admin/fiscal/emitir/${veiculoSel}` : "#"}
+                  className={styles.btnPrimary}
+                  aria-disabled={!veiculoSel}
+                  style={!veiculoSel ? { opacity: 0.55, pointerEvents: "none" } : undefined}
+                >
+                  Emitir nota
+                </Link>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {!ativo && (
         <div
