@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import styles from "./admin.module.css";
 
 export default function AdminDashboard() {
+  const router = useRouter();
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -82,6 +84,24 @@ export default function AdminDashboard() {
               <Link href="/admin/documentos" className={styles.btnSecondary}>
                 Gerar Documento
               </Link>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const placa = e.currentTarget.placa.value.trim();
+                  if (placa) router.push(`/admin/estoque?busca=${encodeURIComponent(placa)}`);
+                }}
+                style={{ display: "flex", gap: 8 }}
+              >
+                <input
+                  name="placa"
+                  className={styles.formInput}
+                  placeholder="Buscar por placa"
+                  style={{ width: 180 }}
+                />
+                <button type="submit" className={styles.btnSecondary}>
+                  Buscar
+                </button>
+              </form>
             </div>
           </div>
         </>

@@ -1,13 +1,25 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { normalizaBusca } from "@/lib/buscaVeiculo";
 import styles from "../admin.module.css";
 
 export default function EstoquePage() {
+  return (
+    <Suspense fallback={<p>Carregando…</p>}>
+      <EstoqueConteudo />
+    </Suspense>
+  );
+}
+
+function EstoqueConteudo() {
+  const searchParams = useSearchParams();
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
+  // Vem do atalho "Buscar por placa" do Dashboard: /admin/estoque?busca=ABC1D23
+  const [search, setSearch] = useState(searchParams.get("busca") || "");
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
@@ -38,11 +50,14 @@ export default function EstoquePage() {
     setRefreshKey((k) => k + 1);
   }
 
-  const filtered = vehicles.filter((v) =>
-    `${v.brand} ${v.model} ${v.color}`
-      .toLowerCase()
-      .includes(search.toLowerCase())
-  );
+  // A placa entra na busca — é o jeito mais natural de procurar um carro
+  // específico, e antes ela não era considerada.
+  const alvo = normalizaBusca(search);
+  const filtered = alvo
+    ? vehicles.filter((v) =>
+        normalizaBusca(`${v.brand} ${v.model} ${v.color} ${v.placa || ""}`).includes(alvo)
+      )
+    : vehicles;
 
   const pendentes = vehicles.filter((v) => vehiclePendencias(v).length > 0).length;
 
