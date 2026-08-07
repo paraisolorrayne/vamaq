@@ -9,7 +9,7 @@
 import { getPool } from '@/lib/db';
 
 const SELECT_COLS = `
-  id, slug, brand, model, year, price, quilometragem,
+  id, slug, brand, model, year, ano_modelo, price, quilometragem,
   fuel, transmission, power, color, body_type, featured, badge,
   opcionais, blindagem, images, specs, description, published, status,
   placa, chassi, documentos, renave,
@@ -43,6 +43,9 @@ function normalize(body) {
     brand: body.brand || '',
     model: body.model || '',
     year: Math.round(Number(body.year)) || new Date().getFullYear(),
+    // Opcional: vazio, zero ou lixo viram null — a coluna é nullable e o
+    // veículo sem ano de modelo tem que continuar se comportando como antes.
+    ano_modelo: Math.round(Number(body.ano_modelo)) || null,
     price: body.price !== '' && body.price != null ? Number(body.price) : null,
     // Colunas integer: arredonda para não estourar 22P02 se algum cliente
     // mandar float (ex.: km digitado com separador de milhar).
@@ -101,16 +104,16 @@ export async function addVehicle(body) {
   const slug = slugify(v.brand, v.model, v.year);
   const { rows } = await pool.query(
     `insert into vehicles (
-       slug, brand, model, year, price, quilometragem,
+       slug, brand, model, year, ano_modelo, price, quilometragem,
        fuel, transmission, power, color, body_type, featured, badge,
        opcionais, blindagem, images, specs, description, published, placa, chassi, renave
      ) values (
-       $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,
-       $14::jsonb,$15::jsonb,$16::jsonb,$17::jsonb,$18,$19,$20,$21,$22::jsonb
+       $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,
+       $15::jsonb,$16::jsonb,$17::jsonb,$18::jsonb,$19,$20,$21,$22,$23::jsonb
      )
      returning ${SELECT_COLS}`,
     [
-      slug, v.brand, v.model, v.year, v.price, v.quilometragem,
+      slug, v.brand, v.model, v.year, v.ano_modelo, v.price, v.quilometragem,
       v.fuel, v.transmission, v.power, v.color, v.body_type, v.featured, v.badge,
       JSON.stringify(v.opcionais), JSON.stringify(v.blindagem),
       JSON.stringify(v.images), JSON.stringify(v.specs), v.description, v.published,
@@ -126,15 +129,15 @@ export async function updateVehicle(id, body) {
   const v = normalize(body);
   const { rows } = await pool.query(
     `update vehicles set
-       brand=$2, model=$3, year=$4, price=$5, quilometragem=$6,
-       fuel=$7, transmission=$8, power=$9, color=$10, body_type=$11,
-       featured=$12, badge=$13,
-       opcionais=$14::jsonb, blindagem=$15::jsonb, images=$16::jsonb, specs=$17::jsonb,
-       description=$18, published=$19, placa=$20, chassi=$21, renave=$22::jsonb
+       brand=$2, model=$3, year=$4, ano_modelo=$5, price=$6, quilometragem=$7,
+       fuel=$8, transmission=$9, power=$10, color=$11, body_type=$12,
+       featured=$13, badge=$14,
+       opcionais=$15::jsonb, blindagem=$16::jsonb, images=$17::jsonb, specs=$18::jsonb,
+       description=$19, published=$20, placa=$21, chassi=$22, renave=$23::jsonb
      where id=$1
      returning ${SELECT_COLS}`,
     [
-      id, v.brand, v.model, v.year, v.price, v.quilometragem,
+      id, v.brand, v.model, v.year, v.ano_modelo, v.price, v.quilometragem,
       v.fuel, v.transmission, v.power, v.color, v.body_type, v.featured, v.badge,
       JSON.stringify(v.opcionais), JSON.stringify(v.blindagem),
       JSON.stringify(v.images), JSON.stringify(v.specs), v.description, v.published,
