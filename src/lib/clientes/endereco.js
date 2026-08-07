@@ -10,11 +10,21 @@ function limpo(valor) {
   return String(valor ?? "").trim();
 }
 
+// O CEP é gravado só com dígitos (a NF-e exige assim), mas essa linha vai
+// impressa num contrato — documento jurídico. Com os 8 dígitos certos, sai
+// mascarado (00000-000); com qualquer outra coisa (CEP incompleto, já
+// digitado com máscara, etc.), imprime como veio em vez de inventar máscara
+// para dado incompleto.
+function formataCep(valor) {
+  const c = limpo(valor);
+  return /^\d{8}$/.test(c) ? `${c.slice(0, 5)}-${c.slice(5)}` : c;
+}
+
 export function enderecoEmUmaLinha(cliente) {
   if (!cliente) return "";
   const c = cliente;
   const cidadeUf = [limpo(c.municipio), limpo(c.uf)].filter(Boolean).join("/");
-  const cep = limpo(c.cep);
+  const cep = formataCep(c.cep);
   return [
     limpo(c.logradouro),
     limpo(c.numero),

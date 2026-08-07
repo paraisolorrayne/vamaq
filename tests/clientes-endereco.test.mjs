@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { enderecoEmUmaLinha } from "../src/lib/clientes/endereco.js";
 
-test("endereço completo vira uma linha legível", () => {
+test("endereço completo vira uma linha legível, com o CEP mascarado", () => {
   const linha = enderecoEmUmaLinha({
     logradouro: "Rua das Flores",
     numero: "120",
@@ -10,9 +10,18 @@ test("endereço completo vira uma linha legível", () => {
     bairro: "Centro",
     municipio: "Uberlândia",
     uf: "MG",
-    cep: "38400-100",
+    cep: "38400100",
   });
   assert.equal(linha, "Rua das Flores, 120, sala 3, Centro, Uberlândia/MG, CEP 38400-100");
+});
+
+test("CEP com tamanho estranho sai sem máscara, do jeito que veio", () => {
+  const linha = enderecoEmUmaLinha({
+    municipio: "Uberlândia",
+    uf: "MG",
+    cep: "384001",
+  });
+  assert.equal(linha, "Uberlândia/MG, CEP 384001");
 });
 
 test("partes vazias somem sem deixar vírgula solta", () => {
