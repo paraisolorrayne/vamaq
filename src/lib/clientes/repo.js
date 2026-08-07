@@ -117,8 +117,17 @@ export async function listClientes({ busca, incluirInativos = false } = {}) {
   }
 
   const where = condicoes.length ? `where ${condicoes.join(" and ")}` : "";
+  // Sem `select c.*`: a lista é consumida pelo vendedor (seletor de contrato
+  // e de NF-e), e `obs` (nota interna sobre o cliente) e `rg` não têm por que
+  // sair daqui — quem precisa deles é a ficha (getCliente), que já é
+  // restrita a secretaria/financeiro. As demais colunas ficam porque o
+  // seletor de contrato/NF-e preenche os campos do documento a partir do
+  // cliente já carregado na lista (ver camposDoTemplate/destinatarioDoCliente
+  // em src/lib/clientes/prefill.js).
   const { rows } = await query(
-    `select c.*,
+    `select c.id, c.nome, c.tipo, c.doc, c.email, c.telefone, c.ativo,
+            c.cnh, c.cnh_categoria, c.cep, c.logradouro, c.numero, c.complemento,
+            c.bairro, c.municipio, c.uf, c.representante_nome, c.representante_cpf,
             (select count(*)::int from cliente_veiculos cv where cv.cliente_id = c.id) as veiculos_count
        from clientes c
        ${where}
