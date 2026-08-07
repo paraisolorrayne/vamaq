@@ -36,6 +36,12 @@ function escapeCuringasLike(str) {
   return str.replace(/[\\%_]/g, (c) => `\\${c}`);
 }
 
+// Mesma classe de defeito já corrigida no `obs` do vínculo (ligarVeiculo):
+// campo opcional que chega não-string (ex.: {"rg":123}) quebra em
+// `.trim is not a function` antes de virar {error}. `String(v ?? "")`
+// aceita qualquer tipo sem lançar.
+const txt = (v) => String(v ?? "").trim() || null;
+
 /** Valida e normaliza o que veio do formulário. Retorna {values} ou {error}. */
 async function prepararCliente(data, { ignorarId = null } = {}) {
   const nome = String(data.nome || "").trim();
@@ -61,27 +67,28 @@ async function prepararCliente(data, { ignorarId = null } = {}) {
   const cep = normalizaDoc(data.cep);
   const representanteCpf = normalizaDoc(data.representante_cpf);
   const uf = String(data.uf || "").trim().toUpperCase().slice(0, 2);
+  const email = txt(data.email);
 
   return {
     values: {
       nome,
       tipo,
       doc: doc || null,
-      rg: data.rg?.trim() || null,
-      cnh: data.cnh?.trim() || null,
-      cnh_categoria: data.cnh_categoria?.trim() || null,
-      email: data.email?.trim().toLowerCase() || null,
-      telefone: data.telefone?.trim() || null,
+      rg: txt(data.rg),
+      cnh: txt(data.cnh),
+      cnh_categoria: txt(data.cnh_categoria),
+      email: email ? email.toLowerCase() : null,
+      telefone: txt(data.telefone),
       cep: cep || null,
-      logradouro: data.logradouro?.trim() || null,
-      numero: data.numero?.trim() || null,
-      complemento: data.complemento?.trim() || null,
-      bairro: data.bairro?.trim() || null,
-      municipio: data.municipio?.trim() || null,
+      logradouro: txt(data.logradouro),
+      numero: txt(data.numero),
+      complemento: txt(data.complemento),
+      bairro: txt(data.bairro),
+      municipio: txt(data.municipio),
       uf: uf || null,
-      representante_nome: data.representante_nome?.trim() || null,
+      representante_nome: txt(data.representante_nome),
       representante_cpf: representanteCpf || null,
-      obs: data.obs?.trim() || null,
+      obs: txt(data.obs),
     },
   };
 }
