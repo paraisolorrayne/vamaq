@@ -13,8 +13,13 @@ export const dynamic = "force-dynamic";
 // id" pra quem estiver adivinhando ids na URL.
 const UUID_VALIDO = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+// Sem "vendedor" de propósito: getCliente() traz o bloco `notas` com ref,
+// status e valor de cada nota fiscal do cliente, e a seção fiscal do painel
+// é exclusiva de secretaria/financeiro. A lista (GET /api/admin/clientes,
+// que o vendedor usa no seletor do gerador de contratos) não carrega notas
+// — só a ficha completa faz, por isso ela é mais restrita que a lista.
 export async function GET(_request, { params }) {
-  const auth = await requireApiRole(["secretaria", "financeiro", "vendedor"]);
+  const auth = await requireApiRole(["secretaria", "financeiro"]);
   if (auth.error) return auth.error;
 
   const { id } = await params;
@@ -92,26 +97,5 @@ export async function PATCH(request, { params }) {
   } catch (err) {
     console.error("Falha ao atualizar status do cliente:", err);
     return NextResponse.json({ error: "Falha ao atualizar o status do cliente" }, { status: 500 });
-  }
-}
-
-// Não apaga o registro: cliente com contrato ou nota fiscal é histórico, e
-// apagar de verdade derrubaria o vínculo com o veículo por cascade. Em vez
-// disso, só marca como inativo (some das listas, mas continua na base).
-export async function DELETE(_request, { params }) {
-  const auth = await requireApiRole(["secretaria", "financeiro"]);
-  if (auth.error) return auth.error;
-
-  const { id } = await params;
-  if (!UUID_VALIDO.test(id)) {
-    return NextResponse.json({ error: "Cliente não encontrado" }, { status: 404 });
-  }
-
-  try {
-    await setClienteAtivo(id, false);
-    return NextResponse.json({ ok: true });
-  } catch (err) {
-    console.error("Falha ao desativar cliente:", err);
-    return NextResponse.json({ error: "Falha ao desativar o cliente" }, { status: 500 });
   }
 }
