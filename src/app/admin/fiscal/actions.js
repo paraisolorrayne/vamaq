@@ -20,9 +20,9 @@ export async function cancelarNotaAction(ref, justificativa) {
   return { ok: true };
 }
 
-export async function emitirNotaAction(vehicleId, { destinatario, valorVenda, custoAquisicao }) {
+export async function emitirNotaAction(vehicleId, { destinatario, valorVenda, custoAquisicao, clienteId }) {
   await requireRole(["admin", "financeiro"]);
-  const res = await emitirNotaVeiculo(vehicleId, { destinatario, valorVenda, custoAquisicao });
+  const res = await emitirNotaVeiculo(vehicleId, { destinatario, valorVenda, custoAquisicao, clienteId });
   if (res.error) return { error: res.error };
   revalidatePath("/admin/fiscal");
   return { ok: true, ref: res.nota.ref, status: res.nota.status };

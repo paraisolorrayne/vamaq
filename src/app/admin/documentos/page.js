@@ -6,6 +6,8 @@ import styles from "../admin.module.css";
 import { DEFAULT_TEMPLATES } from "@/lib/contractTemplates";
 import { clienteDoDocumento } from "@/lib/documentosCliente";
 import { generateContractPdf, buildContractDoc } from "@/lib/contractPdf";
+import { camposDoTemplate, prefixoDoTemplate } from "@/lib/clientes/prefill";
+import { formataDoc } from "@/lib/clientes/doc";
 
 // Agrupa os campos por seção preservando a ordem de declaração do modelo.
 function groupBySection(fields) {
@@ -37,6 +39,10 @@ export default function DocumentosPage() {
   const [viewMode, setViewMode] = useState("pdf"); // "pdf" | "texto"
   const [vehicleIdSel, setVehicleIdSel] = useState("");
   const [avisoCopia, setAvisoCopia] = useState(null);
+  const [clientes, setClientes] = useState([]);
+  const [clienteIdSel, setClienteIdSel] = useState("");
+  const [salvandoCliente, setSalvandoCliente] = useState(false);
+  const [avisoCliente, setAvisoCliente] = useState(null); // { tipo: "erro" | "sucesso", texto }
 
   // Pré-visualização fiel: gera o PDF real (mesmo do "Baixar PDF") e exibe
   // num iframe. O texto puro fica disponível como visão alternativa.
@@ -71,6 +77,10 @@ export default function DocumentosPage() {
       .then((r) => r.json())
       .then((data) => setPrefills(data.prefills || []))
       .catch(() => {});
+    fetch("/api/admin/clientes")
+      .then((r) => r.json())
+      .then((d) => setClientes(d.clientes || []))
+      .catch(() => {});
   }, []);
 
   const selectTemplate = useCallback((template) => {
@@ -78,6 +88,8 @@ export default function DocumentosPage() {
     setPreview(null);
     setActivePrefillId(null);
     setVehicleIdSel("");
+    setClienteIdSel("");
+    setAvisoCliente(null);
     const initial = {};
     template.fields.forEach((f) => {
       initial[f.key] = f.type === "select" ? f.options?.[0] || "" : "";
@@ -95,12 +107,58 @@ export default function DocumentosPage() {
     setSelectedTemplate(template);
     setPreview(null);
     setVehicleIdSel("");
+    setClienteIdSel("");
+    setAvisoCliente(null);
     setValues({ ...initial, ...prefill.values });
     setActivePrefillId(prefill.id);
   }
 
   function handleFieldChange(key, value) {
     setValues((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function fillFromCliente(id) {
+    setClienteIdSel(id || "");
+    const cliente = clientes.find((c) => c.id === id);
+    if (!cliente) return;
+    setValues((prev) => ({ ...prev, ...camposDoTemplate(selectedTemplate.id, cliente) }));
+  }
+
+  async function salvarComoCliente() {
+    const p = prefixoDoTemplate(selectedTemplate.id);
+    const novo = {
+      nome: values[`${p}_nome`],
+      doc: values[`${p}_cpf`],
+      cnh: values[`${p}_cnh`],
+      cnh_categoria: values[`${p}_cnh_categoria`],
+      telefone: values[`${p}_telefone`],
+      email: values[`${p}_email`],
+    };
+    setSalvandoCliente(true);
+    setAvisoCliente(null);
+    try {
+      const res = await fetch("/api/admin/clientes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(novo),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 403) {
+        setAvisoCliente({
+          tipo: "erro",
+          texto: "Você não tem permissão para cadastrar clientes — peça à secretaria.",
+        });
+      } else if (!res.ok) {
+        setAvisoCliente({ tipo: "erro", texto: data.error || "Erro ao cadastrar cliente." });
+      } else {
+        setClientes((prev) => [...prev, data.cliente]);
+        setClienteIdSel(data.cliente.id);
+        setAvisoCliente({ tipo: "sucesso", texto: "Cliente cadastrado." });
+      }
+    } catch {
+      setAvisoCliente({ tipo: "erro", texto: "Erro ao cadastrar cliente." });
+    }
+    setSalvandoCliente(false);
   }
 
   // `prefix` escolhe qual ficha recebe os dados: veiculo (padrão) ou troca
@@ -170,6 +228,7 @@ export default function DocumentosPage() {
       const cliente = clienteDoDocumento(selectedTemplate.id, values);
       if (cliente) fd.set("cliente", cliente);
       if (vehicleIdSel) fd.set("vehicleId", vehicleIdSel);
+      if (clienteIdSel) fd.set("clienteId", clienteIdSel);
       const res = await fetch("/api/admin/documentos-gerados", { method: "POST", body: fd });
       if (!res.ok) throw new Error();
     } catch {
@@ -419,6 +478,58 @@ export default function DocumentosPage() {
             >
               ← Trocar Modelo
             </button>
+          </div>
+
+          <div className={styles.card} style={{ marginBottom: 24 }}>
+            <h3
+              style={{
+                fontSize: "0.9rem",
+                fontWeight: 600,
+                marginBottom: 12,
+              }}
+            >
+              Preencher dados do cliente automaticamente
+            </h3>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+              {clientes.length > 0 ? (
+                <select
+                  className={styles.formSelect}
+                  value={clienteIdSel}
+                  onChange={(e) => fillFromCliente(e.target.value)}
+                  style={{ flex: 1, minWidth: 240 }}
+                >
+                  <option value="">Selecione um cliente cadastrado...</option>
+                  {clientes.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.nome}{c.doc ? ` — ${formataDoc(c.doc)}` : ""}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <p style={{ fontSize: "0.85rem", color: "#666", margin: 0, flex: 1 }}>
+                  Nenhum cliente cadastrado ainda.
+                </p>
+              )}
+              <button
+                onClick={salvarComoCliente}
+                className={styles.btnSecondary}
+                disabled={salvandoCliente}
+              >
+                {salvandoCliente ? "Salvando..." : "Salvar como cliente"}
+              </button>
+            </div>
+            {avisoCliente && (
+              <p
+                style={{
+                  fontSize: "0.8rem",
+                  marginTop: 8,
+                  marginBottom: 0,
+                  color: avisoCliente.tipo === "erro" ? "#b91c1c" : "#15803d",
+                }}
+              >
+                {avisoCliente.texto}
+              </p>
+            )}
           </div>
 
           {vehicles.length > 0 && (

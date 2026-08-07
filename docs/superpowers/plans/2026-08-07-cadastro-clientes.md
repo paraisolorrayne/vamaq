@@ -31,9 +31,9 @@
 - Create: `src/lib/clientes/doc.js`
 - Create: `src/lib/clientes/endereco.js`
 - Create: `src/lib/clientes/prefill.js`
-- Test: `tests/clientes-doc.test.js`
-- Test: `tests/clientes-endereco.test.js`
-- Test: `tests/clientes-prefill.test.js`
+- Test: `tests/clientes-doc.test.mjs`
+- Test: `tests/clientes-endereco.test.mjs`
+- Test: `tests/clientes-prefill.test.mjs`
 
 **Interfaces:**
 - Consumes: nada.
@@ -503,6 +503,7 @@ git commit -m "feat: módulos puros de cliente (documento, endereço, prefill de
 **Files:**
 - Create: `db/clientes-schema.sql`
 - Create: `src/lib/clientes/repo.js`
+- Test: `tests/clientes-schema.test.mjs`
 - Modify: `docs/RUNBOOK-BACKUP.md` (uma linha na tabela "O que é copiado" não é necessária — o dump é do banco inteiro; **não altere**)
 
 **Interfaces:**
@@ -656,55 +657,100 @@ Pontos obrigatórios:
 - `desligarVeiculo(vinculoId)`: `delete from cliente_veiculos where id = $1`.
 - `updateCliente` seta `updated_at = now()`.
 
-- [ ] **Step 4: Provar o repositório contra o banco local**
+- [ ] **Step 4: Escrever `tests/clientes-schema.test.mjs`**
 
-O repositório usa o alias `@/`, que não resolve fora do Next — então ele não tem
-teste automatizado, e o repo não tem infra de teste com banco. O que se prova
-aqui são as **garantias do schema**, direto no `psql`, e elas são o que importa:
+O repositório em si usa o alias `@/` e não tem teste (o alias não resolve fora do
+Next). O que **tem** teste, e é o que importa aqui, são as garantias do schema.
 
-```bash
-psql "$DATABASE_URL" <<'SQL'
-insert into clientes (nome, doc) values ('Teste Um', '12345678900');
-insert into clientes (nome, doc) values ('Teste Dois', null);
-insert into clientes (nome, doc) values ('Teste Três', null);
-SQL
+**Copie a estrutura de `tests/documentos-schema.test.mjs`** — leia esse arquivo
+antes: ele cria um banco descartável, aplica os `.sql` na ordem, roda os testes e
+derruba o banco no `after`. Use `const TEST_DB = "vamaq_clientes_test";` e a lista
+de arquivos `["schema.sql", "auth-schema.sql", "documentos-schema.sql", "fiscal-schema.sql", "clientes-schema.sql"]`
+(documentos e fiscal entram porque `cliente_veiculos.documento_id` e
+`notas_fiscais.cliente_id` dependem deles).
+
+Nome do arquivo: **`.test.mjs`**, não `.test.js` — o `npm test` roda
+`tests/*.test.mjs` e um `.js` seria silenciosamente ignorado.
+
+Os casos, um por garantia do schema:
+
+```js
+test("dois clientes sem documento são aceitos", async () => {
+  await novoCliente({ nome: "Sem Doc Um" });
+  await novoCliente({ nome: "Sem Doc Dois" });
+  const { rows } = await pool.query(`select count(*)::int n from clientes where doc is null`);
+  assert.ok(rows[0].n >= 2);
+});
+
+test("dois clientes com o mesmo documento, não", async () => {
+  await novoCliente({ nome: "Original", doc: "12345678900" });
+  await assert.rejects(
+    () => novoCliente({ nome: "Duplicado", doc: "12345678900" }),
+    /clientes_doc_key/
+  );
+});
+
+test("tipo só aceita pf e pj", async () => {
+  await novoCliente({ nome: "PJ", tipo: "pj", doc: "12345678000190" });
+  await assert.rejects(() => novoCliente({ nome: "Outro", tipo: "xx" }), /cliente_tipo_check/);
+});
+
+test("o mesmo vínculo duas vezes não duplica", async () => {
+  const c = await novoCliente({ nome: "Com Carro" });
+  const v = await novoVeiculo("gol-cliente");
+  await ligar(c, v, "comprou");
+  await assert.rejects(() => ligar(c, v, "comprou"), /cliente_veiculos_unico/);
+});
+
+test("o mesmo cliente pode ter dois papéis no mesmo carro", async () => {
+  const c = await novoCliente({ nome: "Vendeu e Recomprou" });
+  const v = await novoVeiculo("onix-cliente");
+  await ligar(c, v, "vendeu");
+  await ligar(c, v, "comprou");   // não pode rejeitar
+});
+
+test("papel e origem são restritos", async () => {
+  const c = await novoCliente({ nome: "Papel" });
+  const v = await novoVeiculo("hb20-cliente");
+  await assert.rejects(() => ligar(c, v, "emprestou"), /cliente_veiculo_papel_check/);
+  await assert.rejects(() => ligar(c, v, "comprou", "sei-la"), /cliente_veiculo_origem_check/);
+});
+
+test("apagar o cliente leva o vínculo junto, mas NÃO o contrato nem a nota", async () => {
+  // cascade em cliente_veiculos; set null em documentos_gerados.cliente_id e
+  // notas_fiscais.cliente_id — contrato e nota são prova, não podem sumir.
+});
+
+test("apagar o veículo leva o vínculo junto", async () => {
+  // cascade: o vínculo não existe sem as duas pontas.
+});
+
+test("apagar o documento não apaga o vínculo, só a origem dele", async () => {
+  // documento_id vira null; o fato de a pessoa ter comprado o carro permanece.
+});
 ```
-Expected: as três passam — dois clientes sem documento são permitidos.
+
+Os três últimos estão como esqueleto de propósito: **escreva o corpo deles** no
+mesmo estilo dos anteriores (inserir, apagar, consultar, `assert`). São as três
+garantias mais importantes do arquivo — o que sobrevive a quê.
+
+- [ ] **Step 5: Rodar a suíte**
+
+Run: `npm test`
+Expected: PASS, incluindo os testes de schema novos. Se o Postgres local não
+estiver de pé, os testes de schema existentes também falham — nesse caso suba o
+Postgres antes, não desative teste nenhum.
+
+- [ ] **Step 6: Build**
+
+Run: `npm run build`
+Expected: build limpo (o repositório ainda não é importado por ninguém, mas não
+pode quebrar o build).
+
+- [ ] **Step 7: Commit**
 
 ```bash
-psql "$DATABASE_URL" -c "insert into clientes (nome, doc) values ('Duplicado','12345678900');"
-```
-Expected: `ERROR: duplicate key value violates unique constraint "clientes_doc_key"`.
-
-```bash
-psql "$DATABASE_URL" <<'SQL'
-insert into cliente_veiculos (cliente_id, vehicle_id, papel)
-select c.id, v.id, 'comprou' from clientes c, vehicles v
- where c.nome = 'Teste Um' limit 1;
-insert into cliente_veiculos (cliente_id, vehicle_id, papel)
-select c.id, v.id, 'comprou' from clientes c, vehicles v
- where c.nome = 'Teste Um' limit 1;
-SQL
-```
-Expected: a segunda falha com violação de `cliente_veiculos_unico` — é a garantia
-de que gerar o mesmo contrato duas vezes não duplica o vínculo.
-
-```bash
-psql "$DATABASE_URL" -c "delete from clientes where nome like 'Teste %';"
-psql "$DATABASE_URL" -c "select count(*) from cliente_veiculos;"
-```
-Expected: o delete leva o vínculo junto (cascade) — a contagem volta ao que era.
-
-- [ ] **Step 5: Build e suíte**
-
-Run: `npm test && npm run build`
-Expected: PASS e build limpo (o repositório ainda não é importado por ninguém, mas
-não pode quebrar o build).
-
-- [ ] **Step 6: Commit**
-
-```bash
-git add db/clientes-schema.sql src/lib/clientes/repo.js
+git add db/clientes-schema.sql src/lib/clientes/repo.js tests/clientes-schema.test.mjs
 git commit -m "feat: schema de clientes e vínculo cliente-veículo"
 ```
 

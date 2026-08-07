@@ -27,6 +27,7 @@ const SECTIONS = [
   { key: "fipe", prefix: "/admin/fipe", label: "Tabela FIPE", icon: "💰", roles: ["estoque", "financeiro", "secretaria"] },
   { key: "estoque", prefix: "/admin/estoque", label: "Estoque", icon: "🚗", roles: ["estoque", "financeiro", "vendedor", "secretaria"] },
   { key: "crm", prefix: "/admin/crm", label: "CRM (Vendas)", icon: "🤝", roles: ["vendedor", "secretaria"] },
+  { key: "clientes", prefix: "/admin/clientes", label: "Clientes", icon: "🧑", roles: ["secretaria", "financeiro"] },
   { key: "financeiro", prefix: "/admin/financeiro", label: "Financeiro", icon: "📊", roles: ["financeiro", "secretaria"] },
   { key: "fiscal", prefix: "/admin/fiscal", label: "Notas Fiscais", icon: "🧾", roles: ["financeiro"] },
   { key: "tutoriais", prefix: "/admin/tutoriais", label: "Tutoriais", icon: "📚", roles: ["estoque", "financeiro", "vendedor", "secretaria"] },
@@ -47,7 +48,7 @@ export function canAccessPath(role, pathname) {
 
 /** Itens de menu que este papel deve ver, na ordem de exibição. */
 export function navFor(role) {
-  const order = ["dashboard", "estoque", "crm", "financeiro", "fiscal", "documentos", "criativos", "fipe", "tutoriais", "funcionarios", "usuarios"];
+  const order = ["dashboard", "estoque", "crm", "clientes", "financeiro", "fiscal", "documentos", "criativos", "fipe", "tutoriais", "funcionarios", "usuarios"];
   const HIDDEN = new Set();
   return order
     .filter((key) => !HIDDEN.has(key))

@@ -1,0 +1,101 @@
+import { NextResponse } from "next/server";
+import { requireApiRole } from "@/lib/auth/api";
+import { getCliente, updateCliente, setClienteAtivo } from "@/lib/clientes/repo";
+
+export const dynamic = "force-dynamic";
+
+// Mesmo formato usado em ARQUIVO_VALIDO (src/lib/documentos.js): um `id` que
+// nem bate com a forma de um UUID nunca vai achar linha no banco. Sem essa
+// checagem, o Postgres rejeita o tipo antes da query rodar e isso vira 500
+// genérico — mas um id malformado na URL não é erro de servidor, é o mesmo
+// "não encontrado" que um UUID válido porém inexistente. Tratamos os dois
+// igual, inclusive para não revelar a diferença entre "não existe" e "nem é
+// id" pra quem estiver adivinhando ids na URL.
+const UUID_VALIDO = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Sem "vendedor" de propósito: getCliente() traz o bloco `notas` com ref,
+// status e valor de cada nota fiscal do cliente, e a seção fiscal do painel
+// é exclusiva de secretaria/financeiro. A lista (GET /api/admin/clientes,
+// que o vendedor usa no seletor do gerador de contratos) não carrega notas
+// — só a ficha completa faz, por isso ela é mais restrita que a lista.
+export async function GET(_request, { params }) {
+  const auth = await requireApiRole(["secretaria", "financeiro"]);
+  if (auth.error) return auth.error;
+
+  const { id } = await params;
+  if (!UUID_VALIDO.test(id)) {
+    return NextResponse.json({ error: "Cliente não encontrado" }, { status: 404 });
+  }
+
+  try {
+    const cliente = await getCliente(id);
+    if (!cliente) {
+      return NextResponse.json({ error: "Cliente não encontrado" }, { status: 404 });
+    }
+    return NextResponse.json({ cliente });
+  } catch (err) {
+    console.error("Falha ao buscar cliente:", err);
+    return NextResponse.json({ error: "Falha ao buscar o cliente" }, { status: 500 });
+  }
+}
+
+export async function PUT(request, { params }) {
+  const auth = await requireApiRole(["secretaria", "financeiro"]);
+  if (auth.error) return auth.error;
+
+  const { id } = await params;
+  if (!UUID_VALIDO.test(id)) {
+    return NextResponse.json({ error: "Cliente não encontrado" }, { status: 404 });
+  }
+
+  try {
+    const body = await request.json();
+    const res = await updateCliente(id, body);
+    if (res.error) return NextResponse.json({ error: res.error }, { status: 400 });
+    return NextResponse.json({ cliente: res.cliente });
+  } catch (err) {
+    // A checagem de duplicidade em updateCliente roda em JS antes do update
+    // — não é atômica com o banco. Numa corrida (duas abas editando/criando
+    // com o mesmo CPF/CNPJ ao mesmo tempo), uma delas passa pela checagem e
+    // só estoura no índice único do Postgres (clientes_doc_key). Esse
+    // caminho cobre a corrida; o {error} do repo acima cobre o caso comum.
+    if (err.code === "23505" && err.constraint === "clientes_doc_key") {
+      return NextResponse.json({ error: "Já existe um cliente com esse CPF/CNPJ." }, { status: 400 });
+    }
+    console.error("Falha ao atualizar cliente:", err);
+    return NextResponse.json({ error: "Falha ao atualizar o cliente" }, { status: 500 });
+  }
+}
+
+// Separado do PUT de propósito: `ativo` não é campo de formulário, é uma
+// ação. Se ele entrasse em CAMPOS e fosse salvo junto com o resto, um PUT
+// comum (ex.: um form antigo em cache mandando `ativo: false` sem querer)
+// poderia desativar o cliente como efeito colateral de uma edição normal.
+// Aqui vira o único caminho pra mudar esse campo — reativar inclusive. Por
+// isso `ativo` é exigido como booleano explícito: um corpo sem a chave (ou
+// com o nome errado, tipo `ativa`) não pode cair em `Boolean(undefined) ===
+// false` e desativar o cliente em silêncio.
+export async function PATCH(request, { params }) {
+  const auth = await requireApiRole(["secretaria", "financeiro"]);
+  if (auth.error) return auth.error;
+
+  const { id } = await params;
+  if (!UUID_VALIDO.test(id)) {
+    return NextResponse.json({ error: "Cliente não encontrado" }, { status: 404 });
+  }
+
+  try {
+    const body = await request.json();
+    if (typeof body.ativo !== "boolean") {
+      return NextResponse.json(
+        { error: "Informe 'ativo' como verdadeiro ou falso." },
+        { status: 400 }
+      );
+    }
+    await setClienteAtivo(id, body.ativo);
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error("Falha ao atualizar status do cliente:", err);
+    return NextResponse.json({ error: "Falha ao atualizar o status do cliente" }, { status: 500 });
+  }
+}
