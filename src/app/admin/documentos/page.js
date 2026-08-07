@@ -8,6 +8,7 @@ import { clienteDoDocumento } from "@/lib/documentosCliente";
 import { generateContractPdf, buildContractDoc } from "@/lib/contractPdf";
 import { camposDoTemplate, prefixoDoTemplate } from "@/lib/clientes/prefill";
 import { formataDoc } from "@/lib/clientes/doc";
+import { anoVeiculo } from "@/lib/anoVeiculo";
 
 // Agrupa os campos por seção preservando a ordem de declaração do modelo.
 function groupBySection(fields) {
@@ -171,7 +172,7 @@ export default function DocumentosPage() {
       ...prev,
       [`${prefix}_marca`]: v.brand || prev[`${prefix}_marca`],
       [`${prefix}_modelo`]: v.model || prev[`${prefix}_modelo`],
-      [`${prefix}_ano`]: String(v.year) || prev[`${prefix}_ano`],
+      [`${prefix}_ano`]: anoVeiculo(v) || prev[`${prefix}_ano`],
       [`${prefix}_cor`]: v.color || prev[`${prefix}_cor`],
       [`${prefix}_combustivel`]: v.fuel || prev[`${prefix}_combustivel`],
       [`${prefix}_km`]: v.quilometragem
@@ -551,7 +552,7 @@ export default function DocumentosPage() {
                 <option value="">Selecione um veículo do estoque...</option>
                 {vehicles.map((v) => (
                   <option key={v.id} value={v.id}>
-                    {v.brand} {v.model} {v.year} — {v.color}
+                    {v.brand} {v.model} {anoVeiculo(v)} — {v.color}
                   </option>
                 ))}
               </select>
@@ -570,7 +571,7 @@ export default function DocumentosPage() {
                   </option>
                   {vehicles.map((v) => (
                     <option key={v.id} value={v.id}>
-                      {v.brand} {v.model} {v.year} — {v.color}
+                      {v.brand} {v.model} {anoVeiculo(v)} — {v.color}
                     </option>
                   ))}
                 </select>

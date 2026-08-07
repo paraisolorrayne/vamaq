@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { normalizaBusca } from "@/lib/buscaVeiculo";
+import { anoVeiculo } from "@/lib/anoVeiculo";
 import styles from "../admin.module.css";
 
 export default function EstoquePage() {
@@ -158,7 +159,7 @@ function EstoqueConteudo() {
                         {v.brand} {v.model}
                       </strong>
                     </td>
-                    <td>{v.year}</td>
+                    <td>{anoVeiculo(v)}</td>
                     <td>{v.quilometragem?.toLocaleString("pt-BR")} km</td>
                     <td>{v.color}</td>
                     <td>
@@ -220,7 +221,7 @@ function EstoqueConteudo() {
                       {v.brand} {v.model}
                     </strong>
                     <span className={styles.vehicleCardMeta}>
-                      {v.year} · {v.quilometragem?.toLocaleString("pt-BR")} km
+                      {anoVeiculo(v)} · {v.quilometragem?.toLocaleString("pt-BR")} km
                       {v.color ? ` · ${v.color}` : ""}
                     </span>
                     <span>
