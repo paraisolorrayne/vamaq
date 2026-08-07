@@ -4,7 +4,8 @@
  * e devolve {error} em vez de lançar quando o erro é do operador.
  */
 import { query } from "@/lib/db";
-import { normalizaDoc, tipoPorDoc, docValido } from "@/lib/clientes/doc";
+import { normalizaDoc } from "@/lib/clientes/doc";
+import { prepararCampos } from "@/lib/clientes/campos";
 
 const CAMPOS = [
   "nome",
@@ -36,61 +37,25 @@ function escapeCuringasLike(str) {
   return str.replace(/[\\%_]/g, (c) => `\\${c}`);
 }
 
-// Mesma classe de defeito já corrigida no `obs` do vínculo (ligarVeiculo):
-// campo opcional que chega não-string (ex.: {"rg":123}) quebra em
-// `.trim is not a function` antes de virar {error}. `String(v ?? "")`
-// aceita qualquer tipo sem lançar.
-const txt = (v) => String(v ?? "").trim() || null;
-
-/** Valida e normaliza o que veio do formulário. Retorna {values} ou {error}. */
+/**
+ * Valida e normaliza o que veio do formulário (via campos.js, puro) e, se
+ * passar, checa duplicidade de documento no banco. Retorna {values} ou
+ * {error}.
+ */
 async function prepararCliente(data, { ignorarId = null } = {}) {
-  const nome = String(data.nome || "").trim();
-  if (!nome) return { error: "Nome é obrigatório." };
+  const p = prepararCampos(data);
+  if (p.error) return p;
+  const { values } = p;
 
-  const doc = normalizaDoc(data.doc);
-  if (doc && !docValido(doc)) return { error: "CPF/CNPJ deve ter 11 ou 14 dígitos." };
-
-  // Se o documento tem tamanho conhecido (11 ou 14 dígitos), ele decide o
-  // tipo — só cai no que veio do formulário quando o documento está vazio
-  // ou é curto demais para saber.
-  let tipo = tipoPorDoc(doc) || data.tipo || "pf";
-  if (tipo !== "pf" && tipo !== "pj") tipo = "pf";
-
-  if (doc) {
+  if (values.doc) {
     const dup = await query(
       `select id from clientes where doc = $1 and ($2::uuid is null or id <> $2)`,
-      [doc, ignorarId]
+      [values.doc, ignorarId]
     );
     if (dup.rows.length) return { error: "Já existe um cliente com esse CPF/CNPJ." };
   }
 
-  const cep = normalizaDoc(data.cep);
-  const representanteCpf = normalizaDoc(data.representante_cpf);
-  const uf = String(data.uf || "").trim().toUpperCase().slice(0, 2);
-  const email = txt(data.email);
-
-  return {
-    values: {
-      nome,
-      tipo,
-      doc: doc || null,
-      rg: txt(data.rg),
-      cnh: txt(data.cnh),
-      cnh_categoria: txt(data.cnh_categoria),
-      email: email ? email.toLowerCase() : null,
-      telefone: txt(data.telefone),
-      cep: cep || null,
-      logradouro: txt(data.logradouro),
-      numero: txt(data.numero),
-      complemento: txt(data.complemento),
-      bairro: txt(data.bairro),
-      municipio: txt(data.municipio),
-      uf: uf || null,
-      representante_nome: txt(data.representante_nome),
-      representante_cpf: representanteCpf || null,
-      obs: txt(data.obs),
-    },
-  };
+  return { values };
 }
 
 /** Lista de clientes, com o total de veículos vinculados a cada um. */
