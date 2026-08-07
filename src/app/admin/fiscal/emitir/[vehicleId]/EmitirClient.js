@@ -6,6 +6,12 @@ import styles from "../../../admin.module.css";
 import { emitirNotaAction } from "../../actions";
 import { formatValorBR } from "@/lib/money";
 import { icmsSeminovo } from "@/lib/fin/calc";
+import { destinatarioDoCliente } from "@/lib/clientes/prefill";
+import { formataDoc } from "@/lib/clientes/doc";
+
+const DEST_VAZIO = {
+  nome: "", doc: "", cep: "", logradouro: "", numero: "", bairro: "", municipio: "", uf: "",
+};
 
 function money(n) {
   return "R$ " + formatValorBR(Number(n) || 0);
@@ -22,6 +28,7 @@ export default function EmitirClient({
   custoAquisicao,
   custoOrigem,
   notaExistente,
+  clientes,
   ativo,
   vehicleId,
 }) {
@@ -30,6 +37,19 @@ export default function EmitirClient({
   const [resultado, setResultado] = useState(null);
   const [venda, setVenda] = useState(veiculo.price ?? "");
   const [custo, setCusto] = useState(custoOrigem === "financeiro" ? custoAquisicao : "");
+  const [dest, setDest] = useState(DEST_VAZIO);
+  const [clienteIdSel, setClienteIdSel] = useState("");
+
+  function setCampo(k, v) {
+    setDest((p) => ({ ...p, [k]: v }));
+  }
+
+  function fillFromCliente(id) {
+    setClienteIdSel(id || "");
+    const cliente = (clientes || []).find((c) => c.id === id);
+    if (!cliente) return;
+    setDest(destinatarioDoCliente(cliente));
+  }
 
   if (!ativo) {
     return (
@@ -90,16 +110,11 @@ export default function EmitirClient({
   function handleEmitir(e) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    const destinatario = {
-      nome: fd.get("nome"),
-      doc: fd.get("doc"),
-      cep: fd.get("cep"),
-      logradouro: fd.get("logradouro"),
-      numero: fd.get("numero"),
-      bairro: fd.get("bairro"),
-      municipio: fd.get("municipio"),
-      uf: fd.get("uf"),
-    };
+    // O destinatário sai do estado `dest` (controlado, para o seletor de
+    // cliente conseguir preenchê-lo) e não mais do FormData — mas continua
+    // sendo exatamente o que está na tela: o cliente selecionado não
+    // substitui a validação, quem confere e valida é o formulário mesmo.
+    const destinatario = { ...dest };
     if (
       !confirm(
         "Emitir a nota fiscal deste veículo? Depois de autorizada, o cancelamento só é possível em 24h."
@@ -113,6 +128,7 @@ export default function EmitirClient({
         destinatario,
         valorVenda: fd.get("valorVenda"),
         custoAquisicao: fd.get("custoAquisicao"),
+        clienteId: clienteIdSel || undefined,
       });
       if (r?.error) setErr(r.error);
       else if (r?.ok) setResultado(r);
@@ -248,41 +264,117 @@ export default function EmitirClient({
             )}
           </div>
 
+          {/* Cliente cadastrado */}
+          {clientes && clientes.length > 0 && (
+            <div className={styles.card} style={{ marginBottom: 24 }}>
+              <h3 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: 16 }}>Cliente cadastrado</h3>
+              <div className={styles.formGrid}>
+                <div className={`${styles.formGroup} ${styles.formGroupFull}`}>
+                  <label className={styles.formLabel}>Preencher a partir de um cliente</label>
+                  <select
+                    className={styles.formSelect}
+                    value={clienteIdSel}
+                    onChange={(e) => fillFromCliente(e.target.value)}
+                  >
+                    <option value="">Selecione um cliente cadastrado...</option>
+                    {clientes.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.nome}{c.doc ? ` — ${formataDoc(c.doc)}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Destinatário */}
           <div className={styles.card} style={{ marginBottom: 24 }}>
             <h3 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: 16 }}>Destinatário</h3>
+            <p style={{ fontSize: "0.85rem", color: "#666", marginTop: 0 }}>
+              Confira os dados antes de emitir — a nota vai para a SEFAZ com o que estiver aqui.
+            </p>
             <div className={styles.formGrid}>
               <div className={`${styles.formGroup} ${styles.formGroupFull}`}>
                 <label className={styles.formLabel}>Nome *</label>
-                <input name="nome" className={styles.formInput} required />
+                <input
+                  name="nome"
+                  value={dest.nome}
+                  onChange={(e) => setCampo("nome", e.target.value)}
+                  className={styles.formInput}
+                  required
+                />
               </div>
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>CPF/CNPJ *</label>
-                <input name="doc" className={styles.formInput} required />
+                <input
+                  name="doc"
+                  value={dest.doc}
+                  onChange={(e) => setCampo("doc", e.target.value)}
+                  className={styles.formInput}
+                  required
+                />
               </div>
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>CEP *</label>
-                <input name="cep" className={styles.formInput} required />
+                <input
+                  name="cep"
+                  value={dest.cep}
+                  onChange={(e) => setCampo("cep", e.target.value)}
+                  className={styles.formInput}
+                  required
+                />
               </div>
               <div className={`${styles.formGroup} ${styles.formGroupFull}`}>
                 <label className={styles.formLabel}>Logradouro *</label>
-                <input name="logradouro" className={styles.formInput} required />
+                <input
+                  name="logradouro"
+                  value={dest.logradouro}
+                  onChange={(e) => setCampo("logradouro", e.target.value)}
+                  className={styles.formInput}
+                  required
+                />
               </div>
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>Número *</label>
-                <input name="numero" className={styles.formInput} required />
+                <input
+                  name="numero"
+                  value={dest.numero}
+                  onChange={(e) => setCampo("numero", e.target.value)}
+                  className={styles.formInput}
+                  required
+                />
               </div>
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>Bairro *</label>
-                <input name="bairro" className={styles.formInput} required />
+                <input
+                  name="bairro"
+                  value={dest.bairro}
+                  onChange={(e) => setCampo("bairro", e.target.value)}
+                  className={styles.formInput}
+                  required
+                />
               </div>
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>Município *</label>
-                <input name="municipio" className={styles.formInput} required />
+                <input
+                  name="municipio"
+                  value={dest.municipio}
+                  onChange={(e) => setCampo("municipio", e.target.value)}
+                  className={styles.formInput}
+                  required
+                />
               </div>
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>UF *</label>
-                <input name="uf" maxLength={2} className={styles.formInput} required />
+                <input
+                  name="uf"
+                  maxLength={2}
+                  value={dest.uf}
+                  onChange={(e) => setCampo("uf", e.target.value)}
+                  className={styles.formInput}
+                  required
+                />
               </div>
             </div>
           </div>
