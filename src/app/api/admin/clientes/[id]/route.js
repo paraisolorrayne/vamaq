@@ -32,6 +32,14 @@ export async function PUT(request, { params }) {
     if (res.error) return NextResponse.json({ error: res.error }, { status: 400 });
     return NextResponse.json({ cliente: res.cliente });
   } catch (err) {
+    // A checagem de duplicidade em updateCliente roda em JS antes do update
+    // — não é atômica com o banco. Numa corrida (duas abas editando/criando
+    // com o mesmo CPF/CNPJ ao mesmo tempo), uma delas passa pela checagem e
+    // só estoura no índice único do Postgres (clientes_doc_key). Esse
+    // caminho cobre a corrida; o {error} do repo acima cobre o caso comum.
+    if (err.code === "23505" && err.constraint === "clientes_doc_key") {
+      return NextResponse.json({ error: "Já existe um cliente com esse CPF/CNPJ." }, { status: 400 });
+    }
     console.error("Falha ao atualizar cliente:", err);
     return NextResponse.json({ error: "Falha ao atualizar o cliente" }, { status: 500 });
   }
