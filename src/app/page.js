@@ -5,6 +5,7 @@ import WhatsAppFloat from "@/components/WhatsAppFloat";
 import VehicleCard from "@/components/VehicleCard";
 import { getFeaturedVehicles, getAllVehicles } from "@/lib/repositories/vehicles";
 import { getWhatsAppGenericUrl } from "@/lib/whatsapp";
+import { anoVeiculo } from "@/lib/anoVeiculo";
 import styles from "./page.module.css";
 
 // Render dinâmico: o hero/vitrine lê o estoque direto do Postgres, então o
@@ -42,7 +43,7 @@ export default async function HomePage() {
                   {heroVehicle.images?.main && (
                     <img
                       src={heroVehicle.images.main}
-                      alt={`${heroVehicle.brand} ${heroVehicle.model} ${heroVehicle.year}`}
+                      alt={`${heroVehicle.brand} ${heroVehicle.model} ${anoVeiculo(heroVehicle)}`}
                       className={styles.heroImage}
                       loading="eager"
                     />
@@ -52,7 +53,7 @@ export default async function HomePage() {
                 <div className={styles.heroSpecs}>
                   <div className={styles.heroSpec}>
                     <span className={styles.heroSpecLabel}>Ano</span>
-                    <span className={styles.heroSpecValue}>{heroVehicle.year}</span>
+                    <span className={styles.heroSpecValue}>{anoVeiculo(heroVehicle)}</span>
                   </div>
                   <div className={styles.heroSpec}>
                     <span className={styles.heroSpecLabel}>Km</span>

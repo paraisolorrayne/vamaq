@@ -3,12 +3,14 @@
  * Importáveis tanto em Server quanto em Client Components.
  */
 
+import { anoVeiculo } from '@/lib/anoVeiculo';
+
 // Plantão de vendas — manter sincronizado com BUSINESS.phone (src/lib/businessInfo.js)
 export const WHATSAPP_NUMBER = '5534997353315';
 
 export function getWhatsAppUrl(vehicle) {
   const msg = encodeURIComponent(
-    `Olá! Vi o ${vehicle.brand} ${vehicle.model} ${vehicle.year} no site da Vamaq e tenho interesse.`
+    `Olá! Vi o ${vehicle.brand} ${vehicle.model} ${anoVeiculo(vehicle)} no site da Vamaq e tenho interesse.`
   );
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`;
 }

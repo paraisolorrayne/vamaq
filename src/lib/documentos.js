@@ -64,7 +64,7 @@ function escapeCuringasLike(str) {
 }
 
 const SELECT = `
-  select d.*, v.brand, v.model, v.year, v.placa, u.name as criado_por_nome
+  select d.*, v.brand, v.model, v.year, v.ano_modelo, v.placa, u.name as criado_por_nome
     from documentos_gerados d
     left join vehicles v on v.id = d.vehicle_id
     left join users u on u.id = d.criado_por

@@ -15,6 +15,7 @@ const EMPTY_VEHICLE = {
   brand: "",
   model: "",
   year: new Date().getFullYear(),
+  ano_modelo: "",
   price: "",
   quilometragem: "",
   fuel: "Gasolina",
@@ -129,6 +130,7 @@ function NovoVeiculoForm() {
             ...data,
             price: data.price != null ? formatValorBR(data.price) : "",
             quilometragem: data.quilometragem ?? "",
+            ano_modelo: data.ano_modelo ?? "",
             badge: data.badge || "",
             placa: data.placa || "",
             chassi: data.chassi || "",
@@ -221,6 +223,12 @@ function NovoVeiculoForm() {
 
   async function handleSubmit(e) {
     e.preventDefault();
+
+    if (form.ano_modelo !== "" && Number(form.ano_modelo) < Number(form.year)) {
+      alert("O ano do modelo não pode ser anterior ao ano de fabricação.");
+      return;
+    }
+
     setSaving(true);
 
     const parsedPrice = parseValorBR(form.price);
@@ -454,7 +462,7 @@ function NovoVeiculoForm() {
               />
             </div>
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Ano *</label>
+              <label className={styles.formLabel}>Ano de fabricação *</label>
               <input
                 type="number"
                 value={form.year}
@@ -462,6 +470,19 @@ function NovoVeiculoForm() {
                 className={styles.formInput}
                 required
               />
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Ano do modelo</label>
+              <input
+                type="number"
+                value={form.ano_modelo}
+                onChange={(e) => handleChange("ano_modelo", e.target.value)}
+                className={styles.formInput}
+                placeholder="opcional"
+              />
+              <p style={{ marginTop: 8, fontSize: "0.8rem", color: "#666" }}>
+                Deixe em branco se for igual ao ano de fabricação.
+              </p>
             </div>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Preço (R$)</label>

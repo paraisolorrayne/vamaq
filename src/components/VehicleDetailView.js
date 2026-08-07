@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import VehicleCard from '@/components/VehicleCard';
 import { getWhatsAppUrl } from '@/lib/whatsapp';
+import { anoVeiculo } from '@/lib/anoVeiculo';
 import styles from '@/app/veiculo/[slug]/veiculo.module.css';
 
 function resolveGalleryImages(vehicle) {
@@ -113,7 +114,7 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
             <div className={styles.heroMeta}>
               <div className={styles.heroMetaItem}>
                 <span className={styles.heroMetaLabel}>Ano</span>
-                <span className={styles.heroMetaValue}>{vehicle.year}</span>
+                <span className={styles.heroMetaValue}>{anoVeiculo(vehicle)}</span>
               </div>
               <div className={styles.heroMetaItem}>
                 <span className={styles.heroMetaLabel}>Km</span>
@@ -155,7 +156,7 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
             {galleryImages[0] ? (
               <img
                 src={galleryImages[0]}
-                alt={`${vehicle.brand} ${vehicle.model} ${vehicle.year}`}
+                alt={`${vehicle.brand} ${vehicle.model} ${anoVeiculo(vehicle)}`}
                 className={styles.heroImg}
                 loading="eager"
               />

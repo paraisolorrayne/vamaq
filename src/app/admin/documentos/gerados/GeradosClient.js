@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import styles from "../../admin.module.css";
+import { anoVeiculo } from "@/lib/anoVeiculo";
 
 const fmtData = (d) =>
   d ? new Date(d).toLocaleDateString("pt-BR") : "—";
@@ -16,8 +17,9 @@ const TIPO_LABEL = {
 };
 
 function veiculoDoDocumento(doc) {
-  if (!doc.brand && !doc.model && !doc.year && !doc.placa) return "—";
-  const nome = [doc.brand, doc.model, doc.year].filter(Boolean).join(" ");
+  const ano = anoVeiculo(doc);
+  if (!doc.brand && !doc.model && !ano && !doc.placa) return "—";
+  const nome = [doc.brand, doc.model, ano].filter(Boolean).join(" ");
   return [nome, doc.placa].filter(Boolean).join(" — ") || "—";
 }
 

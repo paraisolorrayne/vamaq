@@ -25,6 +25,12 @@ export async function POST(request) {
     return NextResponse.json(vehicle, { status: 201 });
   } catch (err) {
     console.error('Vehicle create error:', err);
+    if (err.constraint === 'ano_modelo_check') {
+      return NextResponse.json(
+        { error: 'O ano do modelo não pode ser anterior ao de fabricação (nem passar de 2036).' },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: `Erro ao salvar veículo: ${err.message}` },
       { status: 500 }

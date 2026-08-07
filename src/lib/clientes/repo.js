@@ -109,7 +109,7 @@ export async function getCliente(id) {
 
   const veiculos = await query(
     `select cv.id as vinculo_id, cv.papel, cv.data, cv.origem,
-            v.id as vehicle_id, v.brand, v.model, v.year, v.placa, v.status
+            v.id as vehicle_id, v.brand, v.model, v.year, v.ano_modelo, v.placa, v.status
        from cliente_veiculos cv
        join vehicles v on v.id = cv.vehicle_id
       where cv.cliente_id = $1
