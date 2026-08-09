@@ -24,6 +24,9 @@ export async function PUT(request, { params }) {
   try {
     const { id } = await params;
     const body = await request.json();
+    if (!body.cliente_nome || !body.cliente_nome.trim()) {
+      return NextResponse.json({ error: "Nome do cliente é obrigatório" }, { status: 400 });
+    }
     const o = await updateOportunidade(id, body);
     if (!o) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json(o);

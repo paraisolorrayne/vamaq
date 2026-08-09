@@ -4,8 +4,7 @@
  */
 import { query } from "@/lib/db";
 import { valorDaOportunidade } from "./valor.js";
-
-export const ETAPAS = ["novo", "contato", "proposta", "negociacao", "ganho", "perdido"];
+import { ETAPAS } from "./etapas.js";
 
 const SELECT = `
   select o.id, o.cliente_nome, o.telefone, o.email, o.etapa, o.valor, o.origem,
@@ -70,15 +69,37 @@ export async function createOportunidade(body, responsavelId) {
   return getOportunidade(rows[0].id);
 }
 
+// `etapa` e `motivo_perda` NÃO entram aqui de propósito — não é esquecimento.
+// O formulário de edição não tem campo para nenhuma das duas, então
+// `normalize()` cairia no fallback ("novo" etapa, motivo_perda null) e um
+// UPDATE que as incluísse apagaria a etapa e o motivo da perda de qualquer
+// oportunidade editada, mesmo sem a pessoa mexer nisso (é o que aconteceu:
+// editar só o telefone de uma oportunidade Ganha ou Perdida a jogava de
+// volta para "novo" e zerava o motivo). Quem manda em etapa é o
+// PATCH/setEtapa — e só ele. Se um dia `etapa`/`motivo_perda` precisarem
+// ser editáveis por aqui, o formulário tem que mandar os dois de verdade
+// (não herdar de um default), e mesmo assim a troca de etapa deveria passar
+// por setEtapa, não por um UPDATE solto.
+const UPDATE = `
+  update oportunidades set
+    cliente_nome=$2, telefone=$3, email=$4, vehicle_id=$5,
+    valor=$6, origem=$7, obs=$8
+  where id=$1 returning id
+`;
+
 export async function updateOportunidade(id, body) {
   const v = normalize(body);
-  const { rows } = await query(
-    `update oportunidades set
-       cliente_nome=$2, telefone=$3, email=$4, vehicle_id=$5, etapa=$6,
-       valor=$7, origem=$8, obs=$9, motivo_perda=$10
-     where id=$1 returning id`,
-    [id, v.cliente_nome, v.telefone, v.email, v.vehicle_id, v.etapa, v.valor, v.origem, v.obs, v.motivo_perda]
-  );
+  if (!v.cliente_nome) throw new Error("Nome do cliente é obrigatório");
+  const { rows } = await query(UPDATE, [
+    id,
+    v.cliente_nome,
+    v.telefone,
+    v.email,
+    v.vehicle_id,
+    v.valor,
+    v.origem,
+    v.obs,
+  ]);
   return rows.length ? getOportunidade(id) : null;
 }
 
