@@ -46,6 +46,7 @@ test("em ganho COM veículo: vende, não avança", () => {
   const a = acoesDaEtapa({ etapa: "ganho", vehicle_id: "abc" });
   assert.equal(a.avancarPara, null);
   assert.equal(a.podeVender, true);
+  assert.equal(a.podePerder, false);
 });
 
 test("em ganho SEM veículo ligado: NÃO oferece registrar venda", () => {
@@ -71,5 +72,7 @@ test("oportunidade nula não quebra e não oferece nada", () => {
   const a = acoesDaEtapa(null);
   assert.equal(a.avancarPara, null);
   assert.equal(a.podeVender, false);
+  assert.equal(a.podePerder, false);
+  assert.equal(a.podeReabrir, false);
   assert.equal(a.podeWhatsapp, false);
 });

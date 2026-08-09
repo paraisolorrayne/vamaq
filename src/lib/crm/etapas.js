@@ -41,7 +41,12 @@ export function acoesDaEtapa(oportunidade) {
     // Registrar venda exige veículo ligado: sem ele a ação falha no servidor,
     // e um botão que falha é pior que um botão ausente.
     podeVender: etapa === "ganho" && Boolean(o.vehicle_id),
-    podePerder: etapa !== "perdido",
+    // `ganho` também sai daqui: negócio já ganho não se "perde" pelo botão
+    // principal. O caso raro de venda que cai depois (ex.: financiamento
+    // negado) passa pela tela "Mover", que oferece qualquer etapa — não por
+    // este atalho. Exige etapa conhecida: sem oportunidade (ou sem etapa) não
+    // há o que perder.
+    podePerder: Boolean(etapa) && etapa !== "perdido" && etapa !== "ganho",
     podeReabrir: etapa === "perdido",
     podeWhatsapp: Boolean(String(o.telefone ?? "").trim()),
   };
