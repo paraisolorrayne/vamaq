@@ -51,24 +51,27 @@ export default async function CrmPage() {
         grupos.map((g) => (
           <div key={g.etapa} className={crm.grupo}>
             <div className={crm.grupoHead}>
-              {g.label.toUpperCase()} · {g.cards.length}
+              {g.label} · {g.cards.length}
             </div>
             <div className={crm.grupoCards}>
-              {g.cards.map((o) => (
-                <Link
-                  key={o.id}
-                  href={`/admin/crm/${o.id}`}
-                  className={`${crm.card} ${o.etapa === "ganho" ? crm.cardGanho : ""} ${o.etapa === "perdido" ? crm.cardPerdido : ""}`}
-                >
-                  <div className={crm.cardNome}>{o.cliente_nome}</div>
-                  <div className={crm.cardMeta}>{veiculoLabel(o)}</div>
-                  {valorLabel(o) && <div className={crm.cardValor}>{valorLabel(o)}</div>}
-                  {o.origem && <div className={crm.cardMeta}>{o.origem}</div>}
-                  {o.etapa === "perdido" && o.motivo_perda && (
-                    <div className={crm.cardMeta}>Perda: {o.motivo_perda}</div>
-                  )}
-                </Link>
-              ))}
+              {g.cards.map((o) => {
+                const valor = valorLabel(o);
+                return (
+                  <Link
+                    key={o.id}
+                    href={`/admin/crm/${o.id}`}
+                    className={`${crm.card} ${o.etapa === "ganho" ? crm.cardGanho : ""} ${o.etapa === "perdido" ? crm.cardPerdido : ""}`}
+                  >
+                    <div className={crm.cardNome}>{o.cliente_nome}</div>
+                    <div className={crm.cardMeta}>{veiculoLabel(o)}</div>
+                    {valor && <div className={crm.cardValor}>{valor}</div>}
+                    {o.origem && <div className={crm.cardMeta}>{o.origem}</div>}
+                    {o.etapa === "perdido" && o.motivo_perda && (
+                      <div className={crm.cardMeta}>Perda: {o.motivo_perda}</div>
+                    )}
+                  </Link>
+                );
+              })}
             </div>
           </div>
         ))
