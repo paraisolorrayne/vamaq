@@ -284,3 +284,47 @@
 .gerenciarItem:active {
   background: #fafafa;
 }
+
+/* ---------- Formulário (Task 5): nova oportunidade / editar ----------
+   A instrução da task é reaproveitar formGroup/formLabel/formInput/
+   formSelect/btnPrimary/btnSecondary de admin.module.css (e não criar classe
+   nova lá). Só que nenhuma dessas classes garante os 48px de toque nem a
+   largura total que esta entrega exige em qualquer clicável — em telas
+   largas, .formInput/.formSelect e .btnPrimary/.btnSecondary ficam abaixo
+   disso. As classes abaixo só ACRESCENTAM essas duas propriedades: nenhuma
+   delas mexe em padding, borda ou fonte, então aplicadas junto (dois
+   `className`, no mesmo elemento) não competem com o que admin.module.css
+   já define — só completam o que falta. */
+.campoToque {
+  min-height: 48px;
+}
+
+.avisoCampo {
+  margin-top: 6px;
+  font-size: 0.8rem;
+  color: #a16207;
+}
+
+.erroForm {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  background: #fee2e2;
+  border-radius: 8px;
+  color: #b91c1c;
+  font-size: 0.85rem;
+}
+
+.formActions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.acaoToque {
+  display: flex;
+  width: 100%;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+}
