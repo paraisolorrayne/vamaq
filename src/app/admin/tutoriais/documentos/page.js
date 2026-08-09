@@ -97,9 +97,11 @@ export default function TutorialDocumentosPage() {
       <div className={guia.warning}>
         <span className={guia.boxLabel}>Compra e venda são contratos diferentes</span>
         <p>
-          São confundidos com frequência: compra é a Vamaq comprando do
-          cliente; venda é a Vamaq vendendo. Antes de escolher o modelo, veja
-          o <Link href="/admin/documentos/guia">guia de Compra × Venda</Link>.
+          São confundidos com frequência: <strong>compra</strong> é a Vamaq
+          comprando o carro do cliente; <strong>venda</strong> é a Vamaq
+          vendendo o carro para ele. O passo 1, logo abaixo, mostra os quatro
+          modelos com o &quot;quando usar&quot; de cada um — confira ali antes
+          de escolher.
         </p>
       </div>
 
