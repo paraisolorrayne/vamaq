@@ -94,6 +94,16 @@ export default function TutorialDocumentosPage() {
           </span>
         </li>
       </ul>
+      <div className={guia.warning}>
+        <span className={guia.boxLabel}>Compra e venda são contratos diferentes</span>
+        <p>
+          São confundidos com frequência: <strong>compra</strong> é a Vamaq
+          comprando o carro do cliente; <strong>venda</strong> é a Vamaq
+          vendendo o carro para ele. O passo 1, logo abaixo, mostra os quatro
+          modelos com o &quot;quando usar&quot; de cada um — confira ali antes
+          de escolher.
+        </p>
+      </div>
 
       <h2 className={guia.sectionTitle}>Passo a passo</h2>
 
@@ -154,6 +164,44 @@ export default function TutorialDocumentosPage() {
       <div className={guia.step}>
         <div className={guia.stepNumber}>2</div>
         <div className={guia.stepBody}>
+          <h3 className={guia.stepTitle}>Preencha o cliente automaticamente</h3>
+          <p>
+            No quadro{" "}
+            <span className={guia.uiField}>
+              Preencher dados do cliente automaticamente
+            </span>
+            , escolha um cliente já cadastrado. O sistema preenche nome, CPF,
+            CNH, endereço e telefone na ficha correspondente do contrato — os
+            campos continuam <strong>editáveis</strong>, então corrija o que
+            precisar antes de gerar.
+          </p>
+          <p>
+            Se você também usar o atalho do estoque (próximo passo) para
+            escolher o carro principal do negócio, os dois ficam ligados: ao
+            gerar o contrato, o carro entra na ficha desse cliente com o papel
+            do contrato (comprou, vendeu ou consignou).
+          </p>
+          <div className={guia.tip}>
+            <span className={guia.boxLabel}>Cliente não cadastrado?</span>
+            <p>
+              O botão{" "}
+              <span className={guia.uiButton}>Salvar como cliente</span>{" "}
+              cadastra quem você digitou à mão nos campos do contrato — mas{" "}
+              <strong>sem o endereço</strong>: no contrato ele é uma linha só,
+              e separar em partes na adivinhação criaria um endereço errado na
+              nota fiscal. Veja o{" "}
+              <Link href="/admin/tutoriais/clientes">
+                tutorial de Clientes
+              </Link>{" "}
+              para completá-lo depois.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className={guia.step}>
+        <div className={guia.stepNumber}>3</div>
+        <div className={guia.stepBody}>
           <h3 className={guia.stepTitle}>Use o atalho do estoque</h3>
           <p>
             No quadro{" "}
@@ -175,7 +223,7 @@ export default function TutorialDocumentosPage() {
       </div>
 
       <div className={guia.step}>
-        <div className={guia.stepNumber}>3</div>
+        <div className={guia.stepNumber}>4</div>
         <div className={guia.stepBody}>
           <h3 className={guia.stepTitle}>
             Preencha as seções na ordem da tela
@@ -214,7 +262,7 @@ export default function TutorialDocumentosPage() {
       </div>
 
       <div className={guia.step}>
-        <div className={guia.stepNumber}>4</div>
+        <div className={guia.stepNumber}>5</div>
         <div className={guia.stepBody}>
           <h3 className={guia.stepTitle}>
             Troca com diferença em dinheiro? Feche a conta antes
@@ -260,7 +308,7 @@ export default function TutorialDocumentosPage() {
       </div>
 
       <div className={guia.step}>
-        <div className={guia.stepNumber}>5</div>
+        <div className={guia.stepNumber}>6</div>
         <div className={guia.stepBody}>
           <h3 className={guia.stepTitle}>Gere, confira e baixe o PDF</h3>
           <p>
@@ -312,6 +360,15 @@ export default function TutorialDocumentosPage() {
               Volte ao formulário, corrija só o campo errado e gere de novo —
               quantas vezes precisar. Só vale o PDF que for impresso e
               assinado.
+            </p>
+          </div>
+          <div className={guia.tip}>
+            <span className={guia.boxLabel}>O contrato fica guardado</span>
+            <p>
+              Ao baixar o PDF, uma cópia é salva sozinha em{" "}
+              <Link href="/admin/documentos/gerados">Documentos gerados</Link>{" "}
+              e, quando um carro do estoque foi selecionado, também na ficha
+              desse veículo, em Contratos gerados.
             </p>
           </div>
         </div>

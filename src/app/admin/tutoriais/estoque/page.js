@@ -53,6 +53,11 @@ export default function TutorialEstoquePage() {
           </p>
           <ul>
             <li>
+              <strong>Ano de fabricação</strong> e <strong>Ano do modelo</strong>:
+              preencha os dois para o carro aparecer como{" "}
+              <strong>2021/2022</strong> no site, no estoque e no contrato;
+            </li>
+            <li>
               <strong>Preço</strong> no formato <strong>158.000,00</strong>.
               Deixe em branco para o site mostrar{" "}
               <strong>&quot;Sob Consulta&quot;</strong>;
@@ -67,6 +72,15 @@ export default function TutorialEstoquePage() {
               quando preenchida.
             </li>
           </ul>
+          <div className={t.tip}>
+            <span className={t.boxLabel}>Ano do modelo igual ao de fabricação?</span>
+            <p>
+              Deixe o campo <span className={t.uiField}>Ano do modelo</span> em
+              branco — o sistema mostra um ano só. E o modelo{" "}
+              <strong>nunca pode ser anterior</strong> ao de fabricação: tentar
+              salvar assim é recusado.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -122,6 +136,12 @@ export default function TutorialEstoquePage() {
             <span className={t.uiField}>Placa</span> e anexe os{" "}
             <strong>documentos do veículo</strong> (CRLV, CRV, nota fiscal…) na
             seção <span className={t.uiField}>Documentos do veículo</span>.
+          </p>
+          <p>
+            Preencha também o <span className={t.uiField}>Chassi</span>. Ele é{" "}
+            <strong>obrigatório para emitir a nota fiscal</strong> do veículo —
+            sem ele, a tela de emissão avisa e não deixa seguir. Veja o{" "}
+            <Link href="/admin/tutoriais/fiscal">tutorial de Notas Fiscais</Link>.
           </p>
           <div className={t.warning}>
             <span className={t.boxLabel}>Pendências</span>
