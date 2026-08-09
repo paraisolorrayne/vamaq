@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireRole } from "@/lib/auth/dal";
 import { listOportunidades } from "@/lib/crm/oportunidades";
-import { ETAPAS_INFO, rotuloEtapa } from "@/lib/crm/etapas";
+import { ETAPAS_INFO, rotuloEtapa, etapaTerminal } from "@/lib/crm/etapas";
 import { rotuloVeiculo } from "@/lib/crm/rotuloVeiculo";
 import { formatValorBR } from "@/lib/money";
 import styles from "../admin.module.css";
@@ -24,7 +24,7 @@ export default async function CrmPage() {
   // O layout do /admin já barra por papel; aqui é defesa em profundidade.
   await requireRole(["vendedor", "secretaria"]);
   const oportunidades = await listOportunidades();
-  const emAberto = oportunidades.filter((o) => !["ganho", "perdido"].includes(o.etapa)).length;
+  const emAberto = oportunidades.filter((o) => !etapaTerminal(o.etapa)).length;
 
   const grupos = ETAPAS_INFO.map((et) => ({
     etapa: et.key,

@@ -25,24 +25,26 @@ export default async function RemoverPage({ params }) {
         ← Voltar
       </Link>
 
-      <div className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>Remover a oportunidade</h1>
-        <p className={styles.pageSubtitle}>{o.cliente_nome}</p>
+      <div className={crm.telaAcao}>
+        <div className={styles.pageHeader}>
+          <h1 className={styles.pageTitle}>Remover a oportunidade</h1>
+          <p className={styles.pageSubtitle}>{o.cliente_nome}</p>
+        </div>
+
+        <p className={crm.info}>
+          Esta oportunidade some de vez da lista — não dá para desfazer. Remover não mexe no
+          veículo nem em nada do financeiro.
+        </p>
+        <p className={crm.info}>
+          Se você só quer tirar esta oportunidade do funil sem perder o histórico, marque
+          como perdida em vez de remover.
+        </p>
+        <Link href={`/admin/crm/${id}/perder`} className={crm.btnSecundario}>
+          Marcar como perdido
+        </Link>
+
+        <RemoverForm oportunidadeId={id} />
       </div>
-
-      <p className={crm.info}>
-        Esta oportunidade some de vez da lista — não dá para desfazer. Remover não mexe no
-        veículo nem em nada do financeiro.
-      </p>
-      <p className={crm.info}>
-        Se você só quer tirar esta oportunidade do funil sem perder o histórico, marque
-        como perdida em vez de remover.
-      </p>
-      <Link href={`/admin/crm/${id}/perder`} className={crm.btnSecundario}>
-        Marcar como perdido
-      </Link>
-
-      <RemoverForm oportunidadeId={id} />
     </>
   );
 }

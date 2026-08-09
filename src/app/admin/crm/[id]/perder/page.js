@@ -25,17 +25,19 @@ export default async function PerderPage({ params }) {
         ← Voltar
       </Link>
 
-      <div className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>Marcar como perdido</h1>
-        <p className={styles.pageSubtitle}>{o.cliente_nome}</p>
+      <div className={crm.telaAcao}>
+        <div className={styles.pageHeader}>
+          <h1 className={styles.pageTitle}>Marcar como perdido</h1>
+          <p className={styles.pageSubtitle}>{o.cliente_nome}</p>
+        </div>
+
+        <p className={crm.info}>
+          A oportunidade não é apagada: ela continua na lista, na etapa Perdido, e pode ser
+          reaberta a qualquer momento.
+        </p>
+
+        <PerderForm oportunidadeId={id} />
       </div>
-
-      <p className={crm.info}>
-        A oportunidade não é apagada: ela continua na lista, na etapa Perdido, e pode ser
-        reaberta a qualquer momento.
-      </p>
-
-      <PerderForm oportunidadeId={id} />
     </>
   );
 }

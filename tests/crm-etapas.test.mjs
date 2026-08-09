@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { proximaEtapa, rotuloEtapa, acoesDaEtapa } from "../src/lib/crm/etapas.js";
+import { proximaEtapa, rotuloEtapa, acoesDaEtapa, etapaTerminal, ETAPAS, ETAPAS_INFO } from "../src/lib/crm/etapas.js";
 
 test("proximaEtapa percorre o funil na ordem", () => {
   assert.equal(proximaEtapa("novo"), "contato");
@@ -70,6 +70,22 @@ test("WhatsApp só aparece quando o telefone dá para virar link", () => {
   assert.equal(acoesDaEtapa({ etapa: "novo", telefone: "123" }).podeWhatsapp, false);
   assert.equal(acoesDaEtapa({ etapa: "novo", telefone: "" }).podeWhatsapp, false);
   assert.equal(acoesDaEtapa({ etapa: "novo" }).podeWhatsapp, false);
+});
+
+test("ETAPAS é a lista de chaves de ETAPAS_INFO, na mesma ordem", () => {
+  assert.deepEqual(ETAPAS, ETAPAS_INFO.map((e) => e.key));
+});
+
+test("etapaTerminal: só ganho e perdido são terminais", () => {
+  assert.equal(etapaTerminal("ganho"), true);
+  assert.equal(etapaTerminal("perdido"), true);
+  assert.equal(etapaTerminal("novo"), false);
+  assert.equal(etapaTerminal("contato"), false);
+  assert.equal(etapaTerminal("proposta"), false);
+  assert.equal(etapaTerminal("negociacao"), false);
+  assert.equal(etapaTerminal(""), false);
+  assert.equal(etapaTerminal(null), false);
+  assert.equal(etapaTerminal(undefined), false);
 });
 
 test("oportunidade nula não quebra e não oferece nada", () => {

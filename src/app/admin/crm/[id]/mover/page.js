@@ -25,12 +25,14 @@ export default async function MoverPage({ params }) {
         ← Voltar
       </Link>
 
-      <div className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>Mover para outra etapa</h1>
-        <p className={styles.pageSubtitle}>{o.cliente_nome}</p>
-      </div>
+      <div className={crm.telaAcao}>
+        <div className={styles.pageHeader}>
+          <h1 className={styles.pageTitle}>Mover para outra etapa</h1>
+          <p className={styles.pageSubtitle}>{o.cliente_nome}</p>
+        </div>
 
-      <MoverForm oportunidadeId={id} etapaAtual={o.etapa} />
+        <MoverForm oportunidadeId={id} etapaAtual={o.etapa} />
+      </div>
     </>
   );
 }

@@ -128,7 +128,10 @@ export default function AcoesCard({ oportunidade: o }) {
         <Link href={`/admin/crm/${o.id}/mover`} className={crm.gerenciarItem}>
           Mover
         </Link>
-        <Link href={`/admin/crm/${o.id}/remover`} className={crm.gerenciarItem}>
+        <Link
+          href={`/admin/crm/${o.id}/remover`}
+          className={`${crm.gerenciarItem} ${crm.gerenciarItemPerigo}`}
+        >
           Remover
         </Link>
       </div>

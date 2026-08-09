@@ -94,6 +94,14 @@
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 14px;
   }
+
+  /* Telas de ação (perder/vender/remover/mover): a spec prometeu largura
+     confortável em vez de esticar — num monitor largo, sem isto, um botão
+     como "Marcar como perdido" (width: 100% em .btnPerder) passava de mil
+     pixels. Só entra aqui dentro, então nada muda no celular. */
+  .telaAcao {
+    max-width: 480px;
+  }
 }
 
 /* ---------- Tela do card (Task 4) ----------
@@ -306,6 +314,15 @@
 }
 .gerenciarItem:active {
   background: #fafafa;
+}
+
+/* "Remover" é destrutivo e ficava a 1px de "Mover" na mesma fileira, sem
+   nada que os distinguisse — fácil de tocar o errado. Vermelho é o padrão
+   que o painel já usa para ação perigosa (mesmo tom de .btnPerder /
+   admin.module.css .btnDanger). Só cor: mantém o tamanho de toque e o
+   layout de .gerenciarItem, que continua a base. */
+.gerenciarItemPerigo {
+  color: #b91c1c;
 }
 
 /* ---------- Formulário (Task 5): nova oportunidade / editar ----------

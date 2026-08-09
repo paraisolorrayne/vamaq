@@ -20,6 +20,18 @@ export const ETAPAS_INFO = [
   { key: "perdido", label: "Perdido" },
 ];
 
+// Só as chaves, na mesma ordem — para quem precisa validar/percorrer sem os
+// rótulos (ex.: src/lib/crm/oportunidades.js). Uma única lista de etapas:
+// antes havia esta e uma cópia solta em oportunidades.js, e as duas podiam
+// divergir numa edição futura sem nenhum aviso.
+export const ETAPAS = ETAPAS_INFO.map((e) => e.key);
+
+// `ganho` e `perdido` não voltam ao funil por "avançar" nem contam como "em
+// aberto" nas contagens da lista — ver src/app/admin/crm/page.js.
+export function etapaTerminal(etapa) {
+  return etapa === "ganho" || etapa === "perdido";
+}
+
 // A sequência que "Avançar" percorre. `perdido` fica de fora: é saída lateral.
 const FUNIL = ["novo", "contato", "proposta", "negociacao", "ganho"];
 
