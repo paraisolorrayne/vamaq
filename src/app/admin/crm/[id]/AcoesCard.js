@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { acoesDaEtapa, rotuloEtapa } from "@/lib/crm/etapas";
@@ -36,8 +36,16 @@ export default function AcoesCard({ oportunidade: o }) {
   const router = useRouter();
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState("");
-
   const acoes = acoesDaEtapa(o);
+  // `router.refresh()` não bloqueia: dispara a nova busca do Server
+  // Component e devolve na hora, antes de a tela mudar. Sem `useTransition`,
+  // o `finally` (abaixo) já reabilitava o botão nesse mesmo tique — em uma
+  // rede lenta a tela ficava idêntica por até ~1s, o vendedor achava que
+  // não tocou certo e tocava de novo, pulando uma etapa (ex.: "Avançar para
+  // Proposta" duas vezes leva direto a Negociação). `isPending` cobre
+  // exatamente essa janela: só vira `false` quando o refresh — e a
+  // re-renderização do pai com o novo estado — termina de verdade.
+  const [isPending, startTransition] = useTransition();
 
   async function mudarEtapa(etapa) {
     setErro("");
@@ -49,7 +57,9 @@ export default function AcoesCard({ oportunidade: o }) {
         body: JSON.stringify({ etapa }),
       });
       if (!res.ok) throw new Error("Falha ao salvar");
-      router.refresh();
+      startTransition(() => {
+        router.refresh();
+      });
     } catch {
       setErro("Não foi possível salvar. Verifique a conexão e tente de novo.");
     } finally {
@@ -58,10 +68,14 @@ export default function AcoesCard({ oportunidade: o }) {
       // AcoesCard (mesmo componente, mesma posição na árvore) — o estado
       // `carregando` sobrevive ao refresh. Sem isto, o botão "Avançar"
       // funciona uma vez e trava desabilitado para sempre, sem erro nenhum
-      // na tela.
+      // na tela. Mas `carregando` sozinho não basta mais: quem mantém o
+      // botão desabilitado até a tela realmente mudar é `isPending`
+      // (`disabled={carregando || isPending}` abaixo).
       setCarregando(false);
     }
   }
+
+  const desabilitado = carregando || isPending;
 
   return (
     <div className={crm.acoes}>
@@ -71,7 +85,7 @@ export default function AcoesCard({ oportunidade: o }) {
         <button
           type="button"
           className={crm.btnPrimario}
-          disabled={carregando}
+          disabled={desabilitado}
           onClick={() => mudarEtapa(acoes.avancarPara)}
         >
           Avançar para {rotuloEtapa(acoes.avancarPara)}
@@ -100,7 +114,7 @@ export default function AcoesCard({ oportunidade: o }) {
         <button
           type="button"
           className={crm.btnPrimario}
-          disabled={carregando}
+          disabled={desabilitado}
           onClick={() => mudarEtapa("novo")}
         >
           Reabrir oportunidade
