@@ -4,33 +4,8 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { acoesDaEtapa, rotuloEtapa } from "@/lib/crm/etapas";
-import { telefoneWhatsapp } from "@/lib/crm/telefone";
-import { rotuloVeiculo } from "@/lib/crm/rotuloVeiculo";
+import { linkWhatsapp } from "@/lib/crm/whatsappVendedor";
 import crm from "../crm.module.css";
-
-// `src/lib/whatsapp.js` monta o link para o WhatsApp *da loja* (número fixo
-// em WHATSAPP_NUMBER) — é o cliente chamando a Vamaq, usado no site público.
-// Aqui é o inverso: o vendedor chama o telefone do cliente que já está na
-// oportunidade. Não dá para reaproveitar getWhatsAppUrl/getWhatsAppGenericUrl
-// porque os dois cravam o número da loja como destino; o formato do link
-// (wa.me + texto codificado) é reproduzido à mão abaixo — mas a normalização
-// do telefone do cliente (DDI, para o wa.me não confundir DDD com país) é a
-// mesma usada por `acoesDaEtapa` para decidir se `podeWhatsapp` é `true`,
-// então quando este link é renderizado o número já é garantidamente válido.
-function mensagemWhatsapp(o) {
-  const primeiroNome = (o.cliente_nome || "").trim().split(/\s+/)[0] || "";
-  const saudacao = primeiroNome ? `Olá, ${primeiroNome}!` : "Olá!";
-  const veiculo = rotuloVeiculo(o) || null;
-  return veiculo
-    ? `${saudacao} Aqui é da Vamaq Motors, sobre o ${veiculo} que você está negociando com a gente — podemos continuar?`
-    : `${saudacao} Aqui é da Vamaq Motors, tudo bem? Vamos continuar o seu atendimento.`;
-}
-
-function linkWhatsapp(o) {
-  const numero = telefoneWhatsapp(o.telefone);
-  const texto = encodeURIComponent(mensagemWhatsapp(o));
-  return `https://wa.me/${numero}?text=${texto}`;
-}
 
 export default function AcoesCard({ oportunidade: o }) {
   const router = useRouter();

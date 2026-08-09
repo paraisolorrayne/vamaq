@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { requireRole } from "@/lib/auth/dal";
 import { getOportunidade } from "@/lib/crm/oportunidades";
 import { acoesDaEtapa, rotuloEtapa } from "@/lib/crm/etapas";
-import { rotuloVeiculo } from "@/lib/crm/rotuloVeiculo";
+import { veiculoComPlaca } from "@/lib/crm/veiculoComPlaca";
 import styles from "../../../admin.module.css";
 import crm from "../../crm.module.css";
 import VenderForm from "./VenderForm";
@@ -12,16 +12,6 @@ export const metadata = {
   title: "Registrar a venda — Vamaq Motors",
   robots: { index: false, follow: false },
 };
-
-// Veículo por extenso para esta tela: marca, modelo, ano (via rotuloVeiculo,
-// já usado na lista e no card) e a placa, que só importa aqui — é por isso
-// que não entrou em rotuloVeiculo, que é usado também na mensagem de
-// WhatsApp e não deveria carregar a placa lá.
-function veiculoComPlaca(o) {
-  const base = rotuloVeiculo(o);
-  if (!base) return "";
-  return o.vehicle_placa ? `${base} — placa ${o.vehicle_placa}` : base;
-}
 
 export default async function VenderPage({ params }) {
   // O layout do /admin já barra por papel; aqui é defesa em profundidade,

@@ -20,10 +20,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { anoVeiculo } from "@/lib/anoVeiculo";
+import { opcoesOrigem } from "@/lib/crm/origem";
 import styles from "../admin.module.css";
 import crm from "./crm.module.css";
-
-const ORIGENS = ["WhatsApp", "Instagram", "Indicação", "Site", "Loja física", "Outro"];
 
 function veiculoOptionLabel(v) {
   const ano = anoVeiculo(v);
@@ -43,13 +42,10 @@ export default function FormOportunidade({ valoresIniciais, oportunidadeId }) {
   const [origem, setOrigem] = useState(iniciais.origem || "");
   const [obs, setObs] = useState(iniciais.obs || "");
 
-  // `origem` é texto livre no banco (sem CHECK). Se a oportunidade já tem um
-  // valor gravado que não está em ORIGENS (dado antigo, ou gravado por outra
-  // via), o <select> normal cairia na primeira opção da lista e salvar
-  // trocaria o valor em silêncio — a pessoa nem veria a mudança. Por isso o
-  // valor atual entra na lista de opções quando ela não o contém.
-  const opcoesOrigem =
-    origem && !ORIGENS.includes(origem) ? [...ORIGENS, origem] : ORIGENS;
+  // `origem` é texto livre no banco (sem CHECK) — ver o comentário em
+  // src/lib/crm/origem.js. O valor atual entra na lista de opções quando
+  // ela não o contém, para o <select> nunca trocar o valor em silêncio.
+  const opcoes = opcoesOrigem(origem);
 
   const [veiculos, setVeiculos] = useState([]);
   const [veiculosErro, setVeiculosErro] = useState("");
@@ -207,7 +203,7 @@ export default function FormOportunidade({ valoresIniciais, oportunidadeId }) {
             className={`${styles.formSelect} ${crm.campoToque}`}
           >
             <option value="">Selecione</option>
-            {opcoesOrigem.map((o) => (
+            {opcoes.map((o) => (
               <option key={o} value={o}>
                 {o}
               </option>
