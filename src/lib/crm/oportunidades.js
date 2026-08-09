@@ -20,7 +20,13 @@ const SELECT = `
 `;
 
 function row(r) {
-  return { ...r, valor: r.valor != null ? Number(r.valor) : null };
+  // A coluna `valor` é `numeric` no Postgres, que aceita NaN (foi assim que
+  // o defeito antigo gravou dado corrompido, antes da escrita ser corrigida
+  // nesta branch). Uma linha com NaN gravado viraria "R$ NaN" na tela sem
+  // explicação — por isso NaN também vira null na leitura, igual a um valor
+  // ausente.
+  const valor = r.valor != null ? Number(r.valor) : null;
+  return { ...r, valor: Number.isNaN(valor) ? null : valor };
 }
 
 function normalize(b) {
