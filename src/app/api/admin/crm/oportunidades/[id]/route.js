@@ -10,7 +10,7 @@ import {
 import { setVehicleStatus } from "@/lib/vehicleStore";
 
 export async function GET(_request, { params }) {
-  const auth = await requireApiRole(["vendedor"]);
+  const auth = await requireApiRole(["vendedor", "secretaria"]);
   if (auth.error) return auth.error;
   const { id } = await params;
   const o = await getOportunidade(id);
@@ -19,7 +19,7 @@ export async function GET(_request, { params }) {
 }
 
 export async function PUT(request, { params }) {
-  const auth = await requireApiRole(["vendedor"]);
+  const auth = await requireApiRole(["vendedor", "secretaria"]);
   if (auth.error) return auth.error;
   try {
     const { id } = await params;
@@ -34,7 +34,7 @@ export async function PUT(request, { params }) {
 
 // PATCH: mudar etapa, ou registrar a venda (marca o veículo como vendido).
 export async function PATCH(request, { params }) {
-  const auth = await requireApiRole(["vendedor"]);
+  const auth = await requireApiRole(["vendedor", "secretaria"]);
   if (auth.error) return auth.error;
   const { id } = await params;
   const body = await request.json();
@@ -59,7 +59,7 @@ export async function PATCH(request, { params }) {
 }
 
 export async function DELETE(_request, { params }) {
-  const auth = await requireApiRole(["vendedor"]);
+  const auth = await requireApiRole(["vendedor", "secretaria"]);
   if (auth.error) return auth.error;
   const { id } = await params;
   const ok = await deleteOportunidade(id);
