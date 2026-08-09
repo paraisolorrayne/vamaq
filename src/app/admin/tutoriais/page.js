@@ -16,10 +16,34 @@ const TUTORIAIS = [
     desc: "Cadastrar, editar e publicar veículos, com fotos e consulta FIPE.",
   },
   {
+    href: "/admin/tutoriais/crm",
+    icon: "🤝",
+    title: "CRM",
+    desc: "Acompanhar oportunidades de venda do primeiro contato até o fechamento.",
+  },
+  {
+    href: "/admin/tutoriais/clientes",
+    icon: "🧑",
+    title: "Clientes",
+    desc: "Cadastrar clientes e reaproveitar os dados em contratos e notas fiscais.",
+  },
+  {
     href: "/admin/tutoriais/documentos",
     icon: "📄",
     title: "Documentos",
     desc: "Gerar contratos de compra, venda, consignação e vistoria sem erro.",
+  },
+  {
+    href: "/admin/tutoriais/fiscal",
+    icon: "🧾",
+    title: "Notas Fiscais",
+    desc: "Emitir e acompanhar a NF-e de cada veículo vendido.",
+  },
+  {
+    href: "/admin/tutoriais/financeiro",
+    icon: "📊",
+    title: "Financeiro",
+    desc: "Lançamentos, DRE, margem por veículo, cobranças e contas a pagar.",
   },
   {
     href: "/admin/tutoriais/criativos",
@@ -34,10 +58,10 @@ const TUTORIAIS = [
     desc: "Consultar o preço de referência de carros, motos e caminhões.",
   },
   {
-    href: "/admin/tutoriais/financeiro",
-    icon: "📊",
-    title: "Financeiro",
-    desc: "Lançamentos, DRE, margem por veículo, cobranças e contas a pagar.",
+    href: "/admin/tutoriais/funcionarios",
+    icon: "🧑‍🔧",
+    title: "Funcionários",
+    desc: "Ficha, admissão, saída e acesso ao sistema de cada funcionário.",
   },
 ];
 

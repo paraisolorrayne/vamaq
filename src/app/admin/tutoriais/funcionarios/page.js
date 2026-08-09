@@ -133,7 +133,8 @@ export default function TutorialFuncionariosPage() {
             <p>
               Readmitir a ficha não reativa um login que havia sido
               desativado no desligamento. Se a pessoa volta a precisar de
-              acesso, reative e redefina a senha na tela de Usuários.
+              acesso, reative e redefina a senha na tela de{" "}
+              <Link href="/admin/usuarios">Usuários</Link>.
             </p>
           </div>
         </div>
