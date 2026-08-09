@@ -1,91 +1,110 @@
-.board {
-  display: flex;
-  gap: 14px;
-  overflow-x: auto;
-  padding-bottom: 12px;
-  align-items: flex-start;
-}
-.column {
-  flex: 0 0 268px;
-  background: var(--bg-secondary, #f7f7f8);
-  border: 1px solid var(--border-light, #e5e5e5);
-  border-radius: 12px;
-  padding: 12px;
-}
-.colHead {
+/* CRM — lista mobile, agrupada por etapa. Mobile-first: escrito para a tela
+   estreita, alargado só no fim com @media (min-width: …). Sem quadro
+   horizontal — o vendedor rola a lista vertical, com o dedo, no pátio. */
+
+.novoBtn {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-  padding: 0 2px;
+  justify-content: center;
+  width: 100%;
+  min-height: 52px;
+  margin-bottom: 24px;
+  padding: 14px 20px;
+  background: #ff6a00;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+  font-family: var(--font-heading, "Rajdhani", "Inter", sans-serif);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
 }
-.colTitle {
-  font-size: 0.82rem;
+.novoBtn:hover {
+  background: #e55e00;
+}
+
+.grupo {
+  margin-bottom: 28px;
+}
+
+.grupoHead {
+  font-size: 0.8rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #555;
+  letter-spacing: 0.06em;
+  color: #777;
+  padding: 0 2px;
+  margin-bottom: 10px;
 }
-.colCount {
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: #888;
-  background: #fff;
-  border: 1px solid var(--border-light, #e5e5e5);
-  border-radius: 999px;
-  padding: 1px 8px;
+
+.grupoCards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
-.cards { display: flex; flex-direction: column; gap: 10px; min-height: 20px; }
+
 .card {
+  display: block;
+  min-height: 76px;
   background: #fff;
   border: 1px solid var(--border-light, #e5e5e5);
-  border-left: 3px solid #ff6a00;
+  border-left: 4px solid #ff6a00;
   border-radius: 10px;
-  padding: 12px;
+  padding: 16px 18px;
+  text-decoration: none;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
 }
-.card.perdido { border-left-color: #b91c1c; opacity: 0.75; }
-.card.ganho { border-left-color: #15803d; }
-.cardName { font-size: 0.92rem; font-weight: 700; color: #111; }
-.cardMeta { font-size: 0.78rem; color: #666; margin-top: 3px; }
-.cardValor { font-size: 0.85rem; font-weight: 700; color: #0a0a14; margin-top: 6px; font-variant-numeric: tabular-nums; }
-.cardFoot { display: flex; gap: 6px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
-.moveSelect {
-  flex: 1;
-  min-width: 0;
-  padding: 4px 6px;
-  font-size: 0.76rem;
-  border: 1px solid var(--border-medium, #d0d0d0);
-  border-radius: 6px;
-  background: #fff;
+.card:active {
+  background: #fafafa;
 }
-.iconBtn {
-  border: 1px solid var(--border-light, #e5e5e5);
-  background: #fff;
-  border-radius: 6px;
-  padding: 3px 8px;
-  font-size: 0.75rem;
-  cursor: pointer;
-  color: #555;
+.cardGanho {
+  border-left-color: #15803d;
 }
-.iconBtn:hover { border-color: #ff6a00; color: #ff6a00; }
-.sellBtn {
-  width: 100%;
-  margin-top: 8px;
-  padding: 5px;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: #fff;
-  background: #15803d;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
+.cardPerdido {
+  border-left-color: #b91c1c;
+  opacity: 0.8;
 }
-.sellBtn:hover { background: #126b33; }
+
+.cardNome {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #111;
+}
+.cardMeta {
+  font-size: 0.82rem;
+  color: #666;
+  margin-top: 4px;
+}
+.cardValor {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #0a0a14;
+  margin-top: 6px;
+  font-variant-numeric: tabular-nums;
+}
 
 @media (prefers-color-scheme: dark) {
-  .column { background: #1a1a1a; border-color: #2a2a2a; }
-  .card { background: #111; border-color: #2a2a2a; }
-  .cardName { color: #f0f0f0; }
-  .colCount { background: #111; border-color: #2a2a2a; }
+  .card {
+    background: #111;
+    border-color: #2a2a2a;
+  }
+  .cardNome {
+    color: #f0f0f0;
+  }
+  .grupoHead {
+    color: #999;
+  }
+}
+
+/* A partir daqui, tela larga: cards em grade e página com respiro nas
+   laterais. Nada abaixo desta linha muda o comportamento no celular. */
+@media (min-width: 900px) {
+  .grupoCards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+  }
 }
