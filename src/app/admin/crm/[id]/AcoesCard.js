@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { acoesDaEtapa, rotuloEtapa } from "@/lib/crm/etapas";
 import { telefoneWhatsapp } from "@/lib/crm/telefone";
-import { anoVeiculo } from "@/lib/anoVeiculo";
+import { rotuloVeiculo } from "@/lib/crm/rotuloVeiculo";
 import crm from "../crm.module.css";
 
 // `src/lib/whatsapp.js` monta o link para o WhatsApp *da loja* (número fixo
@@ -20,11 +20,7 @@ import crm from "../crm.module.css";
 function mensagemWhatsapp(o) {
   const primeiroNome = (o.cliente_nome || "").trim().split(/\s+/)[0] || "";
   const saudacao = primeiroNome ? `Olá, ${primeiroNome}!` : "Olá!";
-  const veiculo = o.vehicle_brand
-    ? [o.vehicle_brand, o.vehicle_model, anoVeiculo({ year: o.vehicle_year, ano_modelo: o.vehicle_ano_modelo })]
-        .filter(Boolean)
-        .join(" ")
-    : null;
+  const veiculo = rotuloVeiculo(o) || null;
   return veiculo
     ? `${saudacao} Aqui é da Vamaq Motors, sobre o ${veiculo} que você está negociando com a gente — podemos continuar?`
     : `${saudacao} Aqui é da Vamaq Motors, tudo bem? Vamos continuar o seu atendimento.`;
@@ -56,6 +52,13 @@ export default function AcoesCard({ oportunidade: o }) {
       router.refresh();
     } catch {
       setErro("Não foi possível salvar. Verifique a conexão e tente de novo.");
+    } finally {
+      // `finally`, não só o `catch`: no sucesso, `router.refresh()`
+      // re-renderiza o Server Component pai mas não desmonta este
+      // AcoesCard (mesmo componente, mesma posição na árvore) — o estado
+      // `carregando` sobrevive ao refresh. Sem isto, o botão "Avançar"
+      // funciona uma vez e trava desabilitado para sempre, sem erro nenhum
+      // na tela.
       setCarregando(false);
     }
   }

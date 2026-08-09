@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requireRole } from "@/lib/auth/dal";
 import { listOportunidades } from "@/lib/crm/oportunidades";
 import { ETAPAS_INFO, rotuloEtapa } from "@/lib/crm/etapas";
-import { anoVeiculo } from "@/lib/anoVeiculo";
+import { rotuloVeiculo } from "@/lib/crm/rotuloVeiculo";
 import { formatValorBR } from "@/lib/money";
 import styles from "../admin.module.css";
 import crm from "./crm.module.css";
@@ -13,9 +13,7 @@ export const metadata = {
 };
 
 function veiculoLabel(o) {
-  if (!o.vehicle_brand) return "sem veículo";
-  const ano = anoVeiculo({ year: o.vehicle_year, ano_modelo: o.vehicle_ano_modelo });
-  return [o.vehicle_brand, o.vehicle_model, ano].filter(Boolean).join(" ");
+  return rotuloVeiculo(o) || "sem veículo";
 }
 
 function valorLabel(o) {
