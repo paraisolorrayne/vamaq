@@ -23,15 +23,7 @@ import { anoVeiculo } from "@/lib/anoVeiculo";
 import styles from "../admin.module.css";
 import crm from "./crm.module.css";
 
-const ORIGENS = [
-  "WhatsApp",
-  "Site",
-  "Indicação",
-  "Loja física",
-  "Telefone",
-  "Instagram/Facebook",
-  "Outro",
-];
+const ORIGENS = ["WhatsApp", "Instagram", "Indicação", "Site", "Loja física", "Outro"];
 
 function veiculoOptionLabel(v) {
   const ano = anoVeiculo(v);
@@ -50,6 +42,14 @@ export default function FormOportunidade({ valoresIniciais, oportunidadeId }) {
   const [valor, setValor] = useState(iniciais.valor || "");
   const [origem, setOrigem] = useState(iniciais.origem || "");
   const [obs, setObs] = useState(iniciais.obs || "");
+
+  // `origem` é texto livre no banco (sem CHECK). Se a oportunidade já tem um
+  // valor gravado que não está em ORIGENS (dado antigo, ou gravado por outra
+  // via), o <select> normal cairia na primeira opção da lista e salvar
+  // trocaria o valor em silêncio — a pessoa nem veria a mudança. Por isso o
+  // valor atual entra na lista de opções quando ela não o contém.
+  const opcoesOrigem =
+    origem && !ORIGENS.includes(origem) ? [...ORIGENS, origem] : ORIGENS;
 
   const [veiculos, setVeiculos] = useState([]);
   const [veiculosErro, setVeiculosErro] = useState("");
@@ -119,6 +119,12 @@ export default function FormOportunidade({ valoresIniciais, oportunidadeId }) {
       router.push(`/admin/crm/${data.id}`);
     } catch (err) {
       setErro(err.message);
+    } finally {
+      // `finally`, não só o `catch`: hoje o sucesso faz `router.push` para
+      // outra rota e este componente desmonta de verdade, então não haveria
+      // diferença prática. Mas se um dia o push virar `router.refresh()`
+      // (como no AcoesCard, que fica na mesma rota), o componente sobrevive
+      // e o botão travaria desabilitado para sempre sem isto.
       setSalvando(false);
     }
   }
@@ -201,7 +207,7 @@ export default function FormOportunidade({ valoresIniciais, oportunidadeId }) {
             className={`${styles.formSelect} ${crm.campoToque}`}
           >
             <option value="">Selecione</option>
-            {ORIGENS.map((o) => (
+            {opcoesOrigem.map((o) => (
               <option key={o} value={o}>
                 {o}
               </option>
