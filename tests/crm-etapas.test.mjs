@@ -62,8 +62,12 @@ test("em perdido: só reabrir", () => {
   assert.equal(a.podeReabrir, true);
 });
 
-test("WhatsApp só aparece quando há telefone", () => {
-  assert.equal(acoesDaEtapa({ etapa: "novo", telefone: "34999" }).podeWhatsapp, true);
+test("WhatsApp só aparece quando o telefone dá para virar link", () => {
+  assert.equal(acoesDaEtapa({ etapa: "novo", telefone: "34999887766" }).podeWhatsapp, true);
+  assert.equal(acoesDaEtapa({ etapa: "novo", telefone: "(34) 99988-7766" }).podeWhatsapp, true);
+  // Curto demais (ex.: DDD sozinho, sem o resto do número) não dá para
+  // adivinhar o DDI — ver src/lib/crm/telefone.js.
+  assert.equal(acoesDaEtapa({ etapa: "novo", telefone: "123" }).podeWhatsapp, false);
   assert.equal(acoesDaEtapa({ etapa: "novo", telefone: "" }).podeWhatsapp, false);
   assert.equal(acoesDaEtapa({ etapa: "novo" }).podeWhatsapp, false);
 });

@@ -2,12 +2,14 @@
  * Regras do funil do CRM: ordem das etapas, rótulos e quais ações a tela do
  * card oferece.
  *
- * Puro de propósito (sem I/O e sem imports): é usado nas telas e no teste, que
- * roda em `node --test`, onde o alias "@/" não resolve.
+ * Puro de propósito (sem I/O): é usado nas telas e no teste, que roda em
+ * `node --test`, onde o alias "@/" não resolve — por isso o único import
+ * daqui é relativo, com extensão, para outro módulo igualmente puro.
  *
  * `ganho` e `perdido` são terminais: saem do funil por caminhos próprios
  * (registrar venda / reabrir), não por "avançar".
  */
+import { telefoneWhatsapp } from "./telefone.js";
 
 export const ETAPAS_INFO = [
   { key: "novo", label: "Novo" },
@@ -48,6 +50,9 @@ export function acoesDaEtapa(oportunidade) {
     // há o que perder.
     podePerder: Boolean(etapa) && etapa !== "perdido" && etapa !== "ganho",
     podeReabrir: etapa === "perdido",
-    podeWhatsapp: Boolean(String(o.telefone ?? "").trim()),
+    // Presente não basta: "34999" (DDD sem DDI) faz o wa.me abrir a
+    // conversa errada. Só oferece o botão quando dá para montar um link
+    // que funcione — ver src/lib/crm/telefone.js.
+    podeWhatsapp: Boolean(telefoneWhatsapp(o.telefone)),
   };
 }
