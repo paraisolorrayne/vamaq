@@ -17,6 +17,11 @@ test("vazio, null e undefined viram null — valor é campo opcional, não zero"
   assert.equal(valorDaOportunidade(undefined), null);
 });
 
+test("zero é um valor válido (vale zero reais) — não vira null", () => {
+  assert.equal(valorDaOportunidade(0), 0);
+  assert.equal(valorDaOportunidade("0"), 0);
+});
+
 test("entrada que não dá número vira null, nunca NaN", () => {
   const v = valorDaOportunidade("abc");
   assert.equal(v, null);
