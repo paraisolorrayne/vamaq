@@ -11,7 +11,7 @@ const SELECT = `
   select o.id, o.cliente_nome, o.telefone, o.email, o.etapa, o.valor, o.origem,
          o.obs, o.motivo_perda, o.vehicle_id, o.responsavel_id,
          v.brand as vehicle_brand, v.model as vehicle_model, v.year as vehicle_year,
-         v.ano_modelo as vehicle_ano_modelo,
+         v.ano_modelo as vehicle_ano_modelo, v.placa as vehicle_placa,
          u.name as responsavel_nome,
          o.created_at, o.updated_at
     from oportunidades o

@@ -239,6 +239,11 @@
   font-weight: 700;
   text-align: center;
   text-decoration: none;
+  cursor: pointer;
+}
+.btnSecundario:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 
 .btnPerder {
@@ -256,6 +261,11 @@
   font-weight: 700;
   text-align: center;
   text-decoration: none;
+  cursor: pointer;
+}
+.btnPerder:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 
 .gerenciarRow {
@@ -327,4 +337,53 @@
   min-height: 48px;
   align-items: center;
   justify-content: center;
+}
+
+/* ---------- Telas de decisão (Task 6): perder / vender / remover / mover ----------
+   Substituem os popups nativos do navegador (motivo digitado, duas
+   confirmações e um aviso pós-ação). Texto de apoio (não é aviso de erro de
+   campo — por isso não reaproveita .avisoCampo, que é amarelo e pequeno) e a
+   lista de avisos da venda, que precisa aparecer ANTES do botão de
+   confirmar: é o ponto inteiro da tela — hoje esse aviso só aparece depois
+   da venda já registrada, quando não dá mais para agir. */
+.info {
+  margin-bottom: 20px;
+  padding: 14px 16px;
+  background: #f7f7f8;
+  border-radius: 10px;
+  color: #333;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.avisos {
+  margin: 0 0 24px;
+  padding: 16px 18px 16px 34px;
+  background: #fff7ed;
+  border: 1px solid #fde3c7;
+  border-radius: 10px;
+  color: #333;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.avisoItem + .avisoItem {
+  margin-top: 8px;
+}
+
+/* ---------- Mover: etapas como botões de largura total ---------- */
+.etapaAtual {
+  background: #fff1e6;
+  color: #ff6a00;
+  border-color: #ffd7b3;
+  cursor: default;
+}
+.etapaAtual:disabled {
+  opacity: 1;
+}
+.etapaMarca {
+  margin-left: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
