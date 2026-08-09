@@ -128,6 +128,12 @@
   font-weight: 700;
   color: #111;
   font-family: var(--font-heading, "Rajdhani", "Inter", sans-serif);
+  /* Mesmo risco de .dadoValue: também é item de flex (filho de .detailHead,
+     ao lado de .etapaBadge). cliente_nome normalmente tem espaço para
+     quebrar, mas nada garante isso (nome digitado colado, por exemplo) —
+     mais barato blindar aqui do que confiar no dado. */
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .etapaBadge {
@@ -182,6 +188,13 @@
   color: #111;
   font-weight: 600;
   text-align: right;
+  /* Item de flex (filho de .dadoRow) tem min-width: auto por padrão — ele se
+     recusa a encolher abaixo do min-content, e um e-mail sem espaços tem
+     min-content igual ao texto inteiro. Como .main já tem min-width: 0 e o
+     <html> não rola na horizontal, o texto ficava cortado e inalcançável,
+     sem jeito de ver o resto (mesmo defeito da tela de Usuários). */
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 /* ---------- Ações do card ---------- */
