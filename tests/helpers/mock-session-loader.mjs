@@ -1,7 +1,8 @@
 /**
- * Hook de carregamento de módulos (node:module.register) usado só pelo teste
- * de autorização (clientes-autorizacao.test.mjs) para importar as rotas de
- * verdade — src/app/api/admin/clientes/**\/route.js — em `node --test`.
+ * Hook de carregamento de módulos (node:module.register) usado pelos testes
+ * de autorização (clientes-autorizacao.test.mjs e crm-autorizacao.test.mjs)
+ * para importar as rotas de verdade — src/app/api/admin/{clientes,crm}/**\/route.js
+ * — em `node --test`.
  *
  * Duas resoluções que o Node puro não faz sozinho, sem tocar em código de
  * produção nem no package.json:
@@ -10,11 +11,13 @@
  *      existe para o resolvedor do Node. Reescrevemos "@/x" para o arquivo
  *      relativo em src/x.js.
  *
- *   2. "next/server" e "next/headers" são importados sem extensão nas rotas
- *      — o pacote `next` não declara "exports" no package.json, então CJS
- *      via require() acha a extensão sozinho, mas ESM via import não. Aqui
- *      completamos para "next/server.js" / "next/headers.js", que existem
- *      de verdade no pacote.
+ *   2. "next/server", "next/headers" e "next/cache" são importados sem
+ *      extensão nas rotas — o pacote `next` não declara "exports" no
+ *      package.json, então CJS via require() acha a extensão sozinho, mas
+ *      ESM via import não. Aqui completamos para "next/server.js" /
+ *      "next/headers.js" / "next/cache.js", que existem de verdade no
+ *      pacote ("next/cache" só entrou quando o CRM passou a usar
+ *      revalidatePath no PATCH de registrar-venda).
  *
  * A peça que importa: "@/lib/auth/session" — de onde requireApiRole tira o
  * usuário logado — é redirecionada para um módulo falso definido abaixo em
@@ -39,7 +42,7 @@ export async function resolve(specifier, context, nextResolve) {
     const alvo = new URL(`${specifier.slice(2)}.js`, SRC_URL);
     return nextResolve(alvo.href, context);
   }
-  if (specifier === "next/server" || specifier === "next/headers") {
+  if (specifier === "next/server" || specifier === "next/headers" || specifier === "next/cache") {
     return nextResolve(`${specifier}.js`, context);
   }
   return nextResolve(specifier, context);

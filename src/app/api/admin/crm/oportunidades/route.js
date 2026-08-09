@@ -5,13 +5,13 @@ import { listOportunidades, createOportunidade } from "@/lib/crm/oportunidades";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const auth = await requireApiRole(["vendedor"]);
+  const auth = await requireApiRole(["vendedor", "secretaria"]);
   if (auth.error) return auth.error;
   return NextResponse.json({ oportunidades: await listOportunidades() });
 }
 
 export async function POST(request) {
-  const auth = await requireApiRole(["vendedor"]);
+  const auth = await requireApiRole(["vendedor", "secretaria"]);
   if (auth.error) return auth.error;
   try {
     const body = await request.json();

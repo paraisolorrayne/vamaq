@@ -1,91 +1,419 @@
-.board {
-  display: flex;
-  gap: 14px;
-  overflow-x: auto;
-  padding-bottom: 12px;
-  align-items: flex-start;
-}
-.column {
-  flex: 0 0 268px;
-  background: var(--bg-secondary, #f7f7f8);
-  border: 1px solid var(--border-light, #e5e5e5);
-  border-radius: 12px;
-  padding: 12px;
-}
-.colHead {
+/* CRM — lista mobile, agrupada por etapa. Mobile-first: escrito para a tela
+   estreita, alargado só no fim com @media (min-width: …). Sem quadro
+   horizontal — o vendedor rola a lista vertical, com o dedo, no pátio. */
+
+.novoBtn {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-  padding: 0 2px;
+  justify-content: center;
+  width: 100%;
+  min-height: 52px;
+  margin-bottom: 24px;
+  padding: 14px 20px;
+  background: #ff6a00;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+  font-family: var(--font-heading, "Rajdhani", "Inter", sans-serif);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
 }
-.colTitle {
-  font-size: 0.82rem;
+.novoBtn:hover {
+  background: #e55e00;
+}
+
+.grupo {
+  margin-bottom: 28px;
+}
+
+.grupoHead {
+  font-size: 0.8rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #555;
+  letter-spacing: 0.06em;
+  color: #777;
+  padding: 0 2px;
+  margin-bottom: 10px;
 }
-.colCount {
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: #888;
-  background: #fff;
-  border: 1px solid var(--border-light, #e5e5e5);
-  border-radius: 999px;
-  padding: 1px 8px;
+
+.grupoCards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
-.cards { display: flex; flex-direction: column; gap: 10px; min-height: 20px; }
+
 .card {
+  display: block;
+  min-height: 76px;
   background: #fff;
   border: 1px solid var(--border-light, #e5e5e5);
-  border-left: 3px solid #ff6a00;
+  border-left: 4px solid #ff6a00;
   border-radius: 10px;
-  padding: 12px;
+  padding: 16px 18px;
+  text-decoration: none;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
 }
-.card.perdido { border-left-color: #b91c1c; opacity: 0.75; }
-.card.ganho { border-left-color: #15803d; }
-.cardName { font-size: 0.92rem; font-weight: 700; color: #111; }
-.cardMeta { font-size: 0.78rem; color: #666; margin-top: 3px; }
-.cardValor { font-size: 0.85rem; font-weight: 700; color: #0a0a14; margin-top: 6px; font-variant-numeric: tabular-nums; }
-.cardFoot { display: flex; gap: 6px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
-.moveSelect {
-  flex: 1;
+.card:active {
+  background: #fafafa;
+}
+.cardGanho {
+  border-left-color: #15803d;
+}
+.cardPerdido {
+  border-left-color: #b91c1c;
+  opacity: 0.8;
+}
+
+.cardNome {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #111;
+}
+.cardMeta {
+  font-size: 0.82rem;
+  color: #666;
+  margin-top: 4px;
+}
+.cardValor {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #0a0a14;
+  margin-top: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* A partir daqui, tela larga: cards em grade e página com respiro nas
+   laterais. Nada abaixo desta linha muda o comportamento no celular. */
+@media (min-width: 900px) {
+  .grupoCards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+  }
+
+  /* Telas de ação (perder/vender/remover/mover): a spec prometeu largura
+     confortável em vez de esticar — num monitor largo, sem isto, um botão
+     como "Marcar como perdido" (width: 100% em .btnPerder) passava de mil
+     pixels. Só entra aqui dentro, então nada muda no celular. */
+  .telaAcao {
+    max-width: 480px;
+  }
+}
+
+/* ---------- Tela do card (Task 4) ----------
+   admin.module.css tem `.backLinkContent`, mas é texto puro sem altura de
+   toque — abaixo do piso de 48px que esta entrega exige em qualquer
+   clicável. Por isso o "← Voltar" ganha classe própria aqui em vez de
+   reaproveitar aquela. */
+.voltar {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 2px;
+  color: #666;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+.voltar:active {
+  color: #ff6a00;
+}
+
+.detailHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.detailNome {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #111;
+  font-family: var(--font-heading, "Rajdhani", "Inter", sans-serif);
+  /* Mesmo risco de .dadoValue: também é item de flex (filho de .detailHead,
+     ao lado de .etapaBadge). cliente_nome normalmente tem espaço para
+     quebrar, mas nada garante isso (nome digitado colado, por exemplo) —
+     mais barato blindar aqui do que confiar no dado. */
   min-width: 0;
-  padding: 4px 6px;
-  font-size: 0.76rem;
-  border: 1px solid var(--border-medium, #d0d0d0);
-  border-radius: 6px;
-  background: #fff;
+  overflow-wrap: anywhere;
 }
-.iconBtn {
+
+.etapaBadge {
+  flex-shrink: 0;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: #fff1e6;
+  color: #ff6a00;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.etapaBadgeGanho {
+  background: #dcfce7;
+  color: #15803d;
+}
+.etapaBadgePerdido {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.dados {
+  background: #fff;
   border: 1px solid var(--border-light, #e5e5e5);
-  background: #fff;
-  border-radius: 6px;
-  padding: 3px 8px;
-  font-size: 0.75rem;
-  cursor: pointer;
-  color: #555;
+  border-radius: 10px;
+  padding: 0 18px;
+  margin-bottom: 24px;
 }
-.iconBtn:hover { border-color: #ff6a00; color: #ff6a00; }
-.sellBtn {
+
+.dadoRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border-light, #f0f0f0);
+}
+.dadoRow:last-child {
+  border-bottom: none;
+}
+
+.dadoLabel {
+  font-size: 0.82rem;
+  color: #777;
+  flex-shrink: 0;
+}
+
+.dadoValue {
+  font-size: 0.95rem;
+  color: #111;
+  font-weight: 600;
+  text-align: right;
+  /* Item de flex (filho de .dadoRow) tem min-width: auto por padrão — ele se
+     recusa a encolher abaixo do min-content, e um e-mail sem espaços tem
+     min-content igual ao texto inteiro. Como .main já tem min-width: 0 e o
+     <html> não rola na horizontal, o texto ficava cortado e inalcançável,
+     sem jeito de ver o resto (mesmo defeito da tela de Usuários). */
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Ações do card ---------- */
+.acoes {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.acoesErro {
+  color: #b91c1c;
+  font-size: 0.85rem;
+  padding: 12px 14px;
+  background: #fee2e2;
+  border-radius: 8px;
+}
+
+.btnPrimario {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
+  min-height: 52px;
+  padding: 14px 20px;
+  background: #ff6a00;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+  font-family: var(--font-heading, "Rajdhani", "Inter", sans-serif);
+  letter-spacing: 0.03em;
+  cursor: pointer;
+}
+.btnPrimario:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.btnSecundario {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 52px;
+  padding: 14px 20px;
+  background: #fff;
+  color: #0a0a14;
+  border: 1px solid var(--border-light, #d8d8d8);
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+.btnSecundario:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.btnPerder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 52px;
+  padding: 14px 20px;
+  background: #fff;
+  color: #b91c1c;
+  border: 1px solid #f3c6c6;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+.btnPerder:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.gerenciarRow {
+  display: flex;
+  border: 1px solid var(--border-light, #e5e5e5);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.gerenciarItem {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 10px 8px;
+  color: #555;
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-decoration: none;
+  text-align: center;
+}
+.gerenciarItem:not(:first-child) {
+  border-left: 1px solid var(--border-light, #e5e5e5);
+}
+.gerenciarItem:active {
+  background: #fafafa;
+}
+
+/* "Remover" é destrutivo e ficava a 1px de "Mover" na mesma fileira, sem
+   nada que os distinguisse — fácil de tocar o errado. Vermelho é o padrão
+   que o painel já usa para ação perigosa (mesmo tom de .btnPerder /
+   admin.module.css .btnDanger). Só cor: mantém o tamanho de toque e o
+   layout de .gerenciarItem, que continua a base. */
+.gerenciarItemPerigo {
+  color: #b91c1c;
+}
+
+/* ---------- Formulário (Task 5): nova oportunidade / editar ----------
+   A instrução da task é reaproveitar formGroup/formLabel/formInput/
+   formSelect/btnPrimary/btnSecondary de admin.module.css (e não criar classe
+   nova lá). Só que nenhuma dessas classes garante os 48px de toque nem a
+   largura total que esta entrega exige em qualquer clicável — em telas
+   largas, .formInput/.formSelect e .btnPrimary/.btnSecondary ficam abaixo
+   disso. As classes abaixo só ACRESCENTAM essas duas propriedades: nenhuma
+   delas mexe em padding, borda ou fonte, então aplicadas junto (dois
+   `className`, no mesmo elemento) não competem com o que admin.module.css
+   já define — só completam o que falta. */
+.campoToque {
+  min-height: 48px;
+}
+
+.avisoCampo {
+  margin-top: 6px;
+  font-size: 0.8rem;
+  color: #a16207;
+}
+
+.erroForm {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  background: #fee2e2;
+  border-radius: 8px;
+  color: #b91c1c;
+  font-size: 0.85rem;
+}
+
+.formActions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.acaoToque {
+  display: flex;
+  width: 100%;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---------- Telas de decisão (Task 6): perder / vender / remover / mover ----------
+   Substituem os popups nativos do navegador (motivo digitado, duas
+   confirmações e um aviso pós-ação). Texto de apoio (não é aviso de erro de
+   campo — por isso não reaproveita .avisoCampo, que é amarelo e pequeno) e a
+   lista de avisos da venda, que precisa aparecer ANTES do botão de
+   confirmar: é o ponto inteiro da tela — hoje esse aviso só aparece depois
+   da venda já registrada, quando não dá mais para agir. */
+.info {
+  margin-bottom: 20px;
+  padding: 14px 16px;
+  background: #f7f7f8;
+  border-radius: 10px;
+  color: #333;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.avisos {
+  margin: 0 0 24px;
+  padding: 16px 18px 16px 34px;
+  background: #fff7ed;
+  border: 1px solid #fde3c7;
+  border-radius: 10px;
+  color: #333;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.avisoItem + .avisoItem {
   margin-top: 8px;
-  padding: 5px;
+}
+
+/* ---------- Mover: etapas como botões de largura total ---------- */
+.etapaAtual {
+  background: #fff1e6;
+  color: #ff6a00;
+  border-color: #ffd7b3;
+  cursor: default;
+}
+.etapaAtual:disabled {
+  opacity: 1;
+}
+.etapaMarca {
+  margin-left: 6px;
   font-size: 0.78rem;
   font-weight: 600;
-  color: #fff;
-  background: #15803d;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
-.sellBtn:hover { background: #126b33; }
-
-@media (prefers-color-scheme: dark) {
-  .column { background: #1a1a1a; border-color: #2a2a2a; }
-  .card { background: #111; border-color: #2a2a2a; }
-  .cardName { color: #f0f0f0; }
-  .colCount { background: #111; border-color: #2a2a2a; }
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
