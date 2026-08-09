@@ -86,19 +86,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-@media (prefers-color-scheme: dark) {
-  .card {
-    background: #111;
-    border-color: #2a2a2a;
-  }
-  .cardNome {
-    color: #f0f0f0;
-  }
-  .grupoHead {
-    color: #999;
-  }
-}
-
 /* A partir daqui, tela larga: cards em grade e página com respiro nas
    laterais. Nada abaixo desta linha muda o comportamento no celular. */
 @media (min-width: 900px) {
