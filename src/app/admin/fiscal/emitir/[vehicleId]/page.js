@@ -10,7 +10,7 @@ export const metadata = {
 };
 
 export default async function EmitirPage({ params }) {
-  await requireRole(["admin", "financeiro"]);
+  await requireRole(["financeiro", "secretaria"]);
   const { vehicleId } = await params;
   const dados = await getDadosEmissao(vehicleId);
   if (!dados) notFound();

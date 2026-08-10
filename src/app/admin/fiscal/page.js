@@ -9,7 +9,7 @@ export const metadata = {
 };
 
 export default async function FiscalPage() {
-  await requireRole(["admin", "financeiro"]);
+  await requireRole(["financeiro", "secretaria"]);
   const notas = await listNotas();
   // A nota nasce da venda: só veículo vendido pode ser emitido.
   const vendidos = (await readVehicles()).filter((v) => v.status === "vendido");
