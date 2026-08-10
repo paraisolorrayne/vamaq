@@ -106,14 +106,25 @@ export default function FormOportunidade({ valoresIniciais, oportunidadeId }) {
   function handleSelecionarCliente(cliente) {
     setAvisoDesvincular(false);
     const dados = dadosDoCliente(cliente);
-    // Item 2 da revisão 2 (fix-revisao2-report.md): NÃO sobrescreve o nome
-    // digitado — só preenche a partir do cadastro quando o campo ainda está
-    // vazio. O vendedor conhece a pessoa por como digitou ("Carlinhos"); o
-    // nome oficial do cadastro ("Carlos Eduardo Mendes") já aparece à parte
-    // assim que o vínculo existe (item 1), então nada se perde mantendo o
-    // que foi digitado. Mesmo comportamento de VincularForm.js — os dois
-    // caminhos de vínculo agora concordam.
-    setClienteNome((atual) => (atual.trim() ? atual : dados.cliente_nome));
+    // Preenche ao CRIAR, preserva ao EDITAR — as duas metades não são a
+    // mesma regra, mesmo parecendo.
+    //
+    // Criando (sem oportunidadeId): o que está em `clienteNome` até aqui é
+    // só o termo de BUSCA que a pessoa digitou para achar o cliente — ex.
+    // "Carl" para achar "Carlos Eduardo Mendes" — não é apelido de ninguém.
+    // Escolher o resultado troca pelo nome completo do cadastro, sempre,
+    // mesmo que o campo já tivesse algo digitado.
+    //
+    // Editando uma oportunidade que já existe, o nome em tela pode ser como
+    // o vendedor decidiu chamar a pessoa ("Carlinhos") — aí preserva (item 2
+    // da revisão 2, fix-revisao2-report.md) e só preenche a partir do
+    // cadastro quando o campo ainda está vazio; o nome oficial do cadastro
+    // ("Carlos Eduardo Mendes") já aparece à parte assim que o vínculo
+    // existe (item 1), então nada se perde mantendo o que foi digitado.
+    // VincularForm.js nunca sobrescreve `cliente_nome` (só o `cliente_id`
+    // muda por lá) — ele só existe para oportunidades que já existem, ou
+    // seja, é sempre o caso "editando" desta distinção.
+    setClienteNome((atual) => (!editando || !atual.trim() ? dados.cliente_nome : atual));
     // item 4 do fix-duplicado-report.md: só sobrescreve telefone/e-mail
     // quando o cadastro trouxe algo — nunca com um campo em branco. Sem
     // isto, um cliente recém-criado sem e-mail no cadastro (porque o POST
