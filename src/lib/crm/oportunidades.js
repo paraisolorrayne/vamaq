@@ -8,14 +8,16 @@ import { ETAPAS } from "./etapas.js";
 
 const SELECT = `
   select o.id, o.cliente_nome, o.telefone, o.email, o.etapa, o.valor, o.origem,
-         o.obs, o.motivo_perda, o.vehicle_id, o.responsavel_id,
+         o.obs, o.motivo_perda, o.vehicle_id, o.responsavel_id, o.cliente_id,
          v.brand as vehicle_brand, v.model as vehicle_model, v.year as vehicle_year,
          v.ano_modelo as vehicle_ano_modelo, v.placa as vehicle_placa,
          u.name as responsavel_nome,
+         c.nome as cliente_cadastrado_nome,
          o.created_at, o.updated_at
     from oportunidades o
     left join vehicles v on v.id = o.vehicle_id
     left join users u on u.id = o.responsavel_id
+    left join clientes c on c.id = o.cliente_id
 `;
 
 function row(r) {
@@ -39,6 +41,7 @@ function normalize(b) {
     origem: b.origem || null,
     obs: b.obs || null,
     motivo_perda: b.motivo_perda || null,
+    cliente_id: b.cliente_id || null,
   };
 }
 
@@ -62,9 +65,20 @@ export async function createOportunidade(body, responsavelId) {
   if (!v.cliente_nome) throw new Error("Nome do cliente é obrigatório");
   const { rows } = await query(
     `insert into oportunidades
-       (cliente_nome, telefone, email, vehicle_id, etapa, valor, origem, obs, responsavel_id)
-     values ($1,$2,$3,$4,$5,$6,$7,$8,$9) returning id`,
-    [v.cliente_nome, v.telefone, v.email, v.vehicle_id, v.etapa, v.valor, v.origem, v.obs, responsavelId || null]
+       (cliente_nome, telefone, email, vehicle_id, etapa, valor, origem, obs, responsavel_id, cliente_id)
+     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) returning id`,
+    [
+      v.cliente_nome,
+      v.telefone,
+      v.email,
+      v.vehicle_id,
+      v.etapa,
+      v.valor,
+      v.origem,
+      v.obs,
+      responsavelId || null,
+      v.cliente_id,
+    ]
   );
   return getOportunidade(rows[0].id);
 }
@@ -83,7 +97,7 @@ export async function createOportunidade(body, responsavelId) {
 const UPDATE = `
   update oportunidades set
     cliente_nome=$2, telefone=$3, email=$4, vehicle_id=$5,
-    valor=$6, origem=$7, obs=$8
+    valor=$6, origem=$7, obs=$8, cliente_id=$9
   where id=$1 returning id
 `;
 
@@ -99,6 +113,7 @@ export async function updateOportunidade(id, body) {
     v.valor,
     v.origem,
     v.obs,
+    v.cliente_id,
   ]);
   return rows.length ? getOportunidade(id) : null;
 }

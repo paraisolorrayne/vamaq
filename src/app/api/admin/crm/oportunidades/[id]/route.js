@@ -9,6 +9,7 @@ import {
 } from "@/lib/crm/oportunidades";
 import { acoesDaEtapa } from "@/lib/crm/etapas";
 import { setVehicleStatus } from "@/lib/vehicleStore";
+import { ligarVeiculo } from "@/lib/clientes/repo";
 
 export async function GET(_request, { params }) {
   const auth = await requireApiRole(["vendedor", "secretaria"]);
@@ -62,6 +63,22 @@ export async function PATCH(request, { params }) {
       await setVehicleStatus(o.vehicle_id, "vendido"); // sai do site, preserva histórico
       revalidatePath("/");
       revalidatePath("/acervo");
+    }
+    if (o.cliente_id && o.vehicle_id) {
+      // O vínculo é um efeito colateral desejável, não a razão de existir da
+      // venda: falhar aqui não pode desfazer uma venda já registrada. Mesma
+      // forma de src/lib/documentos.js e src/lib/fiscal/notas.js.
+      // Sem documentoId: venda pelo CRM não gera documentos_gerados.
+      try {
+        await ligarVeiculo({
+          clienteId: o.cliente_id,
+          vehicleId: o.vehicle_id,
+          papel: "comprou",
+          origem: "crm",
+        });
+      } catch (err) {
+        console.error("Venda registrada, mas o vínculo cliente-veículo falhou:", err);
+      }
     }
     return NextResponse.json(o);
   }

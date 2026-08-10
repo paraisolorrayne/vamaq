@@ -22,7 +22,10 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
-  const auth = await requireApiRole(["secretaria", "financeiro"]);
+  // O vendedor cadastra cliente de dentro do CRM — lead no pátio não espera.
+  // Mas continua sem PUT/PATCH/DELETE e sem a ficha: administrar cadastro é da
+  // secretaria e do financeiro. Ver a spec desta entrega.
+  const auth = await requireApiRole(["secretaria", "financeiro", "vendedor"]);
   if (auth.error) return auth.error;
 
   try {

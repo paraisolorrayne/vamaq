@@ -2,7 +2,8 @@
  * Matriz de autorização das rotas de cliente (src/app/api/admin/clientes/).
  *
  * A promessa central desta entrega é que o vendedor LÊ a lista de clientes
- * (para o seletor de contrato/NF-e) mas não escreve, e nem lê a ficha
+ * (para o seletor de contrato/NF-e) e CRIA cliente (POST — o lead no pátio
+ * não espera a secretaria), mas não edita, não apaga, e nem lê a ficha
  * completa — ela carrega notas fiscais (ver o comentário em
  * src/app/api/admin/clientes/[id]/route.js). Um defeito real nessa fronteira
  * passou por seis revisões e só foi pego na revisão da branch inteira; este
@@ -77,8 +78,11 @@ const ROTAS = [
     chamar: () => clientesRoute.GET(reqGet("http://localhost/api/admin/clientes")),
   },
   {
+    // Vendedor de propósito DENTRO de permitidos aqui: ele cadastra o
+    // cliente de dentro do CRM, sem esperar a secretaria. Único handler de
+    // clientes que abre para o vendedor — ver a spec desta entrega.
     nome: "POST /clientes",
-    permitidos: ["secretaria", "financeiro", "admin"],
+    permitidos: ["secretaria", "financeiro", "vendedor", "admin"],
     chamar: () =>
       clientesRoute.POST(
         reqJson("http://localhost/api/admin/clientes", "POST", { nome: "Fulano de Teste" })

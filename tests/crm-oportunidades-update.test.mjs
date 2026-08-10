@@ -110,7 +110,7 @@ test("editar (UPDATE do repositório, sem etapa/motivo_perda) não mexe em etapa
   // Reproduz exatamente o que updateOportunidade faz: roda o UPDATE
   // extraído do módulo, com o corpo que o formulário de edição manda de
   // verdade (sem etapa, sem motivo_perda) — só editando o telefone.
-  await pool.query(UPDATE, [id, "Maria Ganha", "34988880000", null, vehicleId, null, null, null]);
+  await pool.query(UPDATE, [id, "Maria Ganha", "34988880000", null, vehicleId, null, null, null, null]);
 
   const { rows: depois } = await pool.query(
     `select etapa, motivo_perda, telefone from oportunidades where id = $1`,
@@ -133,7 +133,7 @@ test("editar (UPDATE do repositório, sem etapa/motivo_perda) não mexe em etapa
   );
   const id = rows[0].id;
 
-  await pool.query(UPDATE, [id, "João Perdido", null, null, null, null, null, null]);
+  await pool.query(UPDATE, [id, "João Perdido", null, null, null, null, null, null, null]);
 
   const { rows: depois } = await pool.query(
     `select etapa, motivo_perda from oportunidades where id = $1`,
