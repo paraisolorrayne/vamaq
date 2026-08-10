@@ -158,7 +158,7 @@ export async function getCliente(id) {
   );
 
   const oportunidades = await query(
-    `select o.id, o.etapa, o.valor, o.created_at,
+    `select o.id, o.etapa, o.valor, o.created_at, o.cliente_nome,
             v.brand as vehicle_brand, v.model as vehicle_model,
             v.year as vehicle_year, v.ano_modelo as vehicle_ano_modelo
        from oportunidades o

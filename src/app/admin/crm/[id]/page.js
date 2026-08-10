@@ -87,6 +87,15 @@ export default async function OportunidadePage({ params }) {
 
       {o.cliente_id && <p className={crm.clienteMeta}>{textoCarros(veiculosCount)}</p>}
 
+      {/* Item 1 da revisão 2 (fix-revisao2-report.md): o vendedor registra
+          "Carlinhos" e vincula ao cadastro "Carlos Eduardo Mendes" — sem
+          isto a tela só mostrava "Carlinhos" e ninguém conseguia ligar um
+          nome ao outro. Para TODOS os papéis, inclusive o vendedor: é ele
+          quem mais precisa saber a quem o nome digitado corresponde. */}
+      {o.cliente_cadastrado_nome && o.cliente_cadastrado_nome !== o.cliente_nome && (
+        <p className={crm.clienteMeta}>cadastro: {o.cliente_cadastrado_nome}</p>
+      )}
+
       <div className={crm.dados}>
         {linhas.map(([label, value]) => (
           <div key={label} className={crm.dadoRow}>
