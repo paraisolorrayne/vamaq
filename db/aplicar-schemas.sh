@@ -33,6 +33,14 @@
 # ============================================================================
 set -euo pipefail
 
+# Sem `psql` no PATH, o erro lá embaixo vira "FALHOU / Parei em schema.sql" —
+# que manda o operador depurar SQL em vez de instalar o cliente. Checa antes
+# de tudo.
+if ! command -v psql >/dev/null 2>&1; then
+  echo "ERRO: psql não encontrado no PATH. Instale o cliente do Postgres (ex.: apt install postgresql-client)." >&2
+  exit 1
+fi
+
 DBURL="${1:-${DATABASE_URL:-}}"
 if [ -z "$DBURL" ]; then
   echo "ERRO: passe a URL do banco como argumento ou defina DATABASE_URL." >&2
@@ -53,24 +61,36 @@ ARQUIVOS=(
   crm-schema.sql
 )
 
+# Checa os sete ANTES de aplicar qualquer um. Checar dentro do laço de
+# aplicação (como era antes) deixa o banco pela metade quando um arquivo do
+# meio ou do fim falta — exatamente o que este script existe para evitar.
 for arquivo in "${ARQUIVOS[@]}"; do
   caminho="$RAIZ/db/$arquivo"
   if [ ! -f "$caminho" ]; then
     echo "ERRO: $caminho não existe." >&2
     exit 1
   fi
+done
+
+for arquivo in "${ARQUIVOS[@]}"; do
+  caminho="$RAIZ/db/$arquivo"
   printf '%-28s ' "$arquivo"
   # ON_ERROR_STOP faz o psql sair com erro na primeira falha, em vez de seguir
   # aplicando o resto num banco meio construído.
+  # --single-transaction embrulha CADA arquivo numa transação: sem isto, o
+  # psql faz autocommit por instrução, e um arquivo que falha no meio fica
+  # ELE MESMO meio aplicado (não só "os arquivos depois dele" ficam de fora).
+  # Nenhum arquivo em db/ usa `create index concurrently` (que não roda dentro
+  # de transação), então a flag é segura aqui.
   # client_min_messages=warning cala os NOTICE de "já existe, pulando", que são
   # o funcionamento NORMAL de um arquivo idempotente e só escondem o que importa.
   # Warning e error continuam aparecendo.
   if PGOPTIONS='--client-min-messages=warning' \
-     psql "$DBURL" -v ON_ERROR_STOP=1 -q -f "$caminho" > /dev/null; then
+     psql "$DBURL" -v ON_ERROR_STOP=1 -q --single-transaction -f "$caminho" > /dev/null; then
     echo "ok"
   else
     echo "FALHOU"
-    echo "Parei em $arquivo. Nada depois dele foi aplicado." >&2
+    echo "Parei em $arquivo. Nada dele (nem do que vem depois) foi aplicado — --single-transaction desfez o arquivo inteiro." >&2
     exit 1
   fi
 done
