@@ -22,13 +22,21 @@
 
 import { useEffect, useState } from "react";
 import { formataDoc } from "@/lib/clientes/doc";
+import { podeOferecerCadastro } from "@/lib/crm/vinculoCliente";
 import crm from "./crm.module.css";
+
+// Teto de resultados pedido à API (ver src/lib/clientes/repo.js e
+// src/app/api/admin/clientes/route.js): os resultados são botões de largura
+// total DENTRO do formulário — trinta homônimos empurrariam o formulário
+// inteiro para fora da tela.
+const LIMITE_RESULTADOS = 8;
 
 export default function SeletorCliente({
   valor,
   onChangeValor,
   onSelecionar,
   telefoneParaCriar,
+  emailParaCriar,
   inputClassName,
   placeholder,
   required,
@@ -38,6 +46,7 @@ export default function SeletorCliente({
 }) {
   const [ativo, setAtivo] = useState(Boolean(autoBuscar));
   const [resultados, setResultados] = useState([]);
+  const [mais, setMais] = useState(false);
   const [buscando, setBuscando] = useState(false);
   const [buscaErro, setBuscaErro] = useState("");
   const [criando, setCriando] = useState(false);
@@ -50,6 +59,7 @@ export default function SeletorCliente({
     const termo = valor.trim();
     if (!termo) {
       setResultados([]);
+      setMais(false);
       setBuscaErro("");
       setBuscando(false);
       return undefined;
@@ -59,20 +69,29 @@ export default function SeletorCliente({
     setBuscando(true);
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/admin/clientes?busca=${encodeURIComponent(termo)}`);
+        // incluirInativos=true (item 3 do fix-duplicado-report.md): um
+        // cliente desativado pela secretaria continua existindo — escondê-lo
+        // daqui é o que fazia o vendedor não achar e recadastrar do zero.
+        // limite=8: ver LIMITE_RESULTADOS acima.
+        const res = await fetch(
+          `/api/admin/clientes?busca=${encodeURIComponent(termo)}&incluirInativos=true&limite=${LIMITE_RESULTADOS}`
+        );
         const data = await res.json().catch(() => ({}));
         if (cancelado) return;
         if (!res.ok) {
           setBuscaErro(data.error || "Não foi possível buscar clientes agora.");
           setResultados([]);
+          setMais(false);
           return;
         }
         setBuscaErro("");
         setResultados(Array.isArray(data.clientes) ? data.clientes : []);
+        setMais(Boolean(data.mais));
       } catch {
         if (!cancelado) {
           setBuscaErro("Não foi possível buscar clientes agora.");
           setResultados([]);
+          setMais(false);
         }
       } finally {
         if (!cancelado) setBuscando(false);
@@ -95,6 +114,7 @@ export default function SeletorCliente({
   function escolher(cliente) {
     setAtivo(false);
     setResultados([]);
+    setMais(false);
     setCriarErro("");
     onSelecionar(cliente);
   }
@@ -109,6 +129,12 @@ export default function SeletorCliente({
         body: JSON.stringify({
           nome: valor.trim(),
           telefone: telefoneParaCriar ? telefoneParaCriar.trim() : null,
+          // item 4 do fix-duplicado-report.md: sem isto, o e-mail que a
+          // pessoa já tinha digitado no formulário nunca ia para o cadastro
+          // — e a resposta (email: null) ainda apagava o campo de volta,
+          // porque handleSelecionarCliente() aplicava tudo que vinha do
+          // cadastro sem checar se estava vazio.
+          email: emailParaCriar ? emailParaCriar.trim() : null,
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -132,7 +158,13 @@ export default function SeletorCliente({
   }
 
   const termo = valor.trim();
-  const semResultado = ativo && !buscando && termo.length > 0 && resultados.length === 0;
+  // podeOferecerCadastro (src/lib/crm/vinculoCliente.js, pura e testada):
+  // sem erro, `ativo` já garante que só entra aqui depois de a busca ter
+  // rodado. `ativo &&` continua aqui porque "a busca já foi ativada" é um
+  // detalhe de UI desta tela (não digitou nada ainda vs. campo em branco de
+  // propósito), e a função pura não precisa saber disso.
+  const semResultado =
+    ativo && podeOferecerCadastro({ termo, buscando, erro: buscaErro, resultados });
   const bloqueado = Boolean(disabled);
 
   return (
@@ -170,8 +202,21 @@ export default function SeletorCliente({
                 {[c.doc ? formataDoc(c.doc) : null, c.telefone].filter(Boolean).join(" · ") ||
                   "Sem CPF/CNPJ e sem telefone cadastrados"}
               </span>
+              {/* item 3 do fix-duplicado-report.md: cliente inativo continua
+                  escolhível — achar tem que continuar mais fácil que criar —
+                  mas o vendedor precisa saber que só a secretaria reativa. */}
+              {c.ativo === false && (
+                <span className={crm.resultadoInativo}>
+                  Inativo — peça à secretaria para reativar
+                </span>
+              )}
             </button>
           ))}
+          {mais && (
+            <p className={crm.buscaMais}>
+              Mostrando os {LIMITE_RESULTADOS} mais parecidos — refine a busca.
+            </p>
+          )}
         </div>
       )}
 

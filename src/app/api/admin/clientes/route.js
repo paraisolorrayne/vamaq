@@ -11,10 +11,17 @@ export async function GET(request) {
   const params = new URL(request.url).searchParams;
   const busca = params.get("busca") || "";
   const incluirInativos = params.get("incluirInativos") === "true";
+  // Só o seletor do CRM manda `limite` (ver SeletorCliente.js): a listagem
+  // completa de clientes (ClientesClient.js) não passa este parâmetro e
+  // continua recebendo o resultado inteiro, sem corte. Faixa 1–50 evita tanto
+  // 0/negativo (viraria "sem limite" acidental lá no repo, que só corta
+  // quando `limite` é truthy) quanto um valor absurdo vindo de fora.
+  const limiteN = parseInt(params.get("limite"), 10);
+  const limite = Number.isFinite(limiteN) && limiteN > 0 ? Math.min(limiteN, 50) : undefined;
 
   try {
-    const clientes = await listClientes({ busca, incluirInativos });
-    return NextResponse.json({ clientes });
+    const clientes = await listClientes({ busca, incluirInativos, limite });
+    return NextResponse.json({ clientes, mais: Boolean(clientes.mais) });
   } catch (err) {
     console.error("Falha ao listar clientes:", err);
     return NextResponse.json({ error: "Falha ao listar os clientes" }, { status: 500 });

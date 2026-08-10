@@ -66,6 +66,7 @@ export default function VincularForm({ oportunidade: o }) {
           onChangeValor={setNomeBusca}
           onSelecionar={vincular}
           telefoneParaCriar={o.telefone}
+          emailParaCriar={o.email}
           inputClassName={`${styles.formInput} ${crm.campoToque}`}
           placeholder="Nome do cliente"
           autoBuscar

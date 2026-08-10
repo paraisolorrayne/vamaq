@@ -91,8 +91,15 @@ export default function FormOportunidade({ valoresIniciais, oportunidadeId }) {
   function handleSelecionarCliente(cliente) {
     const dados = dadosDoCliente(cliente);
     setClienteNome(dados.cliente_nome);
-    setTelefone(dados.telefone);
-    setEmail(dados.email);
+    // item 4 do fix-duplicado-report.md: só sobrescreve telefone/e-mail
+    // quando o cadastro trouxe algo — nunca com um campo em branco. Sem
+    // isto, um cliente recém-criado sem e-mail no cadastro (porque o POST
+    // também não mandava) apagava o e-mail que a pessoa acabou de digitar
+    // no formulário, mesmo já tendo corrigido o POST para enviá-lo: o mesmo
+    // buraco valia para escolher um cliente já cadastrado sem telefone/
+    // e-mail enquanto o formulário já tinha um digitado.
+    setTelefone((atual) => dados.telefone || atual);
+    setEmail((atual) => dados.email || atual);
     setClienteId(dados.cliente_id);
   }
 
@@ -164,6 +171,7 @@ export default function FormOportunidade({ valoresIniciais, oportunidadeId }) {
             onChangeValor={handleClienteNomeChange}
             onSelecionar={handleSelecionarCliente}
             telefoneParaCriar={telefone}
+            emailParaCriar={email}
             inputClassName={`${styles.formInput} ${crm.campoToque}`}
             placeholder="Nome do cliente"
             required

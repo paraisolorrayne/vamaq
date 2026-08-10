@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { dadosDoCliente, precisaVincular } from "../src/lib/crm/vinculoCliente.js";
+import { dadosDoCliente, precisaVincular, podeOferecerCadastro } from "../src/lib/crm/vinculoCliente.js";
 
 test("dadosDoCliente: cliente completo copia os quatro campos", () => {
   const cliente = { id: "c1", nome: "Maria Souza", telefone: "34999887766", email: "maria@ex.com" };
@@ -48,4 +48,47 @@ test("precisaVincular: cliente_id vazio (string) ainda precisa vincular", () => 
 
 test("precisaVincular: oportunidade null precisa vincular", () => {
   assert.equal(precisaVincular(null), true);
+});
+
+// podeOferecerCadastro: item 2 do fix-duplicado-report.md — a busca que
+// falhou (fetch estourando no pátio, 3G ruim) não pode virar convite para
+// cadastrar um duplicado do cliente que ela nunca conseguiu procurar.
+test("podeOferecerCadastro: com resultados, não oferece", () => {
+  assert.equal(
+    podeOferecerCadastro({ termo: "Carlos", buscando: false, erro: "", resultados: [{ id: "1" }] }),
+    false
+  );
+});
+
+test("podeOferecerCadastro: sem resultados e sem erro, oferece — a única situação que oferece", () => {
+  assert.equal(
+    podeOferecerCadastro({ termo: "Carlos", buscando: false, erro: "", resultados: [] }),
+    true
+  );
+});
+
+test("podeOferecerCadastro: com erro, não oferece mesmo sem resultados", () => {
+  assert.equal(
+    podeOferecerCadastro({
+      termo: "Carlos",
+      buscando: false,
+      erro: "Não foi possível buscar clientes agora.",
+      resultados: [],
+    }),
+    false
+  );
+});
+
+test("podeOferecerCadastro: buscando, não oferece", () => {
+  assert.equal(
+    podeOferecerCadastro({ termo: "Carlos", buscando: true, erro: "", resultados: [] }),
+    false
+  );
+});
+
+test("podeOferecerCadastro: termo vazio, não oferece", () => {
+  assert.equal(
+    podeOferecerCadastro({ termo: "   ", buscando: false, erro: "", resultados: [] }),
+    false
+  );
 });

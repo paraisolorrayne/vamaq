@@ -20,3 +20,25 @@ export function dadosDoCliente(cliente) {
 export function precisaVincular(oportunidade) {
   return !oportunidade?.cliente_id;
 }
+
+/**
+ * Decide se o seletor pode oferecer "Cadastrar «termo» como cliente novo".
+ *
+ * Existe para fechar um buraco real (ver fix-duplicado-report.md, item 2):
+ * no pátio, com 3G ruim, a busca pode falhar (fetch estourando) sem que a
+ * tela saiba diferenciar "procurei e não achei" de "nunca consegui
+ * procurar". Sem esta função, o segundo caso também oferecia cadastrar —
+ * criando um duplicado do cliente que a busca nunca chegou a checar.
+ *
+ * Só pode oferecer quando: há termo digitado, a busca não está em
+ * andamento, a busca não terminou em erro, e ela terminou sem resultado.
+ * Qualquer um desses fora do lugar (sem termo, buscando, com erro, ou com
+ * resultado) e a resposta é não.
+ */
+export function podeOferecerCadastro({ termo, buscando, erro, resultados }) {
+  if (!String(termo ?? "").trim()) return false;
+  if (buscando) return false;
+  if (erro) return false;
+  const lista = Array.isArray(resultados) ? resultados : [];
+  return lista.length === 0;
+}

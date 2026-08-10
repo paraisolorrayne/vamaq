@@ -415,7 +415,22 @@
   margin-top: 2px;
 }
 
+/* Cliente inativo continua aparecendo na busca (item 3 do
+   fix-duplicado-report.md) — escondê-lo é o que fazia a secretaria desativar
+   alguém e o vendedor recadastrar do zero depois. A marca é um aviso, não um
+   erro: por isso o mesmo tom de amarelo de .avisoCampo, não vermelho. */
+.resultadoInativo {
+  color: #a16207;
+  font-weight: 600;
+}
+
 .buscaStatus {
+  margin-top: 6px;
+  font-size: 0.8rem;
+  color: #777;
+}
+
+.buscaMais {
   margin-top: 6px;
   font-size: 0.8rem;
   color: #777;
