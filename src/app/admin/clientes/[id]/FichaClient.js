@@ -15,7 +15,7 @@ const fmtDataHora = (d) => (d ? new Date(d).toLocaleDateString("pt-BR") : "—")
 const money = (n) => "R$ " + formatValorBR(Number(n) || 0);
 
 const PAPEL_LABEL = { comprou: "Comprou", vendeu: "Vendeu", consignou: "Consignou" };
-const ORIGEM_LABEL = { contrato: "do contrato", nota: "da nota", manual: "manual" };
+const ORIGEM_LABEL = { contrato: "do contrato", nota: "da nota", manual: "manual", crm: "da venda no CRM" };
 
 // Mesmos rótulos de src/app/admin/documentos/gerados/GeradosClient.js — os
 // valores em `tipo` usam o slug técnico, aqui é o nome que o operador reconhece.
@@ -496,6 +496,7 @@ export default function FichaClient({ cliente: clienteInicial }) {
             <thead>
               <tr>
                 <th>Etapa</th>
+                <th>Registrado como</th>
                 <th>Veículo</th>
                 <th>Valor</th>
                 <th>Data</th>
@@ -505,6 +506,11 @@ export default function FichaClient({ cliente: clienteInicial }) {
               {cliente.oportunidades.map((o) => (
                 <tr key={o.id}>
                   <td>{rotuloEtapa(o.etapa)}</td>
+                  {/* Item 1 da revisão 2: mesmo problema do outro lado do
+                      vínculo — a oportunidade guarda o nome como o vendedor
+                      digitou ("Carlinhos"), que pode diferir do cadastro
+                      ("Carlos Eduardo Mendes", já mostrado no topo da ficha). */}
+                  <td>{o.cliente_nome || "—"}</td>
                   <td>{rotuloVeiculo(o) || "—"}</td>
                   <td>{o.valor != null ? money(o.valor) : "—"}</td>
                   <td>{fmtDataHora(o.created_at)}</td>
@@ -512,7 +518,7 @@ export default function FichaClient({ cliente: clienteInicial }) {
               ))}
               {cliente.oportunidades.length === 0 && (
                 <tr>
-                  <td colSpan={4} style={{ textAlign: "center", color: "#6b7280", padding: 16 }}>
+                  <td colSpan={5} style={{ textAlign: "center", color: "#6b7280", padding: 16 }}>
                     Nenhuma oportunidade registrada para este cliente ainda.
                   </td>
                 </tr>
