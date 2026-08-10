@@ -19,7 +19,7 @@ export default function TutorialFiscalPage() {
         </h1>
         <p className={styles.pageSubtitle}>
           A nota fiscal (modelo 55) do veículo vendido, emitida direto do
-          painel — acesso de administrador e financeiro
+          painel — acesso de administrador, financeiro e secretaria
         </p>
       </div>
 
@@ -31,14 +31,29 @@ export default function TutorialFiscalPage() {
           <h3 className={t.stepTitle}>De onde a nota nasce</h3>
           <p>
             Não existe um botão &quot;nova nota&quot; em branco. A nota nasce
-            do <strong>veículo vendido</strong>: marque o carro como vendido
-            no Estoque (veja o{" "}
-            <Link href="/admin/tutoriais/estoque">tutorial de Estoque</Link>)
-            e ele aparece na lista <span className={t.uiField}>Veículo
-            vendido</span>, aqui em <span className={t.uiField}>Notas
-            Fiscais</span>. Escolha o carro e use{" "}
-            <span className={t.uiButton}>Emitir nota</span> — isso abre a
-            tela de conferência daquele veículo específico.
+            do <strong>veículo vendido</strong>, e há dois caminhos reais
+            para marcar essa venda — use o que combina com a origem dela:
+          </p>
+          <ul>
+            <li>
+              <strong>Veio de um lead, pelo CRM</strong>: avance a
+              oportunidade até <span className={t.uiField}>Ganho</span> e use{" "}
+              <span className={t.uiButton}>Registrar a venda</span>.
+            </li>
+            <li>
+              <strong>Venda de balcão, sem lead no CRM</strong>: no{" "}
+              <span className={t.uiField}>Estoque</span>, use{" "}
+              <span className={t.uiButton}>Marcar vendido</span> no carro
+              (veja o{" "}
+              <Link href="/admin/tutoriais/estoque">tutorial de Estoque</Link>).
+            </li>
+          </ul>
+          <p>
+            Nos dois casos o carro vira <strong>vendido</strong> e aparece na
+            lista <span className={t.uiField}>Veículo vendido</span>, aqui em{" "}
+            <span className={t.uiField}>Notas Fiscais</span>. Escolha o carro
+            e use <span className={t.uiButton}>Emitir nota</span> — isso abre
+            a tela de conferência daquele veículo específico.
           </p>
           <p>
             O veículo precisa ter <strong>chassi</strong> cadastrado. Sem

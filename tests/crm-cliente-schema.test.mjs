@@ -120,6 +120,18 @@ test("cliente_veiculos aceita origem = 'crm'", async () => {
   assert.equal(rows[0].origem, "crm");
 });
 
+test("cliente_veiculos aceita origem = 'estoque'", async () => {
+  // Venda de balcão marcada direto no Estoque (ver
+  // docs/superpowers/specs/2026-08-10-marcar-vendido-design.md) — mesma
+  // constraint alterada em db/clientes-schema.sql para 'crm', pelo mesmo
+  // motivo e nos mesmos dois lugares (create table + bloco `do $$`).
+  const clienteId = await novoCliente("Cliente Comprou No Balcão");
+  const vehicleId = await novoVeiculo("estoque-vinculo-cliente");
+  const vinculoId = await ligar(clienteId, vehicleId, "comprou", "estoque");
+  const { rows } = await pool.query(`select origem from cliente_veiculos where id = $1`, [vinculoId]);
+  assert.equal(rows[0].origem, "estoque");
+});
+
 test("cliente_veiculos continua recusando uma origem inventada", async () => {
   const clienteId = await novoCliente("Cliente Origem Invalida");
   const vehicleId = await novoVeiculo("crm-origem-invalida");

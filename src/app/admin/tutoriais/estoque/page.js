@@ -195,12 +195,50 @@ export default function TutorialEstoquePage() {
             (ou a página do veículo) para conferir foto, preço e dados.
           </p>
           <div className={t.tip}>
-            <span className={t.boxLabel}>Vendeu? Use Desativar</span>
+            <span className={t.boxLabel}>Não usou o carro? Use Desativar</span>
             <p>
-              Na lista de estoque, o botão <strong>Desativar</strong> tira o carro
-              do site mas o mantém no estoque (dá para <strong>Reativar</strong>{" "}
-              depois). O histórico do veículo é preservado — importante quando o
-              Financeiro entrar, que liga cada carro à sua margem.
+              Na lista de estoque, o botão <strong>Desativar</strong> tira o
+              carro do site mas o mantém no estoque (dá para{" "}
+              <strong>Reativar</strong> depois) — para o carro sair de
+              circulação sem ter sido vendido. Para uma venda de verdade, veja
+              o próximo passo: <strong>Desativar não marca o carro como
+              vendido</strong> e não libera a nota fiscal.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className={t.step}>
+        <div className={t.stepNumber}>8</div>
+        <div className={t.stepBody}>
+          <h3 className={t.stepTitle}>Vendeu? Marque a venda</h3>
+          <p>
+            Quando o carro é vendido <strong>no balcão</strong>, para alguém
+            que nunca foi um lead no CRM, use{" "}
+            <span className={t.uiButton}>Marcar vendido</span> na lista de
+            estoque. A tela mostra o carro, deixa escolher o{" "}
+            <span className={t.uiField}>Cliente</span> (opcional — dá para
+            vincular depois) e avisa antes de confirmar: o carro vira{" "}
+            <strong>VENDIDO</strong> e <strong>sai do site na hora</strong>.
+          </p>
+          <div className={t.warning}>
+            <span className={t.boxLabel}>A receita não é lançada sozinha</span>
+            <p>
+              Marcar a venda só muda o status do carro. Registre a receita no{" "}
+              <strong>Financeiro</strong>, ligada a este veículo — sem isso a
+              margem dele não aparece nos relatórios.
+            </p>
+          </div>
+          <div className={t.tip}>
+            <span className={t.boxLabel}>Venda veio de um lead? Use o CRM</span>
+            <p>
+              Se a venda nasceu de uma oportunidade no <strong>CRM</strong>,
+              registre-a por lá (<span className={t.uiField}>Ganho</span> →{" "}
+              <span className={t.uiButton}>Registrar a venda</span>) em vez de
+              marcar pelo Estoque — assim o histórico da negociação fica
+              completo. Os dois caminhos levam ao mesmo lugar: o carro vendido
+              aparece em <Link href="/admin/tutoriais/fiscal">Notas
+              Fiscais</Link>, pronto para emitir a nota.
             </p>
           </div>
         </div>
