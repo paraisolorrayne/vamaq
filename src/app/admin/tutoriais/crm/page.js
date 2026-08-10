@@ -44,6 +44,20 @@ export default function TutorialCrmPage() {
             <span className={t.uiButton}>+ Nova oportunidade</span> para
             cadastrar um lead novo (só o nome do cliente é obrigatório).
           </p>
+          <div className={t.tip}>
+            <span className={t.boxLabel}>O campo Cliente busca no cadastro</span>
+            <p>
+              Digite o nome e o campo <span className={t.uiField}>Cliente</span>{" "}
+              já procura no cadastro — escolha um resultado para vincular a
+              oportunidade a ele. Se ninguém aparecer, o botão{" "}
+              <span className={t.uiButton}>Cadastrar «nome» como cliente
+              novo</span> cria o cliente dali mesmo, sem sair do CRM (o
+              vendedor pode fazer isso, mesmo sem ver o menu{" "}
+              <span className={t.uiField}>Clientes</span>). Sem escolher nem
+              cadastrar, a oportunidade fica só com o nome digitado, sem
+              vínculo com a ficha.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -58,7 +72,10 @@ export default function TutorialCrmPage() {
             origem, telefone, e-mail e observações. O botão principal já diz
             o destino — <strong>&quot;Avançar para Proposta&quot;</strong>,
             não só &quot;Avançar&quot; — então nunca é preciso adivinhar em
-            que etapa você vai cair.
+            que etapa você vai cair. Quando o cliente está vinculado ao
+            cadastro, o nome aparece como link e a tela mostra quantos carros
+            já passam pelo histórico dele — quem abre é o vendedor, então só
+            esse número aparece, nunca contrato ou nota fiscal.
           </p>
           <div className={t.tip}>
             <span className={t.boxLabel}>Por que cada ação é uma tela</span>
@@ -124,6 +141,16 @@ export default function TutorialCrmPage() {
               <strong>não</strong> é lançada sozinha: registre-a no
               Financeiro, ligada a esse veículo — sem isso, a{" "}
               <strong>margem daquele carro não aparece</strong>.
+            </p>
+          </div>
+          <div className={t.tip}>
+            <span className={t.boxLabel}>O carro entra na ficha do cliente</span>
+            <p>
+              Quando a oportunidade está vinculada a um cliente do cadastro,
+              confirmar a venda também liga o carro à <strong>ficha</strong>{" "}
+              dele (papel &quot;Comprou&quot;) — o mesmo histórico que um
+              contrato ou uma nota fiscal alimentam. Sem cliente vinculado,
+              esse vínculo não acontece; só a venda em si é registrada.
             </p>
           </div>
         </div>

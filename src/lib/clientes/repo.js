@@ -102,7 +102,7 @@ export async function listClientes({ busca, incluirInativos = false } = {}) {
   return rows;
 }
 
-/** Ficha completa: dados, veículos, documentos e notas fiscais ligados. */
+/** Ficha completa: dados, veículos, documentos, notas fiscais e oportunidades ligados. */
 export async function getCliente(id) {
   const c = await query(`select * from clientes where id = $1`, [id]);
   if (!c.rows.length) return null;
@@ -133,12 +133,45 @@ export async function getCliente(id) {
     [id]
   );
 
+  const oportunidades = await query(
+    `select o.id, o.etapa, o.valor, o.created_at,
+            v.brand as vehicle_brand, v.model as vehicle_model,
+            v.year as vehicle_year, v.ano_modelo as vehicle_ano_modelo
+       from oportunidades o
+       left join vehicles v on v.id = o.vehicle_id
+      where o.cliente_id = $1
+      order by o.created_at desc`,
+    [id]
+  );
+
   return {
     ...c.rows[0],
     veiculos: veiculos.rows,
     documentos: documentos.rows,
     notas: notas.rows,
+    oportunidades: oportunidades.rows,
   };
+}
+
+/**
+ * Resumo mínimo do cliente — id, nome e quantos veículos estão ligados a
+ * ele. Existe separado de getCliente() de propósito: a tela da oportunidade
+ * do CRM (aberta pelo vendedor) só precisa desse número para o texto "N
+ * carros no histórico", mas getCliente() monta a ficha inteira, e o objeto
+ * que ela devolve inclui `notas` — ref, status e valor de notas fiscais, dado
+ * que o vendedor não tem acesso (o GET da ficha é fechado para ele de
+ * propósito). Um `prop={cliente}` descuidado naquela tela vazaria dado
+ * fiscal; esta função nunca traz esse dado para começo de conversa.
+ */
+export async function resumoCliente(id) {
+  const { rows } = await query(
+    `select c.id, c.nome,
+            (select count(*)::int from cliente_veiculos cv where cv.cliente_id = c.id) as veiculos_count
+       from clientes c
+      where c.id = $1`,
+    [id]
+  );
+  return rows.length ? rows[0] : null;
 }
 
 export async function createCliente(data) {

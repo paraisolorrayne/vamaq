@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireRole } from "@/lib/auth/dal";
 import { getOportunidade } from "@/lib/crm/oportunidades";
-import { getCliente } from "@/lib/clientes/repo";
+import { resumoCliente } from "@/lib/clientes/repo";
 import { rotuloEtapa } from "@/lib/crm/etapas";
 import { rotuloVeiculo } from "@/lib/crm/rotuloVeiculo";
 import { formatValorBR } from "@/lib/money";
@@ -44,8 +44,11 @@ export default async function OportunidadePage({ params }) {
   if (!o) notFound();
 
   const podeAbrirFicha = PAPEIS_COM_FICHA.includes(user.role);
-  const clienteVinculado = o.cliente_id ? await getCliente(o.cliente_id) : null;
-  const veiculosCount = clienteVinculado ? clienteVinculado.veiculos.length : 0;
+  // resumoCliente(), não getCliente(): esta tela é aberta pelo vendedor, que
+  // não tem acesso à ficha (nem ao dado fiscal que ela carrega) — ver o
+  // comentário de resumoCliente em src/lib/clientes/repo.js.
+  const resumo = o.cliente_id ? await resumoCliente(o.cliente_id) : null;
+  const veiculosCount = resumo ? resumo.veiculos_count : 0;
 
   const linhas = [
     ["Veículo", veiculoLabel(o)],
