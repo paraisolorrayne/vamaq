@@ -55,8 +55,13 @@ Mais a FK no padrão `do $$ ... pg_constraint` que o projeto usa, e índice em
 `cliente_id`.
 
 `cliente_nome` **continua `not null`** — é o rótulo de exibição e a memória do que
-foi digitado. Ao vincular um cliente, o nome dele é copiado para lá, de modo que a
-lista continua legível sem join.
+foi digitado. Ao vincular um cliente, **o nome digitado NÃO é sobrescrito** pelo
+nome do cadastro — o vendedor conhece a pessoa por como digitou ("Carlinhos"), e
+o nome oficial do cadastro ("Carlos Eduardo Mendes") aparece à parte, junto do
+vínculo, tanto na tela da oportunidade quanto na ficha do cliente. Só preenche
+`cliente_nome` a partir do cadastro quando o campo ainda está vazio. Mesma regra
+nos dois caminhos de vínculo (formulário da oportunidade e a tela `/vincular`) —
+ver fix-revisao2-report.md, itens 1 e 2.
 
 ### A venda pelo CRM passa a ligar o carro ao cliente
 
@@ -75,22 +80,27 @@ gerar contrato ou nota.
 ### Telas do CRM
 
 - **Formulário da oportunidade:** o campo de cliente vira busca. Digitando, mostra
-  os clientes que casam por nome, CPF ou telefone. Escolher preenche nome, telefone
-  e e-mail e guarda o `cliente_id`. Não achou nada e o nome está preenchido:
-  aparece **"Cadastrar «nome» como cliente novo"**, que cria o cadastro mínimo e já
-  vincula.
+  os clientes que casam por nome, CPF ou telefone. Escolher preenche telefone e
+  e-mail (quando o campo já não tinha algo digitado) e guarda o `cliente_id`; o
+  nome só vem do cadastro se o campo ainda estiver vazio — do contrário, o que foi
+  digitado permanece. Não achou nada e o nome está preenchido: aparece
+  **"Cadastrar «nome» como cliente novo"**, que cria o cadastro mínimo e já vincula.
 - **Tela da oportunidade:** quando há cliente vinculado, o nome vira link para a
-  ficha dele, com uma linha discreta dizendo há quantos carros ele passou. Sem
-  vínculo, aparece a ação **"Vincular a um cliente"**, que leva a uma tela própria
-  de busca — como manda a regra do CRM, toda ação é uma tela.
+  ficha dele, com uma linha discreta dizendo há quantos carros ele passou. Se o
+  nome do cadastro difere do nome digitado na oportunidade, uma segunda linha
+  discreta mostra o nome do cadastro (`cadastro: Carlos Eduardo Mendes`) — para
+  todos os papéis, inclusive o vendedor. Sem vínculo, aparece a ação **"Vincular
+  a um cliente"**, que leva a uma tela própria de busca — como manda a regra do
+  CRM, toda ação é uma tela.
 - **Lista:** oportunidade sem cliente cadastrado ganha uma marca discreta, para a
   secretaria saber o que falta vincular. Discreta de propósito — não é erro, é
   pendência.
 
 ### Ficha do cliente
 
-Ganha um bloco **"Oportunidades"**, com etapa, veículo e valor, ao lado dos blocos
-de carros, contratos e notas que já existem. É o outro lado do mesmo vínculo.
+Ganha um bloco **"Oportunidades"**, com etapa, o nome como foi registrado na
+oportunidade, veículo e valor, ao lado dos blocos de carros, contratos e notas
+que já existem. É o outro lado do mesmo vínculo.
 
 ## O que não muda
 
