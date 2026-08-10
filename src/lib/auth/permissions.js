@@ -29,7 +29,7 @@ const SECTIONS = [
   { key: "crm", prefix: "/admin/crm", label: "CRM (Vendas)", icon: "🤝", roles: ["vendedor", "secretaria"] },
   { key: "clientes", prefix: "/admin/clientes", label: "Clientes", icon: "🧑", roles: ["secretaria", "financeiro"] },
   { key: "financeiro", prefix: "/admin/financeiro", label: "Financeiro", icon: "📊", roles: ["financeiro", "secretaria"] },
-  { key: "fiscal", prefix: "/admin/fiscal", label: "Notas Fiscais", icon: "🧾", roles: ["financeiro"] },
+  { key: "fiscal", prefix: "/admin/fiscal", label: "Notas Fiscais", icon: "🧾", roles: ["financeiro", "secretaria"] },
   { key: "tutoriais", prefix: "/admin/tutoriais", label: "Tutoriais", icon: "📚", roles: ["estoque", "financeiro", "vendedor", "secretaria"] },
   { key: "dashboard", prefix: "/admin", label: "Dashboard", icon: "📈", roles: ["estoque", "financeiro", "vendedor", "secretaria"] },
 ];

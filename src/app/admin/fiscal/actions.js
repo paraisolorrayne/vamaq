@@ -5,7 +5,7 @@ import { requireRole } from "@/lib/auth/dal";
 import { atualizarStatus, cancelarNota, emitirNotaVeiculo } from "@/lib/fiscal/notas";
 
 export async function atualizarStatusAction(ref) {
-  await requireRole(["admin", "financeiro"]);
+  await requireRole(["financeiro", "secretaria"]);
   const res = await atualizarStatus(ref);
   if (res.error) return { error: res.error };
   revalidatePath("/admin/fiscal");
@@ -13,7 +13,7 @@ export async function atualizarStatusAction(ref) {
 }
 
 export async function cancelarNotaAction(ref, justificativa) {
-  await requireRole(["admin", "financeiro"]);
+  await requireRole(["financeiro", "secretaria"]);
   const res = await cancelarNota(ref, justificativa);
   if (res.error) return { error: res.error };
   revalidatePath("/admin/fiscal");
@@ -21,7 +21,7 @@ export async function cancelarNotaAction(ref, justificativa) {
 }
 
 export async function emitirNotaAction(vehicleId, { destinatario, valorVenda, custoAquisicao, clienteId }) {
-  await requireRole(["admin", "financeiro"]);
+  await requireRole(["financeiro", "secretaria"]);
   const res = await emitirNotaVeiculo(vehicleId, { destinatario, valorVenda, custoAquisicao, clienteId });
   if (res.error) return { error: res.error };
   revalidatePath("/admin/fiscal");
