@@ -25,6 +25,7 @@ export default async function EditarOportunidadePage({ params }) {
   // volta via valorDaOportunidade (Task 2).
   const valoresIniciais = {
     cliente_nome: o.cliente_nome,
+    cliente_id: o.cliente_id,
     telefone: o.telefone,
     email: o.email,
     vehicle_id: o.vehicle_id,

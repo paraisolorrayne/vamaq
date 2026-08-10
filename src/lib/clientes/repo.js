@@ -6,6 +6,7 @@
 import { query } from "@/lib/db";
 import { normalizaDoc } from "@/lib/clientes/doc";
 import { prepararCampos } from "@/lib/clientes/campos";
+import { clausulaBuscaNome, aplicarLimite } from "@/lib/clientes/busca";
 
 const CAMPOS = [
   "nome",
@@ -30,13 +31,6 @@ const CAMPOS = [
 
 const PAPEIS = ["comprou", "vendeu", "consignou"];
 
-// Escapa os curingas do LIKE (% e _) e o próprio escape (\) antes de montar o
-// padrão — sem isso, buscar por "%" ou "_" lista tudo em vez de nada.
-// Copiado de src/lib/documentos.js:45.
-function escapeCuringasLike(str) {
-  return str.replace(/[\\%_]/g, (c) => `\\${c}`);
-}
-
 /**
  * Valida e normaliza o que veio do formulário (via campos.js, puro) e, se
  * passar, checa duplicidade de documento no banco. Retorna {values} ou
@@ -58,18 +52,35 @@ async function prepararCliente(data, { ignorarId = null } = {}) {
   return { values };
 }
 
-/** Lista de clientes, com o total de veículos vinculados a cada um. */
-export async function listClientes({ busca, incluirInativos = false } = {}) {
+/**
+ * Lista de clientes, com o total de veículos vinculados a cada um.
+ *
+ * `busca` casa nome (termo inteiro OU primeiro token — ver
+ * src/lib/clientes/busca.js), documento e telefone; o resultado vem ordenado
+ * por relevância (quem casou o termo inteiro primeiro) e depois por nome.
+ *
+ * `limite`, quando informado, corta o resultado nesse tamanho — usado pelo
+ * seletor do CRM, onde os resultados são botões de largura total dentro do
+ * formulário (ver SeletorCliente.js): sem limite, uma busca larga o
+ * suficiente para achar "Carlos Mendez" a partir de "Carlos Mendes" também
+ * pode trazer dezenas de homônimos. O array devolvido carrega um `.mais`
+ * (não enumerável em JSON.stringify de array, então quem lê via API precisa
+ * repassá-lo à parte — ver src/app/api/admin/clientes/route.js) indicando se
+ * havia mais resultados do que o limite.
+ */
+export async function listClientes({ busca, incluirInativos = false, limite } = {}) {
   const params = [];
   const condicoes = [];
 
   if (!incluirInativos) condicoes.push(`c.ativo`);
 
   const termo = String(busca || "").trim();
+  let ordemRelevancia = "";
   if (termo) {
-    params.push(`%${escapeCuringasLike(termo)}%`);
-    const nomeIdx = params.length;
-    let clause = `lower(c.nome) like lower($${nomeIdx})`;
+    const nome = clausulaBuscaNome(termo, params.length + 1);
+    let clause = nome.clause;
+    params.push(...nome.params);
+    ordemRelevancia = nome.orderBy;
 
     const digitos = normalizaDoc(termo);
     if (digitos) {
@@ -82,6 +93,17 @@ export async function listClientes({ busca, incluirInativos = false } = {}) {
   }
 
   const where = condicoes.length ? `where ${condicoes.join(" and ")}` : "";
+  const orderBy = ordemRelevancia ? `order by ${ordemRelevancia}, c.nome` : `order by c.nome`;
+
+  // Busca um a mais que o limite pedido: sem isso não haveria como saber, do
+  // lado de cá, se cortamos resultado de verdade (para o "mostrando os N
+  // mais parecidos" da tela) ou se o limite só coincidiu com o total.
+  let limitClause = "";
+  if (limite) {
+    params.push(limite + 1);
+    limitClause = `limit $${params.length}`;
+  }
+
   // Sem `select c.*`: a lista é consumida pelo vendedor (seletor de contrato
   // e de NF-e), e `obs` (nota interna sobre o cliente) e `rg` não têm por que
   // sair daqui — quem precisa deles é a ficha (getCliente), que já é
@@ -96,13 +118,15 @@ export async function listClientes({ busca, incluirInativos = false } = {}) {
             (select count(*)::int from cliente_veiculos cv where cv.cliente_id = c.id) as veiculos_count
        from clientes c
        ${where}
-      order by c.nome`,
+      ${orderBy}
+      ${limitClause}`,
     params
   );
-  return rows;
+
+  return aplicarLimite(rows, limite);
 }
 
-/** Ficha completa: dados, veículos, documentos e notas fiscais ligados. */
+/** Ficha completa: dados, veículos, documentos, notas fiscais e oportunidades ligados. */
 export async function getCliente(id) {
   const c = await query(`select * from clientes where id = $1`, [id]);
   if (!c.rows.length) return null;
@@ -133,12 +157,45 @@ export async function getCliente(id) {
     [id]
   );
 
+  const oportunidades = await query(
+    `select o.id, o.etapa, o.valor, o.created_at, o.cliente_nome,
+            v.brand as vehicle_brand, v.model as vehicle_model,
+            v.year as vehicle_year, v.ano_modelo as vehicle_ano_modelo
+       from oportunidades o
+       left join vehicles v on v.id = o.vehicle_id
+      where o.cliente_id = $1
+      order by o.created_at desc`,
+    [id]
+  );
+
   return {
     ...c.rows[0],
     veiculos: veiculos.rows,
     documentos: documentos.rows,
     notas: notas.rows,
+    oportunidades: oportunidades.rows,
   };
+}
+
+/**
+ * Resumo mínimo do cliente — id, nome e quantos veículos estão ligados a
+ * ele. Existe separado de getCliente() de propósito: a tela da oportunidade
+ * do CRM (aberta pelo vendedor) só precisa desse número para o texto "N
+ * carros no histórico", mas getCliente() monta a ficha inteira, e o objeto
+ * que ela devolve inclui `notas` — ref, status e valor de notas fiscais, dado
+ * que o vendedor não tem acesso (o GET da ficha é fechado para ele de
+ * propósito). Um `prop={cliente}` descuidado naquela tela vazaria dado
+ * fiscal; esta função nunca traz esse dado para começo de conversa.
+ */
+export async function resumoCliente(id) {
+  const { rows } = await query(
+    `select c.id, c.nome,
+            (select count(*)::int from cliente_veiculos cv where cv.cliente_id = c.id) as veiculos_count
+       from clientes c
+      where c.id = $1`,
+    [id]
+  );
+  return rows.length ? rows[0] : null;
 }
 
 export async function createCliente(data) {

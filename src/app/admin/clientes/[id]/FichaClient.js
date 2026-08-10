@@ -6,6 +6,8 @@ import styles from "../../admin.module.css";
 import { formataDoc } from "@/lib/clientes/doc";
 import { formatValorBR } from "@/lib/money";
 import { anoVeiculo } from "@/lib/anoVeiculo";
+import { rotuloEtapa } from "@/lib/crm/etapas";
+import { rotuloVeiculo } from "@/lib/crm/rotuloVeiculo";
 
 const fmtData = (d) =>
   d ? new Date(d).toLocaleDateString("pt-BR", { timeZone: "UTC" }) : "—";
@@ -13,7 +15,7 @@ const fmtDataHora = (d) => (d ? new Date(d).toLocaleDateString("pt-BR") : "—")
 const money = (n) => "R$ " + formatValorBR(Number(n) || 0);
 
 const PAPEL_LABEL = { comprou: "Comprou", vendeu: "Vendeu", consignou: "Consignou" };
-const ORIGEM_LABEL = { contrato: "do contrato", nota: "da nota", manual: "manual" };
+const ORIGEM_LABEL = { contrato: "do contrato", nota: "da nota", manual: "manual", crm: "da venda no CRM" };
 
 // Mesmos rótulos de src/app/admin/documentos/gerados/GeradosClient.js — os
 // valores em `tipo` usam o slug técnico, aqui é o nome que o operador reconhece.
@@ -42,6 +44,14 @@ export default function FichaClient({ cliente: clienteInicial }) {
   const [vehicles, setVehicles] = useState([]);
   const [vehiclesErr, setVehiclesErr] = useState(null);
   const [ligarErr, setLigarErr] = useState(null);
+
+  // Confirmação de ativar/desativar e de desfazer vínculo: inline, na própria
+  // tela — sem janelinha nativa do navegador. Mesma regra do CRM (ver
+  // src/app/admin/tutoriais/crm/page.js: "não existe janelinha de
+  // confirmação"), aqui adaptada porque a ficha não tem uma tela por ação —
+  // o botão vira a pergunta, com "Cancelar" ao lado, até a pessoa decidir.
+  const [confirmarStatus, setConfirmarStatus] = useState(false);
+  const [confirmarDesfazerId, setConfirmarDesfazerId] = useState(null);
 
   // Estoque para o select de "Ligar outro carro" — carregado à parte porque
   // não vem em getCliente() (que só traz os veículos já ligados).
@@ -106,12 +116,9 @@ export default function FichaClient({ cliente: clienteInicial }) {
     });
   }
 
-  function alternarAtivo() {
+  function confirmarAlternarAtivo() {
+    setConfirmarStatus(false);
     const vaiAtivar = cliente.ativo === false;
-    const pergunta = vaiAtivar
-      ? `Reativar ${cliente.nome}? Ele volta a aparecer nas buscas.`
-      : `Desativar ${cliente.nome}? Ele some das buscas, mas o histórico continua.`;
-    if (!confirm(pergunta)) return;
     setDadosErr(null);
     startTransition(async () => {
       try {
@@ -166,9 +173,8 @@ export default function FichaClient({ cliente: clienteInicial }) {
     });
   }
 
-  function desfazerVinculo(v) {
-    const nome = `${v.brand} ${v.model}${v.placa ? " — " + v.placa : ""}`;
-    if (!confirm(`Desfazer o vínculo com ${nome}?`)) return;
+  function confirmarDesfazerVinculo(v) {
+    setConfirmarDesfazerId(null);
     setLigarErr(null);
     startTransition(async () => {
       try {
@@ -326,15 +332,41 @@ export default function FichaClient({ cliente: clienteInicial }) {
             <p style={{ marginTop: 0, marginBottom: 12, fontSize: "0.85rem", color: "#6b7280" }}>
               Cliente inativo — some das buscas, mas segue no histórico.
             </p>
-            <button type="button" className={styles.btnPrimary} onClick={alternarAtivo} disabled={isPending}>
-              Reativar cliente
-            </button>
+            {confirmarStatus ? (
+              <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+                <span style={{ fontSize: "0.85rem" }}>Reativar {cliente.nome}? Ele volta a aparecer nas buscas.</span>
+                <button type="button" className={styles.btnPrimary} onClick={confirmarAlternarAtivo} disabled={isPending}>
+                  Sim, reativar
+                </button>
+                <button type="button" className={styles.btnSecondary} onClick={() => setConfirmarStatus(false)} disabled={isPending}>
+                  Cancelar
+                </button>
+              </div>
+            ) : (
+              <button type="button" className={styles.btnPrimary} onClick={() => setConfirmarStatus(true)} disabled={isPending}>
+                Reativar cliente
+              </button>
+            )}
           </div>
         ) : (
           <div style={{ marginTop: 16 }}>
-            <button type="button" className={styles.btnDanger} onClick={alternarAtivo} disabled={isPending}>
-              Desativar cliente
-            </button>
+            {confirmarStatus ? (
+              <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+                <span style={{ fontSize: "0.85rem" }}>
+                  Desativar {cliente.nome}? Ele some das buscas, mas o histórico continua.
+                </span>
+                <button type="button" className={styles.btnDanger} onClick={confirmarAlternarAtivo} disabled={isPending}>
+                  Sim, desativar
+                </button>
+                <button type="button" className={styles.btnSecondary} onClick={() => setConfirmarStatus(false)} disabled={isPending}>
+                  Cancelar
+                </button>
+              </div>
+            ) : (
+              <button type="button" className={styles.btnDanger} onClick={() => setConfirmarStatus(true)} disabled={isPending}>
+                Desativar cliente
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -369,22 +401,44 @@ export default function FichaClient({ cliente: clienteInicial }) {
                   <td>{fmtData(v.data)}</td>
                   <td>{ORIGEM_LABEL[v.origem] || v.origem}</td>
                   <td>
-                    <div className={styles.tableActions}>
-                      <Link
-                        href={`/admin/estoque/novo?id=${v.vehicle_id}`}
-                        className={`${styles.btnSecondary} ${styles.btnSmall}`}
-                      >
-                        Ver veículo
-                      </Link>
-                      <button
-                        type="button"
-                        className={`${styles.btnDanger} ${styles.btnSmall}`}
-                        onClick={() => desfazerVinculo(v)}
-                        disabled={isPending}
-                      >
-                        Desfazer vínculo
-                      </button>
-                    </div>
+                    {confirmarDesfazerId === v.vinculo_id ? (
+                      <div className={styles.tableActions}>
+                        <span style={{ fontSize: "0.8rem" }}>Desfazer o vínculo?</span>
+                        <button
+                          type="button"
+                          className={`${styles.btnDanger} ${styles.btnSmall}`}
+                          onClick={() => confirmarDesfazerVinculo(v)}
+                          disabled={isPending}
+                        >
+                          Sim, desfazer
+                        </button>
+                        <button
+                          type="button"
+                          className={`${styles.btnSecondary} ${styles.btnSmall}`}
+                          onClick={() => setConfirmarDesfazerId(null)}
+                          disabled={isPending}
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    ) : (
+                      <div className={styles.tableActions}>
+                        <Link
+                          href={`/admin/estoque/novo?id=${v.vehicle_id}`}
+                          className={`${styles.btnSecondary} ${styles.btnSmall}`}
+                        >
+                          Ver veículo
+                        </Link>
+                        <button
+                          type="button"
+                          className={`${styles.btnDanger} ${styles.btnSmall}`}
+                          onClick={() => setConfirmarDesfazerId(v.vinculo_id)}
+                          disabled={isPending}
+                        >
+                          Desfazer vínculo
+                        </button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -431,6 +485,47 @@ export default function FichaClient({ cliente: clienteInicial }) {
           </div>
         </form>
         {vehiclesErr && <p style={{ color: "#b91c1c", fontSize: "0.85rem", marginBottom: 0 }}>{vehiclesErr}</p>}
+      </div>
+
+      {/* Oportunidades */}
+      <div className={styles.card} style={{ marginBottom: 24 }}>
+        <h3 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: 16 }}>Oportunidades</h3>
+
+        <div className={styles.tableWrap}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Etapa</th>
+                <th>Registrado como</th>
+                <th>Veículo</th>
+                <th>Valor</th>
+                <th>Data</th>
+              </tr>
+            </thead>
+            <tbody>
+              {cliente.oportunidades.map((o) => (
+                <tr key={o.id}>
+                  <td>{rotuloEtapa(o.etapa)}</td>
+                  {/* Item 1 da revisão 2: mesmo problema do outro lado do
+                      vínculo — a oportunidade guarda o nome como o vendedor
+                      digitou ("Carlinhos"), que pode diferir do cadastro
+                      ("Carlos Eduardo Mendes", já mostrado no topo da ficha). */}
+                  <td>{o.cliente_nome || "—"}</td>
+                  <td>{rotuloVeiculo(o) || "—"}</td>
+                  <td>{o.valor != null ? money(o.valor) : "—"}</td>
+                  <td>{fmtDataHora(o.created_at)}</td>
+                </tr>
+              ))}
+              {cliente.oportunidades.length === 0 && (
+                <tr>
+                  <td colSpan={5} style={{ textAlign: "center", color: "#6b7280", padding: 16 }}>
+                    Nenhuma oportunidade registrada para este cliente ainda.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Documentos e notas */}

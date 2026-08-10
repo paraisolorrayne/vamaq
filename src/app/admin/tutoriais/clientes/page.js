@@ -78,20 +78,35 @@ export default function TutorialClientesPage() {
       <div className={t.step}>
         <div className={t.stepNumber}>3</div>
         <div className={t.stepBody}>
-          <h3 className={t.stepTitle}>A ficha e os carros</h3>
+          <h3 className={t.stepTitle}>A ficha, os carros e as oportunidades</h3>
           <p>
             Clique em <span className={t.uiField}>Abrir ficha</span> na lista
-            para ver e editar os dados do cliente, os carros ligados a ele e
-            os documentos e notas já emitidos.
+            para ver e editar os dados do cliente, os carros ligados a ele,
+            as oportunidades do CRM em que ele apareceu e os documentos e
+            notas já emitidos.
           </p>
           <p>
-            Os carros aparecem <strong>sozinhos</strong>: gere um contrato com
-            esse cliente selecionado e o carro entra na ficha dele com o
-            papel certo (Comprou, Vendeu ou Consignou). Para negócios
-            anteriores ao sistema, use{" "}
+            Os carros chegam à ficha por <strong>três caminhos</strong>, todos{" "}
+            <strong>sozinhos</strong> — sem precisar ligar à mão: gerar um{" "}
+            <strong>contrato</strong> com esse cliente selecionado, emitir uma{" "}
+            <strong>nota fiscal</strong> para ele, ou <strong>registrar a
+            venda</strong> de uma oportunidade do CRM vinculada a ele (veja o{" "}
+            <Link href="/admin/tutoriais/crm">tutorial de CRM</Link>). Em
+            qualquer um dos três, o carro entra com o papel certo (Comprou,
+            Vendeu ou Consignou). Para negócios anteriores ao sistema, use{" "}
             <span className={t.uiField}>Ligar outro carro</span>, no fim da
             seção Carros, para ligar à mão.
           </p>
+          <div className={t.tip}>
+            <span className={t.boxLabel}>Oportunidades</span>
+            <p>
+              A seção <span className={t.uiField}>Oportunidades</span> lista
+              etapa, veículo, valor e data de cada oportunidade do CRM
+              vinculada a este cliente — é o histórico do funil de vendas,
+              visível só para quem abre a ficha (secretaria, financeiro e
+              admin). O vendedor não vê esta tela.
+            </p>
+          </div>
         </div>
       </div>
 

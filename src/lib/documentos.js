@@ -46,9 +46,24 @@ export async function salvarDocumento({ tipo, titulo, cliente, clienteId, vehicl
     // O vínculo é um efeito colateral desejável, não a razão de existir do
     // contrato: falhar aqui não pode desfazer um documento já gravado.
     try {
-      await ligarVeiculo({
+      const { vinculo } = await ligarVeiculo({
         clienteId, vehicleId, papel, origem: "contrato", documentoId: rows[0].id,
       });
+      // Item 5 da revisão 2 (fix-revisao2-report.md): a venda pelo CRM pode
+      // ter criado este mesmo vínculo (cliente_id, vehicle_id, papel) ANTES
+      // do contrato — `on conflict do nothing` em ligarVeiculo() faz o
+      // insert acima não fazer nada, e o `vinculo` devolvido é a linha que
+      // já existia, com `documento_id` nulo. Sem isto, esse vínculo ficava
+      // para sempre sem apontar para o contrato que o gerou. `coalesce`
+      // preserva um `documento_id` que já estivesse preenchido (contrato
+      // sempre escreveu primeiro, é o caso comum) — só completa o que
+      // estava faltando.
+      if (vinculo && !vinculo.documento_id) {
+        await query(
+          `update cliente_veiculos set documento_id = coalesce(documento_id, $2) where id = $1`,
+          [vinculo.id, rows[0].id]
+        );
+      }
     } catch (err) {
       console.error("Contrato gravado, mas o vínculo cliente-veículo falhou:", err);
     }

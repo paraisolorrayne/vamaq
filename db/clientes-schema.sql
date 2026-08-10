@@ -60,7 +60,14 @@ create table if not exists cliente_veiculos (
   created_at    timestamptz not null default now(),
 
   constraint cliente_veiculo_papel_check check (papel in ('comprou','vendeu','consignou')),
-  constraint cliente_veiculo_origem_check check (origem in ('manual','contrato','nota'))
+  -- 'crm' foi adicionado depois; o check abaixo é o que vale para banco NOVO.
+  -- Bancos que já rodaram este arquivo antes têm a tabela criada e o
+  -- `create table if not exists` é um no-op nela, então o check original
+  -- (sem 'crm') continuaria valendo — daí o bloco `do $$` logo depois, que
+  -- dropa e recria a constraint para esses bancos existentes. Não é
+  -- duplicação: são os dois caminhos (banco novo x banco existente) que
+  -- precisam chegar ao mesmo resultado.
+  constraint cliente_veiculo_origem_check check (origem in ('manual','contrato','nota','crm'))
 );
 
 -- Gerar o mesmo contrato duas vezes não pode criar dois vínculos iguais.
@@ -68,6 +75,18 @@ create unique index if not exists cliente_veiculos_unico
   on cliente_veiculos(cliente_id, vehicle_id, papel);
 
 create index if not exists cliente_veiculos_vehicle_idx on cliente_veiculos(vehicle_id);
+
+-- Recria o check de origem para aceitar 'crm' em bancos que já tinham a
+-- tabela cliente_veiculos criada (ver comentário no `create table` acima:
+-- `create table if not exists` não muda a definição de uma tabela existente,
+-- então sem isto o CRM não conseguiria gravar vínculo nenhum em produção).
+do $$ begin
+  if exists (select 1 from pg_constraint where conname = 'cliente_veiculo_origem_check') then
+    alter table cliente_veiculos drop constraint cliente_veiculo_origem_check;
+  end if;
+  alter table cliente_veiculos add constraint cliente_veiculo_origem_check
+    check (origem in ('manual','contrato','nota','crm'));
+end $$;
 
 -- Ligação dos registros que já existiam. `set null` nos dois: apagar o cadastro
 -- do cliente não pode apagar o contrato nem a nota, que são prova.

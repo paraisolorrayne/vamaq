@@ -21,8 +21,10 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { anoVeiculo } from "@/lib/anoVeiculo";
 import { opcoesOrigem } from "@/lib/crm/origem";
+import { dadosDoCliente } from "@/lib/crm/vinculoCliente";
 import styles from "../admin.module.css";
 import crm from "./crm.module.css";
+import SeletorCliente from "./SeletorCliente";
 
 function veiculoOptionLabel(v) {
   const ano = anoVeiculo(v);
@@ -35,6 +37,7 @@ export default function FormOportunidade({ valoresIniciais, oportunidadeId }) {
   const iniciais = valoresIniciais || {};
 
   const [clienteNome, setClienteNome] = useState(iniciais.cliente_nome || "");
+  const [clienteId, setClienteId] = useState(iniciais.cliente_id || null);
   const [telefone, setTelefone] = useState(iniciais.telefone || "");
   const [email, setEmail] = useState(iniciais.email || "");
   const [vehicleId, setVehicleId] = useState(iniciais.vehicle_id || "");
@@ -51,6 +54,16 @@ export default function FormOportunidade({ valoresIniciais, oportunidadeId }) {
   const [veiculosErro, setVeiculosErro] = useState("");
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState("");
+
+  // Item 3 da revisão 2 (fix-revisao2-report.md): a oportunidade tinha
+  // vínculo (`iniciais.cliente_id`) e handleClienteNomeChange zera o
+  // `clienteId` a cada tecla — certo, o vínculo pode não valer mais. O
+  // problema era o desfecho: salvar direto desfazia o vínculo em silêncio.
+  // `tinhaVinculo` guarda o estado ORIGINAL (não muda depois de montado) só
+  // para saber se há algo a perder; `avisoDesvincular` gate o submit até a
+  // pessoa confirmar explicitamente, sem janelinha nativa do navegador.
+  const tinhaVinculo = Boolean(iniciais.cliente_id);
+  const [avisoDesvincular, setAvisoDesvincular] = useState(false);
 
   useEffect(() => {
     let cancelado = false;
@@ -77,6 +90,53 @@ export default function FormOportunidade({ valoresIniciais, oportunidadeId }) {
     };
   }, []);
 
+  // Qualquer edição no nome invalida o vínculo anterior até a pessoa escolher
+  // de novo (ou cadastrar) — sem isso, um `cliente_id` de uma busca antiga
+  // ficaria colado a um nome digitado depois, sem relação com ele.
+  function handleClienteNomeChange(v) {
+    setClienteNome(v);
+    setClienteId(null);
+    // Qualquer nova edição no nome invalida um aviso que já estava na tela —
+    // a pessoa pode estar corrigindo o nome de volta ou vai escolher outro
+    // cliente; o aviso de desvincular só volta se ela tentar salvar de novo
+    // sem vínculo.
+    setAvisoDesvincular(false);
+  }
+
+  function handleSelecionarCliente(cliente) {
+    setAvisoDesvincular(false);
+    const dados = dadosDoCliente(cliente);
+    // Preenche ao CRIAR, preserva ao EDITAR — as duas metades não são a
+    // mesma regra, mesmo parecendo.
+    //
+    // Criando (sem oportunidadeId): o que está em `clienteNome` até aqui é
+    // só o termo de BUSCA que a pessoa digitou para achar o cliente — ex.
+    // "Carl" para achar "Carlos Eduardo Mendes" — não é apelido de ninguém.
+    // Escolher o resultado troca pelo nome completo do cadastro, sempre,
+    // mesmo que o campo já tivesse algo digitado.
+    //
+    // Editando uma oportunidade que já existe, o nome em tela pode ser como
+    // o vendedor decidiu chamar a pessoa ("Carlinhos") — aí preserva (item 2
+    // da revisão 2, fix-revisao2-report.md) e só preenche a partir do
+    // cadastro quando o campo ainda está vazio; o nome oficial do cadastro
+    // ("Carlos Eduardo Mendes") já aparece à parte assim que o vínculo
+    // existe (item 1), então nada se perde mantendo o que foi digitado.
+    // VincularForm.js nunca sobrescreve `cliente_nome` (só o `cliente_id`
+    // muda por lá) — ele só existe para oportunidades que já existem, ou
+    // seja, é sempre o caso "editando" desta distinção.
+    setClienteNome((atual) => (!editando || !atual.trim() ? dados.cliente_nome : atual));
+    // item 4 do fix-duplicado-report.md: só sobrescreve telefone/e-mail
+    // quando o cadastro trouxe algo — nunca com um campo em branco. Sem
+    // isto, um cliente recém-criado sem e-mail no cadastro (porque o POST
+    // também não mandava) apagava o e-mail que a pessoa acabou de digitar
+    // no formulário, mesmo já tendo corrigido o POST para enviá-lo: o mesmo
+    // buraco valia para escolher um cliente já cadastrado sem telefone/
+    // e-mail enquanto o formulário já tinha um digitado.
+    setTelefone((atual) => dados.telefone || atual);
+    setEmail((atual) => dados.email || atual);
+    setClienteId(dados.cliente_id);
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     setErro("");
@@ -86,9 +146,19 @@ export default function FormOportunidade({ valoresIniciais, oportunidadeId }) {
       return;
     }
 
+    // Item 3: tinha vínculo, não tem mais — pede confirmação explícita antes
+    // de salvar em vez de desfazer em silêncio. Primeiro submit com o aviso
+    // ainda fechado só abre o aviso e PARA aqui, sem salvar; um segundo
+    // clique, agora no botão "Sim, salvar sem vínculo", é a confirmação.
+    if (tinhaVinculo && !clienteId && !avisoDesvincular) {
+      setAvisoDesvincular(true);
+      return;
+    }
+
     setSalvando(true);
     const payload = {
       cliente_nome: clienteNome.trim(),
+      cliente_id: clienteId || null,
       telefone: telefone.trim() || null,
       email: email.trim() || null,
       vehicle_id: vehicleId || null,
@@ -132,15 +202,23 @@ export default function FormOportunidade({ valoresIniciais, oportunidadeId }) {
       {erro && <p className={crm.erroForm}>{erro}</p>}
 
       <div className={styles.formGrid}>
-        <div className={styles.formGroup}>
+        <div className={`${styles.formGroup} ${styles.formGroupFull}`}>
           <label className={styles.formLabel}>Cliente *</label>
-          <input
-            type="text"
-            value={clienteNome}
-            onChange={(e) => setClienteNome(e.target.value)}
-            className={`${styles.formInput} ${crm.campoToque}`}
+          {/* A proteção contra cadastro duplicado (ver task-3-brief.md):
+              achar tem que ser mais fácil que criar. Por isso a busca abre
+              assim que a pessoa digita, com os resultados sempre visíveis
+              (nunca atrás de mais um toque) e o "cadastrar novo" só aparece
+              quando a busca já rodou e não achou ninguém. */}
+          <SeletorCliente
+            valor={clienteNome}
+            onChangeValor={handleClienteNomeChange}
+            onSelecionar={handleSelecionarCliente}
+            telefoneParaCriar={telefone}
+            emailParaCriar={email}
+            inputClassName={`${styles.formInput} ${crm.campoToque}`}
             placeholder="Nome do cliente"
             required
+            clienteVinculado={Boolean(clienteId)}
           />
         </div>
 
@@ -223,17 +301,36 @@ export default function FormOportunidade({ valoresIniciais, oportunidadeId }) {
         </div>
       </div>
 
+      {avisoDesvincular && (
+        <p className={crm.avisoCampo}>
+          O nome não corresponde mais ao cliente vinculado — salvar agora desfaz o
+          vínculo com o cadastro. Confirme abaixo para salvar assim mesmo, ou
+          escolha o cliente de novo no campo acima.
+        </p>
+      )}
+
       <div className={crm.formActions}>
         <button
           type="submit"
-          className={`${styles.btnPrimary} ${crm.acaoToque}`}
+          className={`${avisoDesvincular ? styles.btnDanger : styles.btnPrimary} ${crm.acaoToque}`}
           disabled={salvando}
         >
-          {salvando ? "Salvando..." : "Salvar"}
+          {salvando ? "Salvando..." : avisoDesvincular ? "Sim, salvar sem vínculo" : "Salvar"}
         </button>
-        <Link href={cancelarHref} className={`${styles.btnSecondary} ${crm.acaoToque}`}>
-          Cancelar
-        </Link>
+        {avisoDesvincular ? (
+          <button
+            type="button"
+            className={`${styles.btnSecondary} ${crm.acaoToque}`}
+            onClick={() => setAvisoDesvincular(false)}
+            disabled={salvando}
+          >
+            Cancelar
+          </button>
+        ) : (
+          <Link href={cancelarHref} className={`${styles.btnSecondary} ${crm.acaoToque}`}>
+            Cancelar
+          </Link>
+        )}
       </div>
     </form>
   );

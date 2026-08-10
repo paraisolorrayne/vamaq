@@ -59,14 +59,28 @@ SQL
 
 ---
 
-## 4. Aplicar o schema
+## 4. Aplicar os schemas
+
+> ⚠️ **São sete arquivos, e a ordem importa.** `crm-schema.sql` referencia `clientes`,
+> `clientes-schema.sql` altera `documentos_gerados` e `notas_fiscais`, e assim por diante.
+> Aplicar fora de ordem falha com `relation "..." does not exist` no meio, deixando o banco
+> pela metade. **Use o script**, que já conhece a ordem e para no primeiro erro:
 
 ```bash
 cd "$APP_DIR"
-PGPASSWORD='TROQUE_ESTA_SENHA' psql "postgres://vamaq@localhost:5432/vamaq" -f db/schema.sql
+./db/aplicar-schemas.sh "postgres://vamaq@localhost:5432/vamaq"
+# ou, com DATABASE_URL definido:  ./db/aplicar-schemas.sh
 ```
 
-Deve criar as tabelas `vehicles` e `vehicle_images`. Conferir:
+Todos os arquivos são idempotentes — **rodar de novo é o jeito normal** de aplicar uma
+mudança de schema num banco que já existe. Não há script de deploy neste repositório
+(o deploy é manual); este é o passo a rodar antes do `npm run build` (seção 7).
+
+O financeiro (`db/fin-*.sql`) fica **fora** desse script: vive no schema `fin`, é aplicado com
+outra conexão (`DATABASE_URL_FIN`, role `vamaq_fin`) e a blindagem tem script próprio
+(`scripts/setup-fin-role.sh`). Ver o cabeçalho de `db/aplicar-schemas.sh`.
+
+Deve criar as tabelas `vehicles` e `vehicle_images`, entre outras. Conferir:
 
 ```bash
 PGPASSWORD='TROQUE_ESTA_SENHA' psql "postgres://vamaq@localhost:5432/vamaq" -c '\dt'
