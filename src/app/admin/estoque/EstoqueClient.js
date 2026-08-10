@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { normalizaBusca } from "@/lib/buscaVeiculo";
 import { anoVeiculo } from "@/lib/anoVeiculo";
+import { podeMarcarVendido } from "@/lib/vendaVeiculo";
 import styles from "../admin.module.css";
 
 export default function EstoqueClient({ podeEmitirNota }) {
@@ -174,6 +175,15 @@ function EstoqueConteudo({ podeEmitirNota }) {
                         >
                           Editar
                         </Link>
+                        {podeMarcarVendido(v) && (
+                          <Link
+                            href={`/admin/estoque/${v.id}/vender`}
+                            className={`${styles.btnSecondary} ${styles.btnSmall}`}
+                            style={{ minHeight: 48 }}
+                          >
+                            Marcar vendido
+                          </Link>
+                        )}
                         {v.status === "vendido" && podeEmitirNota && (
                           <Link
                             href={`/admin/fiscal/emitir/${v.id}`}
@@ -237,6 +247,15 @@ function EstoqueConteudo({ podeEmitirNota }) {
                   >
                     Editar
                   </Link>
+                  {podeMarcarVendido(v) && (
+                    <Link
+                      href={`/admin/estoque/${v.id}/vender`}
+                      className={`${styles.btnSecondary} ${styles.btnSmall}`}
+                      style={{ minHeight: 48 }}
+                    >
+                      Marcar vendido
+                    </Link>
+                  )}
                   {v.status === "vendido" && podeEmitirNota && (
                     <Link
                       href={`/admin/fiscal/emitir/${v.id}`}

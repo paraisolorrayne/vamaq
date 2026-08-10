@@ -7,6 +7,7 @@ import {
   setVehicleStatus,
 } from "@/lib/vehicleStore";
 import { requireApiRole } from "@/lib/auth/api";
+import { ligarVeiculo } from "@/lib/clientes/repo";
 
 export async function GET(_request, { params }) {
   const auth = await requireApiRole();
@@ -52,15 +53,22 @@ export async function PUT(request, { params }) {
   }
 }
 
-// Muda só o status do veículo (ciclo de vida). Usado pelo "Desativar" da lista
-// de estoque, no lugar da exclusão.
+// Muda só o status do veículo (ciclo de vida). Usado pelo "Desativar"/
+// "Reativar" da lista de estoque (no lugar da exclusão) e por
+// /admin/estoque/[id]/vender para marcar como vendido.
+//
+// Tira carro do site — por isso exige um dos papéis que já veem o Estoque,
+// não só "estar logado" (frouxidão corrigida junto da entrega de marcar
+// vendido: ver docs/superpowers/specs/2026-08-10-marcar-vendido-design.md).
+// Não tira acesso de ninguém que use a tela: são exatamente os quatro papéis
+// de src/app/admin/estoque/page.js.
 export async function PATCH(request, { params }) {
-  const auth = await requireApiRole();
+  const auth = await requireApiRole(["estoque", "financeiro", "vendedor", "secretaria"]);
   if (auth.error) return auth.error;
 
   try {
     const { id } = await params;
-    const { status } = await request.json();
+    const { status, clienteId } = await request.json();
     const updated = await setVehicleStatus(id, status);
     if (!updated) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -69,6 +77,26 @@ export async function PATCH(request, { params }) {
     revalidatePath('/');
     revalidatePath('/acervo');
     if (updated.slug) revalidatePath(`/veiculo/${updated.slug}`);
+
+    // Venda de balcão marcada pelo Estoque, com cliente escolhido: mesmo
+    // vínculo que o CRM cria ao registrar a venda (ver
+    // src/app/api/admin/crm/oportunidades/[id]/route.js, ramo
+    // "registrar-venda") — papel "comprou", origem "estoque" para
+    // diferenciar de onde a venda nasceu. Efeito colateral desejável, não o
+    // motivo de existir da venda: uma venda já marcada não pode virar erro
+    // porque o vínculo falhou, daí o try/catch que só registra o log.
+    if (status === "vendido" && clienteId) {
+      try {
+        await ligarVeiculo({
+          clienteId,
+          vehicleId: id,
+          papel: "comprou",
+          origem: "estoque",
+        });
+      } catch (err) {
+        console.error("Veículo marcado como vendido, mas o vínculo cliente-veículo falhou:", err);
+      }
+    }
 
     return NextResponse.json(updated);
   } catch (err) {
