@@ -73,7 +73,8 @@ cd "$APP_DIR"
 ```
 
 Todos os arquivos são idempotentes — **rodar de novo é o jeito normal** de aplicar uma
-mudança de schema num banco que já existe, e é o que o deploy faz antes de cada `npm run build`.
+mudança de schema num banco que já existe. Não há script de deploy neste repositório
+(o deploy é manual); este é o passo a rodar antes do `npm run build` (seção 7).
 
 O financeiro (`db/fin-*.sql`) fica **fora** desse script: vive no schema `fin`, é aplicado com
 outra conexão (`DATABASE_URL_FIN`, role `vamaq_fin`) e a blindagem tem script próprio
