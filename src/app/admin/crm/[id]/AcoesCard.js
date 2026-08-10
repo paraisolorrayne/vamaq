@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { acoesDaEtapa, rotuloEtapa } from "@/lib/crm/etapas";
 import { linkWhatsapp } from "@/lib/crm/whatsappVendedor";
+import { precisaVincular } from "@/lib/crm/vinculoCliente";
 import crm from "../crm.module.css";
 
 export default function AcoesCard({ oportunidade: o }) {
@@ -55,6 +56,12 @@ export default function AcoesCard({ oportunidade: o }) {
   return (
     <div className={crm.acoes}>
       {erro && <p className={crm.acoesErro}>{erro}</p>}
+
+      {precisaVincular(o) && (
+        <Link href={`/admin/crm/${o.id}/vincular`} className={crm.btnSecundario}>
+          Vincular a um cliente
+        </Link>
+      )}
 
       {acoes.avancarPara && (
         <button

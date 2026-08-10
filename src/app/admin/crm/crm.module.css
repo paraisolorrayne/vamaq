@@ -369,6 +369,95 @@
   justify-content: center;
 }
 
+/* ---------- Task 3: busca de cliente (FormOportunidade e VincularForm) ----------
+   A proteção contra cadastro duplicado inteira depende de os resultados
+   ficarem visíveis e fáceis de tocar — por isso a lista é conteúdo normal da
+   página (nunca posição absoluta/sobreposição) e cada item bate o piso de
+   48px de toque desta entrega, igual a qualquer outro clicável do CRM. */
+.buscaResultados {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.resultadoItem {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 48px;
+  width: 100%;
+  padding: 8px 14px;
+  background: #fff;
+  border: 1px solid var(--border-light, #d8d8d8);
+  border-radius: 10px;
+  text-align: left;
+  cursor: pointer;
+}
+.resultadoItem:active {
+  background: #fff1e6;
+  border-color: #ffd7b3;
+}
+.resultadoItem:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.resultadoNome {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #111;
+}
+
+.resultadoMeta {
+  font-size: 0.8rem;
+  color: #666;
+  margin-top: 2px;
+}
+
+.buscaStatus {
+  margin-top: 6px;
+  font-size: 0.8rem;
+  color: #777;
+}
+
+.clienteVinculado {
+  margin-top: 6px;
+  font-size: 0.8rem;
+  color: #15803d;
+  font-weight: 600;
+}
+
+/* ---------- Task 3: cliente vinculado na tela da oportunidade ----------
+   O nome vira link só para quem pode abrir a ficha (secretaria/financeiro/
+   admin) — decidido no Server Component, nunca aqui em CSS. Por isso não
+   existe uma regra "esconder para vendedor": quando o vendedor olha, o markup
+   nem manda um <a>, só o texto. */
+.clienteLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: #ffd7b3;
+  text-underline-offset: 4px;
+}
+
+.clienteMeta {
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 20px;
+}
+
+/* ---------- Task 3: marca de pendência na lista ----------
+   Discreta de propósito: não é erro (nada de vermelho/ícone de alerta), é
+   pendência para a secretaria vincular depois. */
+.semCadastro {
+  margin-top: 4px;
+  font-size: 0.75rem;
+  color: #999;
+}
+
 /* ---------- Telas de decisão (Task 6): perder / vender / remover / mover ----------
    Substituem os popups nativos do navegador (motivo digitado, duas
    confirmações e um aviso pós-ação). Texto de apoio (não é aviso de erro de

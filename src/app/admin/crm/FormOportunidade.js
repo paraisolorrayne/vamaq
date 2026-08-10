@@ -21,8 +21,10 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { anoVeiculo } from "@/lib/anoVeiculo";
 import { opcoesOrigem } from "@/lib/crm/origem";
+import { dadosDoCliente } from "@/lib/crm/vinculoCliente";
 import styles from "../admin.module.css";
 import crm from "./crm.module.css";
+import SeletorCliente from "./SeletorCliente";
 
 function veiculoOptionLabel(v) {
   const ano = anoVeiculo(v);
@@ -35,6 +37,7 @@ export default function FormOportunidade({ valoresIniciais, oportunidadeId }) {
   const iniciais = valoresIniciais || {};
 
   const [clienteNome, setClienteNome] = useState(iniciais.cliente_nome || "");
+  const [clienteId, setClienteId] = useState(iniciais.cliente_id || null);
   const [telefone, setTelefone] = useState(iniciais.telefone || "");
   const [email, setEmail] = useState(iniciais.email || "");
   const [vehicleId, setVehicleId] = useState(iniciais.vehicle_id || "");
@@ -77,6 +80,22 @@ export default function FormOportunidade({ valoresIniciais, oportunidadeId }) {
     };
   }, []);
 
+  // Qualquer edição no nome invalida o vínculo anterior até a pessoa escolher
+  // de novo (ou cadastrar) — sem isso, um `cliente_id` de uma busca antiga
+  // ficaria colado a um nome digitado depois, sem relação com ele.
+  function handleClienteNomeChange(v) {
+    setClienteNome(v);
+    setClienteId(null);
+  }
+
+  function handleSelecionarCliente(cliente) {
+    const dados = dadosDoCliente(cliente);
+    setClienteNome(dados.cliente_nome);
+    setTelefone(dados.telefone);
+    setEmail(dados.email);
+    setClienteId(dados.cliente_id);
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     setErro("");
@@ -89,6 +108,7 @@ export default function FormOportunidade({ valoresIniciais, oportunidadeId }) {
     setSalvando(true);
     const payload = {
       cliente_nome: clienteNome.trim(),
+      cliente_id: clienteId || null,
       telefone: telefone.trim() || null,
       email: email.trim() || null,
       vehicle_id: vehicleId || null,
@@ -132,15 +152,22 @@ export default function FormOportunidade({ valoresIniciais, oportunidadeId }) {
       {erro && <p className={crm.erroForm}>{erro}</p>}
 
       <div className={styles.formGrid}>
-        <div className={styles.formGroup}>
+        <div className={`${styles.formGroup} ${styles.formGroupFull}`}>
           <label className={styles.formLabel}>Cliente *</label>
-          <input
-            type="text"
-            value={clienteNome}
-            onChange={(e) => setClienteNome(e.target.value)}
-            className={`${styles.formInput} ${crm.campoToque}`}
+          {/* A proteção contra cadastro duplicado (ver task-3-brief.md):
+              achar tem que ser mais fácil que criar. Por isso a busca abre
+              assim que a pessoa digita, com os resultados sempre visíveis
+              (nunca atrás de mais um toque) e o "cadastrar novo" só aparece
+              quando a busca já rodou e não achou ninguém. */}
+          <SeletorCliente
+            valor={clienteNome}
+            onChangeValor={handleClienteNomeChange}
+            onSelecionar={handleSelecionarCliente}
+            telefoneParaCriar={telefone}
+            inputClassName={`${styles.formInput} ${crm.campoToque}`}
             placeholder="Nome do cliente"
             required
+            clienteVinculado={Boolean(clienteId)}
           />
         </div>
 

@@ -3,6 +3,7 @@ import { requireRole } from "@/lib/auth/dal";
 import { listOportunidades } from "@/lib/crm/oportunidades";
 import { ETAPAS_INFO, rotuloEtapa, etapaTerminal } from "@/lib/crm/etapas";
 import { rotuloVeiculo } from "@/lib/crm/rotuloVeiculo";
+import { precisaVincular } from "@/lib/crm/vinculoCliente";
 import { formatValorBR } from "@/lib/money";
 import styles from "../admin.module.css";
 import crm from "./crm.module.css";
@@ -69,6 +70,11 @@ export default async function CrmPage() {
                     {o.etapa === "perdido" && o.motivo_perda && (
                       <div className={crm.cardMeta}>Perda: {o.motivo_perda}</div>
                     )}
+                    {/* Discreta de propósito (texto pequeno e cinza): não é
+                        erro, é pendência — sinaliza pra secretaria o que
+                        falta vincular, sem culpar quem registrou o lead
+                        correndo. Por isso nem vermelho nem ícone de alerta. */}
+                    {precisaVincular(o) && <div className={crm.semCadastro}>sem cadastro</div>}
                   </Link>
                 );
               })}
