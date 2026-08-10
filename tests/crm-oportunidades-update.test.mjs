@@ -69,7 +69,10 @@ before(async () => {
 
   const su = new URL(ADMIN_URL).username || "postgres";
   pool = new pg.Pool({ connectionString: urlFor(su) });
-  for (const f of ["schema.sql", "auth-schema.sql", "crm-schema.sql"]) {
+  // crm-schema.sql agora referencia clientes(id) (oportunidades.cliente_id),
+  // que por sua vez referencia documentos_gerados/notas_fiscais — daí a
+  // cadeia toda antes dele, na mesma ordem de tests/clientes-schema.test.mjs.
+  for (const f of ["schema.sql", "auth-schema.sql", "documentos-schema.sql", "fiscal-schema.sql", "clientes-schema.sql", "crm-schema.sql"]) {
     await pool.query(await readFile(path.join(ROOT, "db", f), "utf8"));
   }
 });
