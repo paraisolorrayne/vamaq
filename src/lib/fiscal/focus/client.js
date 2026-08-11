@@ -50,9 +50,31 @@ async function focusFetch(path, { method = "GET", body } = {}) {
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error(data?.mensagem || data?.erros?.[0]?.mensagem || `Focus HTTP ${res.status}`);
+    // A Focus manda a mensagem curta em `mensagem` e o detalhamento em `erros`
+    // — e a curta às vezes é literalmente "verifique o detalhamento dos erros".
+    // Pegar só a primeira e descartar o resto deixava o operador com um erro
+    // que manda olhar um detalhe que ninguém mostrava. Aconteceu em 11/08/2026.
+    const erro = new Error(mensagemDeErro(data, res.status));
+    erro.focus = data; // resposta inteira, para gravar em notas_fiscais.raw
+    erro.status = res.status;
+    throw erro;
   }
   return data;
+}
+
+/** Junta a mensagem curta com o detalhamento, quando a Focus manda os dois. */
+export function mensagemDeErro(data, httpStatus) {
+  const curta = data?.mensagem || data?.erro || "";
+  const detalhes = Array.isArray(data?.erros)
+    ? data.erros
+        .map((e) => (typeof e === "string" ? e : [e?.campo, e?.mensagem].filter(Boolean).join(": ")))
+        .filter(Boolean)
+    : [];
+
+  if (curta && detalhes.length) return `${curta} — ${detalhes.join(" · ")}`;
+  if (detalhes.length) return detalhes.join(" · ");
+  if (curta) return curta;
+  return `Focus HTTP ${httpStatus}`;
 }
 
 export function emitirNfe(ref, payload) {

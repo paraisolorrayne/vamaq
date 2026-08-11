@@ -181,9 +181,12 @@ export async function emitirNotaVeiculo(vehicleId, { destinatario, valorVenda, c
 
     return { nota };
   } catch (err) {
+    // Guarda a resposta INTEIRA da Focus, não só a mensagem: quando a recusa é
+    // de schema, o motivo real está no detalhamento, e sem ele o diagnóstico
+    // vira adivinhação. `err.focus` vem do cliente da Focus.
     const nota = await query(
-      `update notas_fiscais set status='erro', mensagem=$2 where ref=$1 returning *`,
-      [ref, String(err.message)]
+      `update notas_fiscais set status='erro', mensagem=$2, raw=$3::jsonb where ref=$1 returning *`,
+      [ref, String(err.message), JSON.stringify(err.focus ?? {})]
     );
     return { error: String(err.message), nota: nota.rows[0] };
   }
