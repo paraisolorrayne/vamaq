@@ -3,7 +3,7 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { montarPayloadNfe } from "../src/lib/fiscal/payload.js";
+import { montarPayloadNfe, normalizaCstIcms } from "../src/lib/fiscal/payload.js";
 
 const CONFIG = {
   cnpj: "45348469000154", ie: "00548033300093", im: "73753300",
@@ -121,4 +121,63 @@ test("recusa quando falta parâmetro fiscal do contador", () => {
 
 test("recusa valor de venda ausente ou zero", () => {
   assert.match(montarPayloadNfe(args({ valorVenda: 0 })).error, /valor da venda/i);
+});
+
+// --- CST do ICMS: dois dígitos, com a origem em campo próprio ---
+// Em 11/08/2026 a Mayra tentou emitir e a SEFAZ recusou com
+// "Situacao tributaria (ICMS) invalida: 020". O contador passou "020", que é a
+// forma combinada (origem 0 + CST 20) — a que aparece na DANFE. Foi gravada
+// inteira no campo do CST, e a origem ainda ia separada, duplicada.
+
+test("CST de dois dígitos passa como está", () => {
+  assert.deepEqual(normalizaCstIcms("20", "0"), { cst: "20" });
+  assert.deepEqual(normalizaCstIcms("00", "0"), { cst: "00" });
+});
+
+test("CST combinado perde o dígito da origem", () => {
+  // o caso real que quebrou
+  assert.deepEqual(normalizaCstIcms("020", "0"), { cst: "20" });
+  assert.deepEqual(normalizaCstIcms("100", "1"), { cst: "00" });
+});
+
+test("CST combinado que contradiz a origem é recusado, não adivinhado", () => {
+  const r = normalizaCstIcms("020", "1");
+  assert.ok(r.error, "deveria recusar quando origem do CST difere da cadastrada");
+  assert.match(r.error, /origem/i);
+  assert.equal(r.cst, undefined);
+});
+
+test("CST sem formato de situação tributária é recusado", () => {
+  for (const ruim of ["", "2", "0200", "abc", null, undefined]) {
+    const r = normalizaCstIcms(ruim, "0");
+    assert.ok(r.error, `deveria recusar ${JSON.stringify(ruim)}`);
+  }
+});
+
+test("o payload manda o CST de dois dígitos, e a origem à parte", () => {
+  const r = montarPayloadNfe({
+    config: { cnpj: "45348469000154", cfop: "5102", cst: "020", origem: "0", ncm: "87032100", serie: "1" },
+    veiculo: { brand: "Porsche", model: "Cayenne", year: 2016, placa: "PAS4I58", chassi: "WP1AA2923GKA14408" },
+    destinatario: { nome: "Fulano", doc: "11122233344", cep: "38400100", logradouro: "Rua A", numero: "1", bairro: "Centro", municipio: "Uberlândia", uf: "MG" },
+    valorVenda: 175000,
+    custoAquisicao: 165000,
+  });
+  assert.ok(!r.error, r.error);
+  const item = r.payload.items[0];
+  assert.equal(item.icms_situacao_tributaria, "20", 'o campo do CST não pode levar a origem junto');
+  assert.equal(item.icms_origem, "0");
+  assert.equal(item.icms_base_calculo, 10000);
+  assert.equal(item.icms_valor, 500);
+});
+
+test("CST que não existe no regime normal é barrado aqui, não na SEFAZ", () => {
+  const r = montarPayloadNfe({
+    config: { cnpj: "45348469000154", cfop: "5102", cst: "99", origem: "0", ncm: "87032100", serie: "1" },
+    veiculo: { brand: "X", model: "Y", year: 2020, chassi: "ABC" },
+    destinatario: { nome: "F", doc: "11122233344", cep: "38400100", logradouro: "R", numero: "1", bairro: "C", municipio: "U", uf: "MG" },
+    valorVenda: 1000,
+    custoAquisicao: 500,
+  });
+  assert.ok(r.error);
+  assert.match(r.error, /contador/i);
 });
