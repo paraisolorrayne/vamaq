@@ -4,6 +4,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { montarPayloadNfe, normalizaCstIcms } from "../src/lib/fiscal/payload.js";
+import { mensagemDeErro } from "../src/lib/fiscal/focus/client.js";
 
 const CONFIG = {
   cnpj: "45348469000154", ie: "00548033300093", im: "73753300",
@@ -180,4 +181,32 @@ test("CST que não existe no regime normal é barrado aqui, não na SEFAZ", () =
   });
   assert.ok(r.error);
   assert.match(r.error, /contador/i);
+});
+
+// --- Mensagem de erro da Focus: a curta sozinha não basta ---
+// Em 11/08/2026 a recusa veio como "Erro na validação do Schema XML, verifique
+// o detalhamento dos erros" — e o detalhamento era descartado pelo cliente.
+
+test("junta a mensagem curta com o detalhamento", () => {
+  const m = mensagemDeErro(
+    { mensagem: "Erro na validação do Schema XML", erros: [{ campo: "icms", mensagem: "modBC ausente" }] },
+    422
+  );
+  assert.match(m, /Schema XML/);
+  assert.match(m, /modBC ausente/, "o detalhamento não pode sumir");
+});
+
+test("detalhamento como lista de strings também aparece", () => {
+  const m = mensagemDeErro({ erros: ["campo A inválido", "campo B ausente"] }, 422);
+  assert.match(m, /campo A inválido/);
+  assert.match(m, /campo B ausente/);
+});
+
+test("só a mensagem curta, sem detalhamento", () => {
+  assert.equal(mensagemDeErro({ mensagem: "Token inválido" }, 401), "Token inválido");
+});
+
+test("resposta sem nada aproveitável cai no status HTTP", () => {
+  assert.match(mensagemDeErro({}, 500), /500/);
+  assert.match(mensagemDeErro(null, 502), /502/);
 });
