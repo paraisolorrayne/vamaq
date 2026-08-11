@@ -32,6 +32,39 @@ const CAMPOS_CONFIG = [
   ["serie", "série"],
 ];
 
+// Situações tributárias do ICMS no regime normal (a Vamaq é Lucro Presumido,
+// então é CST, não CSOSN). A Focus é a autoridade final — esta lista existe
+// para o erro aparecer AQUI, com instrução, em vez de voltar da SEFAZ como
+// "Situacao tributaria (ICMS) invalida" no meio de uma emissão.
+const CST_ICMS_VALIDOS = ["00", "10", "20", "30", "40", "41", "50", "51", "60", "70", "90"];
+
+/**
+ * O CST do ICMS tem DOIS dígitos; a origem da mercadoria vai em campo próprio.
+ *
+ * Contador costuma escrever a forma combinada de três dígitos, que é como sai
+ * na DANFE: origem + CST. Foi o que aconteceu aqui — veio "020" (origem 0 +
+ * CST 20), foi gravado inteiro no campo do CST, e a SEFAZ recusou.
+ *
+ * Aceitamos as duas formas. Com três dígitos, o primeiro TEM que bater com a
+ * origem gravada: se não bater, são duas informações se contradizendo e
+ * adivinhar qual vale seria pior que recusar.
+ */
+export function normalizaCstIcms(cst, origem) {
+  const c = String(cst ?? "").trim();
+  const o = String(origem ?? "").trim();
+
+  if (/^\d{2}$/.test(c)) return { cst: c };
+  if (/^\d{3}$/.test(c)) {
+    if (o && c[0] !== o) {
+      return {
+        error: `CST "${c}" começa com origem ${c[0]}, mas a origem cadastrada é ${o}. Confirme os dois com o contador.`,
+      };
+    }
+    return { cst: c.slice(1) };
+  }
+  return { error: `CST "${c}" não tem formato de situação tributária. Peça ao contador o CST do ICMS (dois dígitos).` };
+}
+
 export function montarPayloadNfe({ config, veiculo, destinatario, valorVenda, custoAquisicao }) {
   const venda = Number(valorVenda) || 0;
   if (venda <= 0) return { error: "Informe o valor da venda." };
@@ -44,6 +77,15 @@ export function montarPayloadNfe({ config, veiculo, destinatario, valorVenda, cu
   if (!veiculo?.chassi) return { error: "O veículo está sem chassi. Preencha no cadastro." };
   for (const [campo, rotulo] of CAMPOS_DESTINATARIO) {
     if (!destinatario?.[campo]) return { error: `Destinatário sem ${rotulo}.` };
+  }
+
+  // O CST vem do contador e pode chegar na forma combinada (origem + CST).
+  const cstNormalizado = normalizaCstIcms(config.cst, config.origem);
+  if (cstNormalizado.error) return { error: cstNormalizado.error };
+  if (!CST_ICMS_VALIDOS.includes(cstNormalizado.cst)) {
+    return {
+      error: `CST do ICMS "${cstNormalizado.cst}" não é uma situação tributária do regime normal. Confirme com o contador.`,
+    };
   }
 
   const aliquota = Number(config.icms_seminovo_aliquota ?? 5);
@@ -91,7 +133,7 @@ export function montarPayloadNfe({ config, veiculo, destinatario, valorVenda, cu
         quantidade_comercial: 1,
         valor_unitario_comercial: venda,
         valor_bruto: venda,
-        icms_situacao_tributaria: String(config.cst),
+        icms_situacao_tributaria: cstNormalizado.cst,
         icms_base_calculo: base,
         icms_aliquota: aliquota,
         icms_valor: icms,
