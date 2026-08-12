@@ -70,18 +70,12 @@ export function computeVehicleMargin(transactions) {
   };
 }
 
-/**
- * ICMS do seminovo (Lucro Presumido, contador da Vamaq): base = lucro
- * (venda − compra de aquisição), alíquota padrão 5%. Só incide quando há venda
- * e o lucro é positivo. Retorna o valor do ICMS.
- */
-export function icmsSeminovo(receita, custoAquisicao, aliquota = 5) {
-  const r = Number(receita) || 0;
-  const c = Number(custoAquisicao) || 0;
-  if (r <= 0) return 0;
-  const base = Math.max(0, r - c);
-  return round2((base * (Number(aliquota) || 0)) / 100);
-}
+// icmsSeminovo() ficava aqui: base = venda − custo, alíquota 5%. Estava
+// errado — as notas autorizadas da Vamaq usam base reduzida sobre o valor da
+// venda, e o custo de aquisição não entra em conta nenhuma. Foi removida em
+// 12/08/2026 em vez de corrigida no lugar, porque um "ICMS" no módulo
+// financeiro que não é o ICMS da nota é exatamente como o erro sobreviveu
+// tanto tempo. A conta única vive em src/lib/fiscal/impostos.js.
 
 /**
  * Alçada de aprovação (Contas a Pagar — ADR-001c §2, correção #1: imposta na

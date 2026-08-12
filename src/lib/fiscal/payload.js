@@ -2,13 +2,19 @@
  * Monta o corpo da NF-e (modelo 55) enviado à Focus NFe.
  *
  * Puro de propósito: sem banco e sem rede, para o teste rodar em `node --test`
- * (o alias "@/" não resolve lá — por isso o import de calc.js é relativo).
+ * (o alias "@/" não resolve lá — por isso os imports são relativos).
  *
- * Nenhum valor fiscal é inventado aqui: CFOP, CST, NCM e série vêm de
- * `fiscal_config`, preenchida pelo contador. Faltou parâmetro, a função recusa
+ * Nenhum valor fiscal é inventado aqui: CFOP, CST, NCM, série, alíquotas e
+ * redução de base vêm de `fiscal_config`. Faltou parâmetro, a função recusa
  * em vez de chutar.
+ *
+ * OS NOMES DOS CAMPOS são os da referência oficial da Focus
+ * (https://campos.focusnfe.com.br/nfe/NotaFiscalXML.html), conferidos um a um
+ * em 12/08/2026. Não invente nome de campo: a Focus aceita o JSON e a recusa
+ * só aparece depois, como "Erro na validação do Schema XML".
  */
-import { icmsSeminovo, round2 } from "../fin/calc.js";
+import { round2 } from "../fin/calc.js";
+import { impostosVeiculoUsado } from "./impostos.js";
 
 const so_digitos = (v) => String(v ?? "").replace(/\D/g, "");
 
@@ -65,7 +71,50 @@ export function normalizaCstIcms(cst, origem) {
   return { error: `CST "${c}" não tem formato de situação tributária. Peça ao contador o CST do ICMS (dois dígitos).` };
 }
 
-export function montarPayloadNfe({ config, veiculo, destinatario, valorVenda, custoAquisicao }) {
+/** 45348469000154 -> 45.348.469/0001-54 (como sai impresso na DANFE). */
+function formataCnpj(doc) {
+  const d = so_digitos(doc);
+  if (d.length !== 14) return d;
+  return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`;
+}
+
+/** 150000 -> "150.000,00" */
+function moedaBR(n) {
+  const [inteiro, centavos] = round2(Number(n) || 0).toFixed(2).split(".");
+  return `${inteiro.replace(/\B(?=(\d{3})+(?!\d))/g, ".")},${centavos}`;
+}
+
+/**
+ * Texto das informações complementares, no formato da NF 12 autorizada:
+ *
+ *   VEICULO USADO ADQ DE VAMAQ MOTORS, CNPJ 45.348.469/0001-54 CF NF 10
+ *   VLR DE AQUISICAO R$150.000,00.
+ *
+ * O CNPJ é o da própria Vamaq porque a nota de aquisição (a de ENTRADA) é
+ * emitida pela Vamaq — é o documento que comprova de onde o carro veio.
+ *
+ * `numeroNotaEntrada` fica de fora quando não é informado: hoje o sistema
+ * ainda não emite notas de entrada, e inventar um número seria pior do que
+ * omitir. Quando o módulo de entrada existir, ele preenche sozinho.
+ */
+export function textoInformacoesComplementares({ config, custoAquisicao, numeroNotaEntrada }) {
+  const partes = [
+    `VEICULO USADO ADQ DE ${config?.razao_social || "VAMAQ MOTORS"}, CNPJ ${formataCnpj(config?.cnpj)}`,
+  ];
+  const nf = String(numeroNotaEntrada ?? "").trim();
+  if (nf) partes.push(`CF NF ${nf}`);
+  partes.push(`VLR DE AQUISICAO R$${moedaBR(custoAquisicao)}.`);
+  return partes.join(" ");
+}
+
+export function montarPayloadNfe({
+  config,
+  veiculo,
+  destinatario,
+  valorVenda,
+  custoAquisicao,
+  numeroNotaEntrada,
+}) {
   const venda = Number(valorVenda) || 0;
   if (venda <= 0) return { error: "Informe o valor da venda." };
 
@@ -88,10 +137,7 @@ export function montarPayloadNfe({ config, veiculo, destinatario, valorVenda, cu
     };
   }
 
-  const aliquota = Number(config.icms_seminovo_aliquota ?? 5);
-  const custo = Number(custoAquisicao) || 0;
-  const base = round2(Math.max(0, venda - custo));
-  const icms = icmsSeminovo(venda, custo, aliquota);
+  const imp = impostosVeiculoUsado(venda, config);
 
   const doc = so_digitos(destinatario.doc);
   if (doc.length !== 11 && doc.length !== 14) {
@@ -105,14 +151,36 @@ export function montarPayloadNfe({ config, veiculo, destinatario, valorVenda, cu
     `Chassi ${veiculo.chassi}`,
   ].filter(Boolean).join(" - ");
 
+  // indIEDest: 1 quando o destinatário é contribuinte e informou a IE;
+  // 9 (não contribuinte) no resto — que é o caso de toda venda a pessoa física.
+  const ieDestinatario = so_digitos(destinatario.ie);
+  const ufEmitente = String(config.uf || "MG").trim().toUpperCase();
+  const ufDestino = String(destinatario.uf).trim().toUpperCase();
+
   const payload = {
-    natureza_operacao: "Venda de mercadoria",
+    natureza_operacao: config.natureza_operacao || "Venda Dentro do Estado",
     // Estruturais da NF-e de venda (não vêm do contador, são constantes do domínio):
     data_emissao: new Date().toISOString(),
     tipo_documento: 1, // 1 = saída
     finalidade_emissao: 1, // 1 = normal
+    // idDest: 1 = operação interna, 2 = interestadual.
+    local_destino: ufDestino === ufEmitente ? 1 : 2,
     serie: String(config.serie),
     cnpj_emitente: so_digitos(config.cnpj),
+
+    // Os quatro campos abaixo são obrigatórios no schema da NF-e 4.00 e não
+    // eram enviados. A SEFAZ recusa um por vez, então a falta deles apareceu
+    // como uma fila de erros diferentes na tela da operadora (11/08/2026).
+    modalidade_frete: String(config.modalidade_frete ?? "1"),
+    presenca_comprador: String(config.presenca_comprador ?? "1"),
+    consumidor_final: String(config.consumidor_final ?? "1"),
+    ...(ieDestinatario
+      ? {
+          indicador_inscricao_estadual_destinatario: 1,
+          inscricao_estadual_destinatario: ieDestinatario,
+        }
+      : { indicador_inscricao_estadual_destinatario: 9 }),
+
     nome_destinatario: destinatario.nome,
     [ehCnpj ? "cnpj_destinatario" : "cpf_destinatario"]: doc,
     cep_destinatario: so_digitos(destinatario.cep),
@@ -120,8 +188,16 @@ export function montarPayloadNfe({ config, veiculo, destinatario, valorVenda, cu
     numero_destinatario: String(destinatario.numero),
     bairro_destinatario: destinatario.bairro,
     municipio_destinatario: destinatario.municipio,
-    uf_destinatario: destinatario.uf,
+    uf_destinatario: ufDestino,
     valor_total: venda,
+
+    // infCpl — a nota autorizada carrega a origem do veículo aqui.
+    informacoes_adicionais_contribuinte: textoInformacoesComplementares({
+      config,
+      custoAquisicao,
+      numeroNotaEntrada,
+    }),
+
     items: [
       {
         numero_item: 1,
@@ -133,17 +209,30 @@ export function montarPayloadNfe({ config, veiculo, destinatario, valorVenda, cu
         quantidade_comercial: 1,
         valor_unitario_comercial: venda,
         valor_bruto: venda,
+
         icms_situacao_tributaria: cstNormalizado.cst,
-        icms_base_calculo: base,
-        icms_aliquota: aliquota,
-        icms_valor: icms,
+        icms_base_calculo: imp.baseIcms,
+        icms_aliquota: imp.aliquotaIcms,
+        icms_valor: imp.icms,
+        // pRedBC: sem isto a base sai sem justificativa e não bate com o valor
+        // do produto — é o campo que explica os 7.500,15 sobre 157.500,00.
+        icms_reducao_base_calculo: imp.reducaoBaseIcms,
         ...(config.origem ? { icms_origem: String(config.origem) } : {}),
-        ...(config.icms_modalidade_base_calculo
-          ? { icms_modalidade_base_calculo: String(config.icms_modalidade_base_calculo) }
-          : {}),
+        // modBC 3 = valor da operação.
+        icms_modalidade_base_calculo: String(config.icms_modalidade_base_calculo || "3"),
+
+        pis_situacao_tributaria: String(config.pis_situacao_tributaria || "01"),
+        pis_base_calculo: imp.basePisCofins,
+        pis_aliquota_porcentual: imp.aliquotaPis,
+        pis_valor: imp.pis,
+
+        cofins_situacao_tributaria: String(config.cofins_situacao_tributaria || "01"),
+        cofins_base_calculo: imp.basePisCofins,
+        cofins_aliquota_porcentual: imp.aliquotaCofins,
+        cofins_valor: imp.cofins,
       },
     ],
   };
 
-  return { payload, impostos: { base, aliquota, icms } };
+  return { payload, impostos: imp };
 }

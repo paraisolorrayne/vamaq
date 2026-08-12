@@ -5,7 +5,8 @@ import Link from "next/link";
 import styles from "../../../admin.module.css";
 import { emitirNotaAction } from "../../actions";
 import { formatValorBR } from "@/lib/money";
-import { icmsSeminovo } from "@/lib/fin/calc";
+import { impostosVeiculoUsado } from "@/lib/fiscal/impostos";
+import { textoInformacoesComplementares } from "@/lib/fiscal/payload";
 import { destinatarioDoCliente } from "@/lib/clientes/prefill";
 import { formataDoc } from "@/lib/clientes/doc";
 
@@ -39,6 +40,7 @@ export default function EmitirClient({
   const [custo, setCusto] = useState(custoOrigem === "financeiro" ? custoAquisicao : "");
   const [dest, setDest] = useState(DEST_VAZIO);
   const [clienteIdSel, setClienteIdSel] = useState("");
+  const [notaEntrada, setNotaEntrada] = useState("");
 
   function setCampo(k, v) {
     setDest((p) => ({ ...p, [k]: v }));
@@ -100,12 +102,15 @@ export default function EmitirClient({
   }
 
   const semChassi = !veiculo.chassi;
-  const aliquota = Number(config?.icms_seminovo_aliquota ?? 5);
-  const vendaNum = Number(venda) || 0;
-  const custoPreenchido = String(custo).trim() !== "";
-  const custoNum = Number(custo) || 0;
-  const base = Math.max(0, vendaNum - custoNum);
-  const icms = icmsSeminovo(vendaNum, custoNum, aliquota);
+  // Mesma função que monta a nota — a tela não pode calcular de um jeito e o
+  // payload de outro. Só depende do valor da venda.
+  const imp = impostosVeiculoUsado(Number(venda) || 0, config || {});
+  // Exatamente o texto que vai na nota — a operadora confere antes de emitir.
+  const textoComplementar = textoInformacoesComplementares({
+    config: config || {},
+    custoAquisicao: Number(custo) || 0,
+    numeroNotaEntrada: notaEntrada,
+  });
 
   function handleEmitir(e) {
     e.preventDefault();
@@ -129,6 +134,7 @@ export default function EmitirClient({
         valorVenda: fd.get("valorVenda"),
         custoAquisicao: fd.get("custoAquisicao"),
         clienteId: clienteIdSel || undefined,
+        numeroNotaEntrada: fd.get("numeroNotaEntrada"),
       });
       if (r?.error) setErr(r.error);
       else if (r?.ok) setResultado(r);
@@ -210,7 +216,7 @@ export default function EmitirClient({
                 />
               </div>
               <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Custo de aquisição *</label>
+                <label className={styles.formLabel}>Valor de aquisição *</label>
                 <input
                   name="custoAquisicao"
                   type="number"
@@ -225,10 +231,37 @@ export default function EmitirClient({
                 />
                 <p style={{ fontSize: "0.78rem", color: "#666", margin: 0 }}>
                   {custoOrigem === "financeiro"
-                    ? "vindo do financeiro"
+                    ? "vindo do financeiro — vai impresso nas informações complementares"
                     : "este veículo não tem compra lançada no financeiro — informe o valor pago"}
                 </p>
               </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Nº da nota de entrada</label>
+                <input
+                  name="numeroNotaEntrada"
+                  value={notaEntrada}
+                  onChange={(e) => setNotaEntrada(e.target.value)}
+                  className={styles.formInput}
+                  inputMode="numeric"
+                />
+                <p style={{ fontSize: "0.78rem", color: "#666", margin: 0 }}>
+                  opcional — número da nota de entrada deste carro, se já existir
+                </p>
+              </div>
+            </div>
+
+            <div
+              style={{
+                marginTop: 16, padding: "10px 12px", background: "#F7F7F8",
+                borderRadius: 6, fontSize: "0.8rem", color: "#555",
+              }}
+            >
+              <strong style={{ display: "block", marginBottom: 4 }}>
+                Informações complementares da nota
+              </strong>
+              <span style={{ fontFamily: "monospace", wordBreak: "break-word" }}>
+                {textoComplementar}
+              </span>
             </div>
           </div>
 
@@ -236,32 +269,36 @@ export default function EmitirClient({
           <div className={styles.card} style={{ marginBottom: 24 }}>
             <h3 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: 16 }}>Impostos</h3>
             <p style={{ fontSize: "0.85rem", color: "#666", marginTop: 0 }}>
-              ICMS do seminovo, calculado sobre o lucro da venda (venda − custo de aquisição) —
-              recalcula sozinho conforme os valores acima mudam.
+              Base do ICMS = valor da venda com redução de {imp.reducaoBaseIcms}% (veículo usado).
+              PIS e COFINS incidem sobre a base do ICMS menos o ICMS. Recalcula sozinho conforme
+              o valor da venda muda — o valor de aquisição não altera imposto nenhum.
             </p>
             <div className={styles.formGrid}>
               <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Base de cálculo</label>
-                <p style={{ margin: 0, fontWeight: 600 }}>
-                  {custoPreenchido ? money(base) : "—"}
-                </p>
+                <label className={styles.formLabel}>Base do ICMS</label>
+                <p style={{ margin: 0, fontWeight: 600 }}>{money(imp.baseIcms)}</p>
               </div>
               <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Alíquota</label>
-                <p style={{ margin: 0, fontWeight: 600 }}>{aliquota}%</p>
+                <label className={styles.formLabel}>Alíquota do ICMS</label>
+                <p style={{ margin: 0, fontWeight: 600 }}>{imp.aliquotaIcms}%</p>
               </div>
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>ICMS</label>
-                <p style={{ margin: 0, fontWeight: 600 }}>
-                  {custoPreenchido ? money(icms) : "—"}
-                </p>
+                <p style={{ margin: 0, fontWeight: 600 }}>{money(imp.icms)}</p>
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Base do PIS/COFINS</label>
+                <p style={{ margin: 0, fontWeight: 600 }}>{money(imp.basePisCofins)}</p>
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>PIS ({imp.aliquotaPis}%)</label>
+                <p style={{ margin: 0, fontWeight: 600 }}>{money(imp.pis)}</p>
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>COFINS ({imp.aliquotaCofins}%)</label>
+                <p style={{ margin: 0, fontWeight: 600 }}>{money(imp.cofins)}</p>
               </div>
             </div>
-            {!custoPreenchido && (
-              <p style={{ fontSize: "0.78rem", color: "#666", margin: "8px 0 0" }}>
-                informe o custo de aquisição para calcular
-              </p>
-            )}
           </div>
 
           {/* Cliente cadastrado */}

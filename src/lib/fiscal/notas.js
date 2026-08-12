@@ -96,7 +96,10 @@ async function salvarRetorno(ref, retorno) {
   return rows[0] || null;
 }
 
-export async function emitirNotaVeiculo(vehicleId, { destinatario, valorVenda, custoAquisicao, clienteId }) {
+export async function emitirNotaVeiculo(
+  vehicleId,
+  { destinatario, valorVenda, custoAquisicao, clienteId, numeroNotaEntrada }
+) {
   if (!focusEnabled()) return { error: "Emissor fiscal não configurado." };
 
   const dados = await getDadosEmissao(vehicleId);
@@ -117,13 +120,20 @@ export async function emitirNotaVeiculo(vehicleId, { destinatario, valorVenda, c
     };
   }
 
-  // O custo de aquisição é a base do ICMS: quando o financeiro já tem o valor
-  // lançado, ele é AUTORITATIVO — o que a tela manda (readOnly não é validação
-  // de servidor) é ignorado para não deixar o cliente escolher a própria base.
+  // O custo de aquisição NÃO entra mais no cálculo do imposto (a base do ICMS
+  // é percentual sobre a venda — ver lib/fiscal/impostos.js). Ele continua
+  // obrigatório porque vai no texto das informações complementares, que é o
+  // que liga a nota de saída à origem do veículo.
+  //
+  // Quando o financeiro já tem o valor lançado, ele é AUTORITATIVO: o que a
+  // tela manda (readOnly não é validação de servidor) é ignorado.
   const custo =
     dados.custoOrigem === "financeiro" ? dados.custoAquisicao : Number(custoAquisicao) || 0;
   if (custo <= 0) {
-    return { error: "Informe o custo de aquisição — sem ele o ICMS incide sobre a venda inteira." };
+    return {
+      error:
+        "Informe o valor de aquisição — ele vai nas informações complementares da nota, identificando de onde o veículo veio.",
+    };
   }
   if (clienteId && !UUID_VALIDO.test(clienteId)) {
     return { error: ERRO_CLIENTE_REMOVIDO };
@@ -135,6 +145,7 @@ export async function emitirNotaVeiculo(vehicleId, { destinatario, valorVenda, c
     destinatario,
     valorVenda,
     custoAquisicao: custo,
+    numeroNotaEntrada,
   });
   if (montado.error) return { error: montado.error };
 

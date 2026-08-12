@@ -4,7 +4,8 @@
  * pela única empresa (Vamaq).
  */
 import { finQuery } from "@/lib/fin/db";
-import { computeDRE, icmsSeminovo } from "@/lib/fin/calc";
+import { computeDRE } from "@/lib/fin/calc";
+import { impostosVeiculoUsado } from "@/lib/fiscal/impostos";
 
 let companyIdCache = null;
 export async function getCompanyId() {
@@ -216,9 +217,17 @@ export async function getDRE({ from, to } = {}) {
 export async function getVehicleMargins({ onlyWithActivity = true } = {}) {
   const company = await getCompanyId();
   if (!company) return [];
-  // Alíquota de ICMS do seminovo (base = lucro venda − compra). Contador: 5%.
+  // Impostos da venda de seminovo. A base do ICMS é o valor da venda com
+  // redução, NÃO a margem — ver src/lib/fiscal/impostos.js, que reproduz a
+  // NF 12 autorizada ao centavo. Enquanto esta linha calculava 5% da margem,
+  // um carro comprado a 100k e vendido a 200k aparecia aqui com 5.000 de
+  // ICMS; o imposto real da nota é 476,20.
+  //
+  // A alíquota vem do cadastro do financeiro; os demais parâmetros ficam no
+  // padrão. Para EMITIR a nota quem manda é `fiscal_config` — aqui é
+  // estimativa de margem, não documento fiscal.
   const cfg = await finQuery(`select icms_seminovo_aliquota from fin.companies where id=$1`, [company]);
-  const aliquota = Number(cfg.rows[0]?.icms_seminovo_aliquota ?? 5);
+  const paramsImposto = { icms_seminovo_aliquota: cfg.rows[0]?.icms_seminovo_aliquota };
 
   // custo de aquisição = despesas na conta 4.1x (Custo de Aquisição de Veículos);
   // custo_total = todas as despesas do veículo (aquisição + preparação + etc.).
@@ -240,14 +249,18 @@ export async function getVehicleMargins({ onlyWithActivity = true } = {}) {
     const custo_total = Number(r.custo_total);
     const custo_aquisicao = Number(r.custo_aquisicao);
     const resultado = round2(receita - custo_total);
-    const icms = icmsSeminovo(receita, custo_aquisicao, aliquota);
+    const imp = impostosVeiculoUsado(receita, paramsImposto);
+    const impostos = round2(imp.icms + imp.pis + imp.cofins);
     return {
       vehicle_id: r.vehicle_id, brand: r.brand, model: r.model, year: r.year,
       placa: r.placa, status: r.status,
       receita, custo_total, custo_aquisicao,
       resultado,
-      icms,
-      resultado_liquido: round2(resultado - icms),
+      icms: imp.icms,
+      pis: imp.pis,
+      cofins: imp.cofins,
+      impostos,
+      resultado_liquido: round2(resultado - impostos),
     };
   });
 }

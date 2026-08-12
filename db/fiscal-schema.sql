@@ -58,6 +58,45 @@ create table if not exists fiscal_config (
   updated_at    timestamptz not null default now()
 );
 
+-- ---------------------------------------------------------------------------
+-- Parâmetros descobertos nas NOTAS REAIS da Vamaq (12/08/2026).
+--
+-- Até aqui a config só tinha CFOP/CST/NCM/série, e o resto do que a SEFAZ
+-- exige estava ausente do payload — cada campo faltando virava uma emissão
+-- recusada, um erro por vez, com a Mayra do outro lado. Estes defaults saem
+-- da NF 12 (venda, protocolo 131267805126821), que a SEFAZ autorizou.
+-- Ver docs/superpowers/specs/2026-08-12-parametros-nfe-reais.md.
+--
+-- `add column if not exists` com default preenche as linhas que já existem,
+-- então a linha de produção é atualizada sozinha — mas só onde a coluna é
+-- NOVA. Coluna que já existia e está vazia precisa do update lá embaixo.
+-- ---------------------------------------------------------------------------
+alter table fiscal_config add column if not exists razao_social text not null default 'VAMAQ MOTORS';
+alter table fiscal_config add column if not exists uf text not null default 'MG';
+alter table fiscal_config add column if not exists natureza_operacao text not null default 'Venda Dentro do Estado';
+
+-- ICMS: base reduzida em 95,238% sobre o valor da operação (não sobre a margem).
+alter table fiscal_config add column if not exists icms_reducao_base numeric(7,4) not null default 95.238;
+
+-- PIS/COFINS cumulativos (Lucro Presumido), sobre a base do ICMS menos o ICMS.
+alter table fiscal_config add column if not exists pis_situacao_tributaria text not null default '01';
+alter table fiscal_config add column if not exists pis_aliquota numeric(6,4) not null default 0.65;
+alter table fiscal_config add column if not exists cofins_situacao_tributaria text not null default '01';
+alter table fiscal_config add column if not exists cofins_aliquota numeric(6,4) not null default 3;
+
+-- Obrigatórios no schema da NF-e 4.00 e que não mandávamos.
+-- modalidade_frete 1 = por conta do destinatário (FOB): a Vamaq não contrata frete.
+alter table fiscal_config add column if not exists modalidade_frete text not null default '1';
+alter table fiscal_config add column if not exists presenca_comprador text not null default '1';
+alter table fiscal_config add column if not exists consumidor_final text not null default '1';
+
+-- Coluna antiga que existe em produção com string vazia: sem isto, a nota sai
+-- sem modBC e a SEFAZ recusa. 3 = valor da operação.
+update fiscal_config
+   set icms_modalidade_base_calculo = '3'
+ where icms_modalidade_base_calculo is null
+    or trim(icms_modalidade_base_calculo) = '';
+
 -- Singleton: corrigir o CFOP/CST é UPDATE, não INSERT — um segundo INSERT
 -- deixava o sistema emitindo com a config antiga, sem sinal nenhum
 -- (getFiscalConfig lia a linha mais antiga por created_at).

@@ -70,22 +70,38 @@ export default function TutorialFiscalPage() {
           <h3 className={t.stepTitle}>Conferir os valores</h3>
           <p>
             A tela mostra <span className={t.uiField}>Valor da venda</span> e{" "}
-            <span className={t.uiField}>Custo de aquisição</span>. A partir
-            dos dois, o <strong>ICMS do seminovo</strong> é calculado
-            sozinho sobre o lucro da venda (venda − custo), com a alíquota
-            que o contador configurou.
+            <span className={t.uiField}>Valor de aquisição</span>. Os impostos
+            são calculados sozinhos e aparecem logo abaixo: o{" "}
+            <strong>ICMS do seminovo</strong> sai de uma base reduzida sobre o
+            valor da venda, e <strong>PIS e COFINS</strong> sobre essa base menos
+            o ICMS. Tudo com os parâmetros que o contador configurou.
           </p>
           <div className={t.warning}>
-            <span className={t.boxLabel}>O custo de aquisição pode vir travado</span>
+            <span className={t.boxLabel}>O valor de aquisição não muda imposto</span>
+            <p>
+              Ele <strong>não entra no cálculo</strong> — quem manda no imposto é
+              o valor da venda. O valor de aquisição vai impresso nas{" "}
+              <strong>informações complementares</strong> da nota, que é o texto
+              que diz de onde o carro veio. A tela mostra esse texto pronto,
+              antes de emitir: confira se está certo.
+            </p>
             <p>
               Quando o financeiro <strong>já tem a compra deste carro
-              lançada</strong>, o campo aparece cinza e travado: o valor
-              usado é sempre o do financeiro, <strong>o que estiver
-              digitado ali é ignorado</strong>. É de propósito — a base do
-              ICMS não pode ser escolhida na hora de emitir a nota. Só
-              quando não há compra lançada no financeiro é que o campo fica
-              editável, e nesse caso é obrigatório: sem ele o ICMS incide
-              sobre a venda inteira.
+              lançada</strong>, o campo aparece cinza e travado: o valor usado é
+              sempre o do financeiro, <strong>o que estiver digitado ali é
+              ignorado</strong>. Só quando não há compra lançada é que o campo
+              fica editável — e aí é obrigatório, senão a nota sai sem essa
+              informação.
+            </p>
+          </div>
+          <div className={t.warning}>
+            <span className={t.boxLabel}>Nº da nota de entrada</span>
+            <p>
+              Campo opcional. Se este carro já tem uma <strong>nota de
+              entrada</strong> emitida, coloque o número dela: o texto das
+              informações complementares passa a citar a nota, que é como as
+              notas da Vamaq já saíam. Sem o número, o texto sai só com o valor
+              de aquisição.
             </p>
           </div>
         </div>

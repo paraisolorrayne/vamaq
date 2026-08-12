@@ -57,7 +57,7 @@ export default function MargensPage() {
               <thead>
                 <tr>
                   <th>Veículo</th><th>Receita</th><th>Custo total</th>
-                  <th title="ICMS estimado: 5% do lucro (venda − compra)">ICMS (5%)</th>
+                  <th title="ICMS + PIS + COFINS da nota de venda, pelos mesmos parâmetros das notas autorizadas">Impostos da venda</th>
                   <th>Resultado líquido</th><th>Margem líq.</th>
                 </tr>
               </thead>
@@ -75,7 +75,7 @@ export default function MargensPage() {
                       </td>
                       <td style={{ fontVariantNumeric: "tabular-nums" }}>{money(m.receita)}</td>
                       <td style={{ fontVariantNumeric: "tabular-nums" }}>{money(m.custo_total)}</td>
-                      <td style={{ fontVariantNumeric: "tabular-nums", color: "#a16207" }}>{money(m.icms)}</td>
+                      <td style={{ fontVariantNumeric: "tabular-nums", color: "#a16207" }}>{money(m.impostos ?? m.icms)}</td>
                       <td style={{ fontVariantNumeric: "tabular-nums", fontWeight: 600, color: liq >= 0 ? "#15803d" : "#b91c1c" }}>{money(liq)}</td>
                       <td style={{ color: margem >= 0 ? "#15803d" : "#b91c1c" }}>
                         {m.receita > 0 ? margem.toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + "%" : "—"}
@@ -87,8 +87,10 @@ export default function MargensPage() {
             </table>
           </div>
           <p style={{ fontSize: "0.78rem", color: "#888", marginTop: 12 }}>
-            ICMS estimado do seminovo: 5% sobre o lucro (nota de venda − nota de compra),
-            conforme regime de Lucro Presumido. Resultado líquido = receita − custos − ICMS.
+            Impostos da venda de seminovo: base do ICMS = valor da venda com redução de 95,238%,
+            alíquota 5%; PIS 0,65% e COFINS 3% sobre a base do ICMS menos o ICMS — os mesmos
+            parâmetros das notas que a SEFAZ já autorizou. Resultado líquido = receita − custos −
+            impostos.
           </p>
           </>
         )}

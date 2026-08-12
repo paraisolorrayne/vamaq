@@ -3,7 +3,11 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { montarPayloadNfe, normalizaCstIcms } from "../src/lib/fiscal/payload.js";
+import {
+  montarPayloadNfe,
+  normalizaCstIcms,
+  textoInformacoesComplementares,
+} from "../src/lib/fiscal/payload.js";
 import { mensagemDeErro } from "../src/lib/fiscal/focus/client.js";
 
 const CONFIG = {
@@ -32,7 +36,7 @@ test("monta o payload com emitente, destinatário e um item", () => {
   const { payload, error } = montarPayloadNfe(args());
   assert.equal(error, undefined);
   assert.equal(payload.cnpj_emitente, "45348469000154");
-  assert.equal(payload.natureza_operacao, "Venda de mercadoria");
+  assert.equal(payload.natureza_operacao, "Venda Dentro do Estado");
   assert.equal(payload.nome_destinatario, "João Comprador");
   assert.equal(payload.cpf_destinatario, "52998224725");
   assert.equal(payload.uf_destinatario, "MG");
@@ -60,19 +64,102 @@ test("a descrição do item identifica o carro, com placa e chassi", () => {
   assert.match(d, /9BWZZZ377VT004251/);
 });
 
-test("ICMS do seminovo: base é o lucro, não o valor da venda", () => {
+test("ICMS do seminovo: base reduzida sobre a venda, não a margem", () => {
+  // ESTE TESTE JÁ AFIRMOU O CONTRÁRIO. Até 12/08/2026 ele exigia base = 50.000
+  // (200.000 − 150.000) e passava — prendendo no lugar um cálculo que as notas
+  // reais da Vamaq desmentem. Ver tests/fiscal-impostos.test.mjs.
   const { impostos, payload } = montarPayloadNfe(args());
-  assert.equal(impostos.base, 50000);      // 200000 - 150000
-  assert.equal(impostos.aliquota, 5);
-  assert.equal(impostos.icms, 2500);       // 5% de 50000
-  assert.equal(payload.items[0].icms_base_calculo, 50000);
-  assert.equal(payload.items[0].icms_valor, 2500);
+  assert.equal(impostos.baseIcms, 9524);   // 200.000 × 4,762%
+  assert.equal(impostos.aliquotaIcms, 5);
+  assert.equal(impostos.icms, 476.2);      // 5% de 9.524
+  assert.equal(payload.items[0].icms_base_calculo, 9524);
+  assert.equal(payload.items[0].icms_valor, 476.2);
+  assert.equal(payload.items[0].icms_reducao_base_calculo, 95.238);
 });
 
-test("venda abaixo do custo não gera ICMS negativo", () => {
-  const { impostos } = montarPayloadNfe(args({ valorVenda: 140000 }));
-  assert.equal(impostos.base, 0);
-  assert.equal(impostos.icms, 0);
+test("o custo de aquisição não altera imposto nenhum", () => {
+  // Ele entra só nas informações complementares. Dois custos muito diferentes
+  // para a mesma venda têm que produzir exatamente os mesmos tributos.
+  const barato = montarPayloadNfe(args({ custoAquisicao: 10000 })).payload.items[0];
+  const caro = montarPayloadNfe(args({ custoAquisicao: 199000 })).payload.items[0];
+  for (const campo of ["icms_base_calculo", "icms_valor", "pis_valor", "cofins_valor"]) {
+    assert.equal(barato[campo], caro[campo], campo);
+  }
+});
+
+test("venda abaixo do custo ainda gera imposto — o prejuízo não isenta", () => {
+  // No cálculo antigo, vender no prejuízo zerava o ICMS. Não zera: a base é
+  // percentual sobre a venda, e a nota sai com imposto mesmo assim.
+  const { impostos } = montarPayloadNfe(args({ valorVenda: 140000, custoAquisicao: 150000 }));
+  assert.equal(impostos.baseIcms, 6666.8);
+  assert.equal(impostos.icms, 333.34);
+  assert.ok(impostos.icms > 0);
+});
+
+test("PIS e COFINS vão no item, sobre a base do ICMS menos o ICMS", () => {
+  const item = montarPayloadNfe(args()).payload.items[0];
+  assert.equal(item.pis_situacao_tributaria, "01");
+  assert.equal(item.cofins_situacao_tributaria, "01");
+  assert.equal(item.pis_base_calculo, 9047.8);   // 9524 − 476,20
+  assert.equal(item.cofins_base_calculo, 9047.8);
+  assert.equal(item.pis_aliquota_porcentual, 0.65);
+  assert.equal(item.cofins_aliquota_porcentual, 3);
+  assert.equal(item.pis_valor, 58.81);
+  assert.equal(item.cofins_valor, 271.43);
+});
+
+// Os quatro campos que a SEFAZ recusou um a um em 11/08/2026, com a Mayra
+// tentando emitir do outro lado. Nomes conferidos na referência da Focus.
+test("payload leva os obrigatórios da NF-e 4.00 que faltavam", () => {
+  const { payload } = montarPayloadNfe(args());
+  assert.equal(payload.modalidade_frete, "1", "FOB — por conta do destinatário");
+  assert.equal(payload.presenca_comprador, "1");
+  assert.equal(payload.consumidor_final, "1");
+  assert.equal(payload.indicador_inscricao_estadual_destinatario, 9);
+  assert.equal(payload.items[0].icms_modalidade_base_calculo, "3");
+});
+
+test("destinatário com inscrição estadual vira contribuinte, não 'não contribuinte'", () => {
+  const { payload } = montarPayloadNfe(
+    args({ destinatario: { ...DESTINATARIO, doc: "45348469000154", ie: "0054803330093" } })
+  );
+  assert.equal(payload.indicador_inscricao_estadual_destinatario, 1);
+  assert.equal(payload.inscricao_estadual_destinatario, "0054803330093");
+});
+
+test("local_destino separa operação interna de interestadual", () => {
+  assert.equal(montarPayloadNfe(args()).payload.local_destino, 1, "MG -> MG");
+  const fora = montarPayloadNfe(args({ destinatario: { ...DESTINATARIO, uf: "sp" } }));
+  assert.equal(fora.payload.local_destino, 2, "MG -> SP");
+  assert.equal(fora.payload.uf_destinatario, "SP", "UF normalizada em maiúscula");
+});
+
+test("informações complementares seguem o formato da nota autorizada", () => {
+  const texto = textoInformacoesComplementares({
+    config: { cnpj: "45348469000154", razao_social: "VAMAQ MOTORS" },
+    custoAquisicao: 150000,
+    numeroNotaEntrada: "10",
+  });
+  assert.equal(
+    texto,
+    "VEICULO USADO ADQ DE VAMAQ MOTORS, CNPJ 45.348.469/0001-54 CF NF 10 VLR DE AQUISICAO R$150.000,00."
+  );
+});
+
+test("sem número da nota de entrada, o trecho 'CF NF' some — não vira 'CF NF undefined'", () => {
+  const texto = textoInformacoesComplementares({
+    config: { cnpj: "45348469000154" },
+    custoAquisicao: 150000,
+  });
+  assert.ok(!/CF NF/.test(texto), texto);
+  assert.ok(!/undefined|null|NaN/.test(texto), texto);
+  assert.match(texto, /VLR DE AQUISICAO R\$150\.000,00\./);
+});
+
+test("o texto complementar entra no payload", () => {
+  const { payload } = montarPayloadNfe(args({ numeroNotaEntrada: "10" }));
+  assert.match(payload.informacoes_adicionais_contribuinte, /VEICULO USADO ADQ DE/);
+  assert.match(payload.informacoes_adicionais_contribuinte, /CF NF 10/);
 });
 
 test("CNPJ no destinatário vai no campo de CNPJ, não no de CPF", () => {
@@ -94,9 +181,17 @@ test("base do ICMS não carrega ponto flutuante sujo (arredonda para 2 casas)", 
   const { payload, impostos } = montarPayloadNfe(
     args({ valorVenda: 100000.1, custoAquisicao: 50000.001 })
   );
-  const casasDecimais = (n) => (String(n).split(".")[1] || "").length;
-  assert.ok(casasDecimais(payload.items[0].icms_base_calculo) <= 2);
-  assert.ok(casasDecimais(impostos.base) <= 2);
+  // `impostos.base` não existe mais — e enquanto existiu com esse nome, este
+  // teste passava sem testar nada: String(undefined).split(".")[1] é vazio.
+  const casasDecimais = (n) => {
+    assert.equal(typeof n, "number", "campo ausente passaria vazio por este teste");
+    return (String(n).split(".")[1] || "").length;
+  };
+  for (const campo of ["icms_base_calculo", "icms_valor", "pis_valor", "cofins_valor"]) {
+    assert.ok(casasDecimais(payload.items[0][campo]) <= 2, campo);
+  }
+  assert.ok(casasDecimais(impostos.baseIcms) <= 2);
+  assert.ok(casasDecimais(impostos.basePisCofins) <= 2);
 });
 
 test("recusa quando falta chassi", () => {
@@ -167,8 +262,10 @@ test("o payload manda o CST de dois dígitos, e a origem à parte", () => {
   const item = r.payload.items[0];
   assert.equal(item.icms_situacao_tributaria, "20", 'o campo do CST não pode levar a origem junto');
   assert.equal(item.icms_origem, "0");
-  assert.equal(item.icms_base_calculo, 10000);
-  assert.equal(item.icms_valor, 500);
+  // O Porsche real: 175.000 × 4,762% = 8.333,50, e 5% disso = 416,68.
+  // O cálculo antigo daria 10.000 de base e 500,00 de ICMS.
+  assert.equal(item.icms_base_calculo, 8333.5);
+  assert.equal(item.icms_valor, 416.68);
 });
 
 test("CST que não existe no regime normal é barrado aqui, não na SEFAZ", () => {

@@ -3,7 +3,7 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { computeDRE, computeVehicleMargin, icmsSeminovo, podeAprovar } from "../src/lib/fin/calc.js";
+import { computeDRE, computeVehicleMargin, podeAprovar } from "../src/lib/fin/calc.js";
 
 const TXS = [
   { type: "revenue", amount: 200000, code: "3.1", status: "confirmed" }, // venda
@@ -41,16 +41,10 @@ test("DRE: sem receita não divide por zero", () => {
   assert.equal(d.lucroLiquido, -100);
 });
 
-test("ICMS seminovo: 5% do lucro (venda − compra)", () => {
-  // compra 150k, venda 200k → lucro 50k → ICMS 5% = 2.500
-  assert.equal(icmsSeminovo(200000, 150000, 5), 2500);
-  // sem venda → sem ICMS
-  assert.equal(icmsSeminovo(0, 150000, 5), 0);
-  // vendeu no prejuízo (venda < compra) → sem ICMS
-  assert.equal(icmsSeminovo(140000, 150000, 5), 0);
-  // alíquota default 5%
-  assert.equal(icmsSeminovo(100000, 80000), 1000);
-});
+// O teste do ICMS do seminovo saiu daqui: ele prendia a fórmula errada (5%
+// sobre a margem) e por isso passava sem nunca desconfiar. A conta correta,
+// travada nos valores de uma nota real autorizada pela SEFAZ, está em
+// tests/fiscal-impostos.test.mjs.
 
 test("alçada de aprovação", () => {
   assert.equal(podeAprovar({ role: "admin" }, 999999), true);           // admin: ilimitado

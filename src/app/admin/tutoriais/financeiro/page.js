@@ -69,16 +69,21 @@ export default function TutorialFinanceiroPage() {
             <span className={t.boxLabel}>Regra de ouro do ICMS</span>
             <p>
               A <strong>compra do veículo</strong> tem que ser lançada na conta{" "}
-              <strong>4.1 — Custo de Aquisição de Veículos</strong>. É essa nota
-              de compra que o sistema usa como base do ICMS (venda − compra).
-              Preparação e reparos vão em <strong>4.2</strong> e não entram na
-              base do imposto.
+              <strong>4.1 — Custo de Aquisição de Veículos</strong>. É esse valor
+              que a nota fiscal de venda imprime nas informações complementares,
+              identificando de onde o carro veio. Preparação e reparos vão em{" "}
+              <strong>4.2</strong>.
+            </p>
+            <p>
+              O <strong>imposto não sai daí</strong>: a base do ICMS do seminovo é
+              o valor da venda com redução, não a diferença entre compra e venda.
+              O que a conta 4.1 muda é a <strong>margem</strong>, não o tributo.
             </p>
           </div>
         </div>
       </div>
 
-      <h2 className={t.sectionTitle}>2. Margem por veículo (com ICMS)</h2>
+      <h2 className={t.sectionTitle}>2. Margem por veículo (com impostos)</h2>
 
       <div className={t.step}>
         <div className={t.stepNumber}>3</div>
@@ -87,7 +92,8 @@ export default function TutorialFinanceiroPage() {
           <p>
             Em <span className={t.uiField}>Margem por veículo</span>, cada carro
             com lançamento mostra receita, custo total, o{" "}
-            <strong>ICMS estimado</strong> e o <strong>resultado líquido</strong>.
+            <strong>impostos da venda</strong> (ICMS, PIS e COFINS) e o{" "}
+            <strong>resultado líquido</strong>.
           </p>
           <div className={t.math}>
             <div><span>Venda</span><span>R$ 200.000</span></div>
