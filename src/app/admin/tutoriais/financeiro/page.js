@@ -75,9 +75,9 @@ export default function TutorialFinanceiroPage() {
               <strong>4.2</strong>.
             </p>
             <p>
-              O <strong>imposto não sai daí</strong>: a base do ICMS do seminovo é
-              o valor da venda com redução, não a diferença entre compra e venda.
-              O que a conta 4.1 muda é a <strong>margem</strong>, não o tributo.
+              Lançar a compra na conta errada <strong>erra o imposto</strong>: a
+              base do ICMS do seminovo é a margem (venda − compra), então uma
+              aquisição fora da 4.1 faz a margem parecer maior do que é.
             </p>
           </div>
         </div>

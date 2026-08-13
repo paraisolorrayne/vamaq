@@ -217,11 +217,10 @@ export async function getDRE({ from, to } = {}) {
 export async function getVehicleMargins({ onlyWithActivity = true } = {}) {
   const company = await getCompanyId();
   if (!company) return [];
-  // Impostos da venda de seminovo. A base do ICMS é o valor da venda com
-  // redução, NÃO a margem — ver src/lib/fiscal/impostos.js, que reproduz a
-  // NF 12 autorizada ao centavo. Enquanto esta linha calculava 5% da margem,
-  // um carro comprado a 100k e vendido a 200k aparecia aqui com 5.000 de
-  // ICMS; o imposto real da nota é 476,20.
+  // Impostos da venda de seminovo, pela MESMA função que monta a nota — ver
+  // src/lib/fiscal/impostos.js, que reproduz a NF 12 autorizada ao centavo.
+  // Antes daqui saía só um ICMS calculado por conta própria; agora a coluna
+  // do relatório e o imposto da nota são o mesmo número, por construção.
   //
   // A alíquota vem do cadastro do financeiro; os demais parâmetros ficam no
   // padrão. Para EMITIR a nota quem manda é `fiscal_config` — aqui é
@@ -249,7 +248,7 @@ export async function getVehicleMargins({ onlyWithActivity = true } = {}) {
     const custo_total = Number(r.custo_total);
     const custo_aquisicao = Number(r.custo_aquisicao);
     const resultado = round2(receita - custo_total);
-    const imp = impostosVeiculoUsado(receita, paramsImposto);
+    const imp = impostosVeiculoUsado(receita, custo_aquisicao, paramsImposto);
     const impostos = round2(imp.icms + imp.pis + imp.cofins);
     return {
       vehicle_id: r.vehicle_id, brand: r.brand, model: r.model, year: r.year,

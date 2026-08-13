@@ -71,19 +71,19 @@ export default function TutorialFiscalPage() {
           <p>
             A tela mostra <span className={t.uiField}>Valor da venda</span> e{" "}
             <span className={t.uiField}>Valor de aquisição</span>. Os impostos
-            são calculados sozinhos e aparecem logo abaixo: o{" "}
-            <strong>ICMS do seminovo</strong> sai de uma base reduzida sobre o
-            valor da venda, e <strong>PIS e COFINS</strong> sobre essa base menos
-            o ICMS. Tudo com os parâmetros que o contador configurou.
+            são calculados sozinhos e aparecem logo abaixo: a base do{" "}
+            <strong>ICMS do seminovo</strong> é a <strong>margem</strong> (venda −
+            aquisição), e <strong>PIS e COFINS</strong> incidem sobre essa base
+            menos o ICMS. Tudo com as alíquotas que o contador configurou.
           </p>
           <div className={t.warning}>
-            <span className={t.boxLabel}>O valor de aquisição não muda imposto</span>
+            <span className={t.boxLabel}>O valor de aquisição é a base do imposto</span>
             <p>
-              Ele <strong>não entra no cálculo</strong> — quem manda no imposto é
-              o valor da venda. O valor de aquisição vai impresso nas{" "}
-              <strong>informações complementares</strong> da nota, que é o texto
-              que diz de onde o carro veio. A tela mostra esse texto pronto,
-              antes de emitir: confira se está certo.
+              Errar esse valor <strong>erra o imposto da nota</strong>: quanto
+              maior a aquisição, menor a margem e menor o ICMS. Ele também vai
+              impresso nas <strong>informações complementares</strong>, o texto
+              que diz de onde o carro veio — a tela mostra esse texto pronto,
+              antes de emitir.
             </p>
             <p>
               Quando o financeiro <strong>já tem a compra deste carro

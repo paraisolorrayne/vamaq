@@ -64,48 +64,43 @@ test("a descrição do item identifica o carro, com placa e chassi", () => {
   assert.match(d, /9BWZZZ377VT004251/);
 });
 
-test("ICMS do seminovo: base reduzida sobre a venda, não a margem", () => {
-  // ESTE TESTE JÁ AFIRMOU O CONTRÁRIO. Até 12/08/2026 ele exigia base = 50.000
-  // (200.000 − 150.000) e passava — prendendo no lugar um cálculo que as notas
-  // reais da Vamaq desmentem. Ver tests/fiscal-impostos.test.mjs.
+test("ICMS do seminovo: base é a margem, levada à nota como redução", () => {
+  // Venda 200.000, aquisição 150.000 -> margem 50.000, que é 25% da venda,
+  // logo a redução informada no XML é de 75%.
   const { impostos, payload } = montarPayloadNfe(args());
-  assert.equal(impostos.baseIcms, 9524);   // 200.000 × 4,762%
+  assert.equal(impostos.margem, 50000);
+  assert.equal(impostos.baseIcms, 50000);
   assert.equal(impostos.aliquotaIcms, 5);
-  assert.equal(impostos.icms, 476.2);      // 5% de 9.524
-  assert.equal(payload.items[0].icms_base_calculo, 9524);
-  assert.equal(payload.items[0].icms_valor, 476.2);
-  assert.equal(payload.items[0].icms_reducao_base_calculo, 95.238);
+  assert.equal(impostos.icms, 2500);
+  assert.equal(payload.items[0].icms_base_calculo, 50000);
+  assert.equal(payload.items[0].icms_valor, 2500);
+  assert.equal(payload.items[0].icms_reducao_base_calculo, 75);
 });
 
-test("o custo de aquisição não altera imposto nenhum", () => {
-  // Ele entra só nas informações complementares. Dois custos muito diferentes
-  // para a mesma venda têm que produzir exatamente os mesmos tributos.
+test("o custo de aquisição é a base do imposto — errá-lo erra a nota", () => {
   const barato = montarPayloadNfe(args({ custoAquisicao: 10000 })).payload.items[0];
   const caro = montarPayloadNfe(args({ custoAquisicao: 199000 })).payload.items[0];
-  for (const campo of ["icms_base_calculo", "icms_valor", "pis_valor", "cofins_valor"]) {
-    assert.equal(barato[campo], caro[campo], campo);
-  }
+  assert.ok(barato.icms_valor > caro.icms_valor, "aquisição maior -> imposto menor");
+  assert.equal(caro.icms_base_calculo, 1000);
 });
 
-test("venda abaixo do custo ainda gera imposto — o prejuízo não isenta", () => {
-  // No cálculo antigo, vender no prejuízo zerava o ICMS. Não zera: a base é
-  // percentual sobre a venda, e a nota sai com imposto mesmo assim.
+test("venda no prejuízo não gera imposto", () => {
   const { impostos } = montarPayloadNfe(args({ valorVenda: 140000, custoAquisicao: 150000 }));
-  assert.equal(impostos.baseIcms, 6666.8);
-  assert.equal(impostos.icms, 333.34);
-  assert.ok(impostos.icms > 0);
+  assert.equal(impostos.margem, 0);
+  assert.equal(impostos.baseIcms, 0);
+  assert.equal(impostos.icms, 0);
 });
 
 test("PIS e COFINS vão no item, sobre a base do ICMS menos o ICMS", () => {
   const item = montarPayloadNfe(args()).payload.items[0];
   assert.equal(item.pis_situacao_tributaria, "01");
   assert.equal(item.cofins_situacao_tributaria, "01");
-  assert.equal(item.pis_base_calculo, 9047.8);   // 9524 − 476,20
-  assert.equal(item.cofins_base_calculo, 9047.8);
+  assert.equal(item.pis_base_calculo, 47500);   // 50.000 − 2.500
+  assert.equal(item.cofins_base_calculo, 47500);
   assert.equal(item.pis_aliquota_porcentual, 0.65);
   assert.equal(item.cofins_aliquota_porcentual, 3);
-  assert.equal(item.pis_valor, 58.81);
-  assert.equal(item.cofins_valor, 271.43);
+  assert.equal(item.pis_valor, 308.75);
+  assert.equal(item.cofins_valor, 1425);
 });
 
 // Os quatro campos que a SEFAZ recusou um a um em 11/08/2026, com a Mayra
@@ -262,10 +257,11 @@ test("o payload manda o CST de dois dígitos, e a origem à parte", () => {
   const item = r.payload.items[0];
   assert.equal(item.icms_situacao_tributaria, "20", 'o campo do CST não pode levar a origem junto');
   assert.equal(item.icms_origem, "0");
-  // O Porsche real: 175.000 × 4,762% = 8.333,50, e 5% disso = 416,68.
-  // O cálculo antigo daria 10.000 de base e 500,00 de ICMS.
-  assert.equal(item.icms_base_calculo, 8333.5);
-  assert.equal(item.icms_valor, 416.68);
+  // O Porsche real: venda 175.000, aquisição 165.000 -> margem 10.000. A base
+  // sai 9.999,50 porque o percentual de redução (94,286%) é arredondado a 3
+  // casas e a base deriva dele — o mesmo mecanismo dos 15 centavos da NF 12.
+  assert.equal(item.icms_base_calculo, 9999.5);
+  assert.equal(item.icms_valor, 499.98);
 });
 
 test("CST que não existe no regime normal é barrado aqui, não na SEFAZ", () => {

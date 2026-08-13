@@ -19,33 +19,41 @@ a SEFAZ já aceitou.
 | PIS/COFINS | ver abaixo | 0,00 | 0,00 |
 | Info complementar | texto obrigatório, abaixo | vazio | vazio |
 
-## O cálculo da venda (NF 12) — e onde nosso código erra
+## O cálculo da venda (NF 12)
 
 Valor da venda 157.500,00; valor de aquisição 150.000,00 (NF 10).
 
 | Campo | Na nota autorizada | Como se chega lá |
 |---|---|---|
-| Base de cálculo do ICMS | **7.500,15** | `157.500,00 × 4,762%` — redução de base de **95,238%** sobre o valor da operação |
+| Margem | 7.500,00 | `venda − aquisição` |
+| Redução da base (pRedBC) | **95,238%** | `(1 − margem/venda) × 100`, arredondado a 3 casas |
+| Base de cálculo do ICMS | **7.500,15** | `157.500,00 × 4,762%` — deriva do pRedBC arredondado |
 | Alíquota | 5,00% | fixa |
 | ICMS | **375,01** | `7.500,15 × 5%` |
 | Base do PIS/COFINS | 7.125,14 | `base do ICMS − ICMS` |
 | PIS | **46,31** | `7.125,14 × 0,65%` |
 | COFINS | **213,75** | `7.125,14 × 3%` |
 
-Os quatro valores batem ao centavo. **O valor de aquisição não entra em nenhuma conta** —
-ele aparece só no texto das informações complementares.
+Os quatro valores batem ao centavo. A base do ICMS é a **margem**; ela chega ao XML como
+percentual de redução porque o layout não aceita base menor que o valor do item sem
+justificar.
 
-**O que nosso código faz hoje** (`src/lib/fiscal/payload.js`): base = `venda − aquisição`,
-sem redução, sem PIS, sem COFINS. Nesse caso daria 7.500,00 — os 15 centavos de diferença
-são a prova de que o método é outro. No Porsche que a Mayra tentou emitir (venda 175.000,
-aquisição 165.000) a diferença deixa de ser cosmética:
+### A leitura errada que eu cheguei a implementar (12/08/2026)
 
-| | Base ICMS | ICMS | PIS | COFINS |
-|---|---|---|---|---|
-| Método da nota autorizada | 8.333,50 | 416,68 | 51,46 | 237,50 |
-| Nosso código hoje | 10.000,00 | 500,00 | — | — |
+Li os 15 centavos de diferença entre a margem (7.500,00) e a base (7.500,15) como prova de
+que a base ignorava a margem e vinha de uma redução fixa de 95,238% sobre a venda. Subiu
+para produção assim, e estava errado.
 
-Emitiríamos ICMS 20% maior que o devido e sem PIS/COFINS nenhum.
+O que eu não vi: **naquele carro a margem calhou de ser 1/21 da venda** — ele foi vendido
+por exatamente `aquisição × 1,05`, e 1/21 é 4,7619%, o complemento de 95,238%. As duas
+leituras reproduzem a NF 12. Os 15 centavos são só o arredondamento do pRedBC a 3 casas.
+
+O que desempata: **95,238% não é número de lei.** Redução legal é redonda (95%, 90%, 80%);
+95,238% é número calculado. E bate com o que o contador já tinha dito em julho.
+
+**Uma nota só não distingue as hipóteses.** Confirmar com uma segunda nota autorizada de
+margem diferente — até lá, `fiscal_config.icms_base_metodo` alterna entre `margem` (padrão)
+e `reducao_fixa` sem tocar em código.
 
 ## Texto das informações complementares (NF 12, literal)
 

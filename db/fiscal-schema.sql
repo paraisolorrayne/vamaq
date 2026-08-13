@@ -75,7 +75,10 @@ alter table fiscal_config add column if not exists razao_social text not null de
 alter table fiscal_config add column if not exists uf text not null default 'MG';
 alter table fiscal_config add column if not exists natureza_operacao text not null default 'Venda Dentro do Estado';
 
--- ICMS: base reduzida em 95,238% sobre o valor da operação (não sobre a margem).
+-- ICMS: a base é a MARGEM (venda − aquisição), levada à nota como um percentual
+-- de redução calculado por nota. 'reducao_fixa' + icms_reducao_base é a saída
+-- caso o contador responda que o percentual é fixo — sem tocar em código.
+alter table fiscal_config add column if not exists icms_base_metodo text not null default 'margem';
 alter table fiscal_config add column if not exists icms_reducao_base numeric(7,4) not null default 95.238;
 
 -- PIS/COFINS cumulativos (Lucro Presumido), sobre a base do ICMS menos o ICMS.

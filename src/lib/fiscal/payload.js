@@ -137,7 +137,7 @@ export function montarPayloadNfe({
     };
   }
 
-  const imp = impostosVeiculoUsado(venda, config);
+  const imp = impostosVeiculoUsado(venda, custoAquisicao, config);
 
   const doc = so_digitos(destinatario.doc);
   if (doc.length !== 11 && doc.length !== 14) {

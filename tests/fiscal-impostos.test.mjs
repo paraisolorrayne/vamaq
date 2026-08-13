@@ -1,102 +1,126 @@
 /**
  * Os impostos da NF-e travados nos valores de uma nota REAL e autorizada.
  *
- * POR QUE ESTE ARQUIVO EXISTE: o cálculo anterior (base = venda − custo de
- * aquisição) parecia razoável, passava nos testes que existiam, e estava
- * errado — teria emitido o Porsche com ICMS 20% acima do devido e sem PIS nem
- * COFINS. Nenhum teste inventado pega isso: só a nota que a SEFAZ já carimbou.
+ * Fonte: DANFE da NF 12 da Vamaq, protocolo 131267805126821 — venda
+ * 157.500,00, aquisição 150.000,00.
  *
- * Fonte: DANFE da NF 12 da Vamaq, protocolo de autorização 131267805126821.
+ * POR QUE ESTE ARQUIVO EXISTE, E O QUE ELE NÃO CONSEGUE PROVAR: uma nota só
+ * não distingue "base = margem" de "base = percentual fixo sobre a venda",
+ * porque naquele carro a margem calhou de ser 1/21 da venda (foi vendido por
+ * exatamente aquisição × 1,05) — e 1/21 é 4,762%, o complemento de 95,238%.
+ * Eu já implementei a leitura errada por causa disso. Os testes de margem
+ * diferente abaixo é que separam as duas hipóteses; enquanto não houver uma
+ * segunda nota autorizada com outra margem, eles valem como decisão de
+ * projeto, não como fato confirmado pela SEFAZ.
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { impostosVeiculoUsado, PADRAO_IMPOSTOS } from "../src/lib/fiscal/impostos.js";
 
+const NF12 = [157500, 150000];
+
 test("NF 12 autorizada: os quatro impostos batem ao centavo", () => {
-  const i = impostosVeiculoUsado(157500);
+  const i = impostosVeiculoUsado(...NF12);
   assert.equal(i.baseIcms, 7500.15, "base do ICMS na DANFE");
   assert.equal(i.icms, 375.01, "valor do ICMS na DANFE");
   assert.equal(i.pis, 46.31, "PIS na DANFE");
   assert.equal(i.cofins, 213.75, "COFINS na DANFE");
 });
 
-test("a base não é a margem — é aí que o cálculo antigo errava", () => {
-  // Venda 157.500 e aquisição 150.000 dariam margem de exatamente 7.500,00.
-  // A nota traz 7.500,15. Os 15 centavos são a assinatura do método correto.
-  const i = impostosVeiculoUsado(157500);
-  assert.notEqual(i.baseIcms, 7500.0);
+test("a redução vai na nota como 95,238 — o número que aparece no XML da NF 12", () => {
+  assert.equal(impostosVeiculoUsado(...NF12).reducaoBaseIcms, 95.238);
+});
+
+test("os 15 centavos são o arredondamento do pRedBC, não outra base", () => {
+  // A margem crua é 7.500,00. A base sai 7.500,15 porque o percentual de
+  // redução é arredondado a 3 casas e a base deriva dele. Se algum dia a base
+  // voltar a ser a margem crua, este teste avisa.
+  const i = impostosVeiculoUsado(...NF12);
+  assert.equal(i.margem, 7500);
   assert.equal(i.baseIcms, 7500.15);
 });
 
-test("o Porsche que falhou em produção: o cálculo antigo cobrava 20% a mais", () => {
-  // Venda 175.000, aquisição 165.000 — a emissão que a Mayra tentou em
-  // 11/08/2026 e que a SEFAZ recusou por falta de modalidade_frete. Se tivesse
-  // passado, teria saído com estes números errados: base 10.000 e ICMS 500,00,
-  // sem PIS nem COFINS. O erro de schema evitou uma nota com imposto errado.
-  const i = impostosVeiculoUsado(175000);
-  assert.equal(i.baseIcms, 8333.5);
-  assert.equal(i.icms, 416.68);
-  assert.equal(i.pis, 51.46);
-  assert.equal(i.cofins, 237.5);
+test("margem diferente muda a base — é isto que separa margem de redução fixa", () => {
+  // O Porsche que a Mayra tentou emitir: venda 175.000, aquisição 165.000.
+  // Pela margem: base ~10.000. Por uma redução fixa de 95,238%: base 8.333,50.
+  const i = impostosVeiculoUsado(175000, 165000);
+  assert.equal(i.margem, 10000);
+  assert.equal(i.baseIcms, 9999.5);
+  assert.equal(i.icms, 499.98);
+  assert.notEqual(i.baseIcms, 8333.5, "8.333,50 é a leitura de redução fixa, que descartamos");
+});
 
-  const margem = 175000 - 165000;
-  assert.equal(margem, 10000, "o que o cálculo antigo usava de base");
-  assert.ok(i.baseIcms < margem, "a base correta é MENOR que a margem");
+test("margem grande gera imposto grande — o inverso também vale", () => {
+  const i = impostosVeiculoUsado(200000, 150000);
+  assert.equal(i.margem, 50000);
+  assert.equal(i.baseIcms, 50000);
+  assert.equal(i.icms, 2500);
+});
+
+test("venda no prejuízo não gera imposto", () => {
+  const i = impostosVeiculoUsado(140000, 150000);
+  assert.equal(i.margem, 0);
+  assert.equal(i.baseIcms, 0);
+  assert.equal(i.icms, 0);
+  assert.equal(i.pis, 0);
+  assert.equal(i.cofins, 0);
+});
+
+test("sem custo de aquisição o imposto incide sobre a venda inteira", () => {
+  // Não é um caso a tolerar: é o motivo de o valor de aquisição ser
+  // obrigatório na tela de emissão.
+  const i = impostosVeiculoUsado(100000, 0);
+  assert.equal(i.reducaoBaseIcms, 0);
+  assert.equal(i.baseIcms, 100000);
+  assert.equal(i.icms, 5000);
 });
 
 test("base do PIS/COFINS é a base do ICMS menos o ICMS", () => {
-  const i = impostosVeiculoUsado(157500);
+  const i = impostosVeiculoUsado(...NF12);
   assert.equal(i.basePisCofins, 7125.14);
-  // Comparação em centavos: 7500.15 - 375.01 dá 7125.139999999999 em ponto
-  // flutuante, e é justamente por isso que a função arredonda.
   assert.equal(Math.round(i.basePisCofins * 100), Math.round((i.baseIcms - i.icms) * 100));
 });
 
 test("venda sem valor não gera imposto", () => {
   for (const v of [0, -1, null, undefined, ""]) {
-    const i = impostosVeiculoUsado(v);
+    const i = impostosVeiculoUsado(v, 50000);
     assert.equal(i.icms, 0, `venda ${JSON.stringify(v)}`);
-    assert.equal(i.pis, 0);
-    assert.equal(i.cofins, 0);
     assert.equal(i.baseIcms, 0);
+    assert.equal(i.margem, 0);
   }
 });
 
-test("parâmetro ausente na config cai no padrão da nota autorizada", () => {
-  const vazia = impostosVeiculoUsado(157500, {});
-  const nulos = impostosVeiculoUsado(157500, {
-    icms_reducao_base: null,
-    icms_seminovo_aliquota: "",
-    pis_aliquota: undefined,
-    cofins_aliquota: "   ",
-  });
-  assert.deepEqual(nulos, vazia);
-  assert.equal(vazia.reducaoBaseIcms, PADRAO_IMPOSTOS.reducaoBaseIcms);
-});
-
 test("numeric do Postgres chega como string e é aceito", () => {
-  const comoTexto = impostosVeiculoUsado(157500, {
-    icms_reducao_base: "95.238",
+  const i = impostosVeiculoUsado("157500.00", "150000.00", {
     icms_seminovo_aliquota: "5.00",
     pis_aliquota: "0.6500",
     cofins_aliquota: "3.0000",
   });
-  assert.equal(comoTexto.icms, 375.01);
-  assert.equal(comoTexto.cofins, 213.75);
+  assert.equal(i.icms, 375.01);
+  assert.equal(i.cofins, 213.75);
 });
 
 test("alíquota zero é respeitada, não confundida com ausência", () => {
-  // Zero é decisão fiscal (isenção); se virasse "ausente", o padrão de 5%
-  // reapareceria e a nota sairia com imposto que o contador mandou zerar.
-  const i = impostosVeiculoUsado(157500, { icms_seminovo_aliquota: 0, pis_aliquota: 0 });
+  const i = impostosVeiculoUsado(...NF12, { icms_seminovo_aliquota: 0, pis_aliquota: 0 });
   assert.equal(i.icms, 0);
   assert.equal(i.pis, 0);
   assert.equal(i.baseIcms, 7500.15, "a base continua existindo");
-  assert.equal(i.cofins, 225.0, "COFINS segue no padrão: 7500,15 × 3%");
+  assert.equal(i.cofins, 225.0, "COFINS segue no padrão: 7.500,15 × 3%");
 });
 
-test("o contador consegue mudar a redução de base sem mexer em código", () => {
-  const i = impostosVeiculoUsado(100000, { icms_reducao_base: 90 });
-  assert.equal(i.baseIcms, 10000);
-  assert.equal(i.icms, 500);
+// Se o contador responder que a redução é fixa, isso vira configuração — sem
+// tocar em código e sem outra rodada de deploy.
+test("método 'reducao_fixa' ignora a margem e usa o percentual cadastrado", () => {
+  const i = impostosVeiculoUsado(175000, 165000, {
+    icms_base_metodo: "reducao_fixa",
+    icms_reducao_base: 95.238,
+  });
+  assert.equal(i.baseIcms, 8333.5);
+  assert.equal(i.icms, 416.68);
+});
+
+test("sem método cadastrado, o padrão é a margem", () => {
+  assert.equal(impostosVeiculoUsado(...NF12, {}).metodo, "margem");
+  assert.equal(impostosVeiculoUsado(...NF12, { icms_base_metodo: "" }).metodo, "margem");
+  assert.equal(PADRAO_IMPOSTOS.reducaoBaseIcms, 95.238, "só usado no método fixo");
 });

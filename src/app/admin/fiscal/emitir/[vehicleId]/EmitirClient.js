@@ -119,7 +119,7 @@ export default function EmitirClient({
   // Mesma função que monta a nota — a tela não pode calcular de um jeito e o
   // payload de outro. Só depende do valor da venda.
   const custoPreenchido = String(custo).trim() !== "" && Number(custo) > 0;
-  const imp = impostosVeiculoUsado(Number(venda) || 0, config || {});
+  const imp = impostosVeiculoUsado(Number(venda) || 0, Number(custo) || 0, config || {});
   // Exatamente o texto que vai na nota — a operadora confere antes de emitir.
   const textoComplementar = textoInformacoesComplementares({
     config: config || {},
@@ -246,7 +246,7 @@ export default function EmitirClient({
                 />
                 <p style={{ fontSize: "0.78rem", color: "#666", margin: 0 }}>
                   {custoOrigem === "financeiro"
-                    ? "vindo do financeiro — vai impresso nas informações complementares"
+                    ? "vindo do financeiro — é a base do imposto e vai impresso na nota"
                     : "este veículo não tem compra lançada no financeiro — informe o valor pago"}
                 </p>
               </div>
@@ -286,11 +286,16 @@ export default function EmitirClient({
           <div className={styles.card} style={{ marginBottom: 24 }}>
             <h3 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: 16 }}>Impostos</h3>
             <p style={{ fontSize: "0.85rem", color: "#666", marginTop: 0 }}>
-              Base do ICMS = valor da venda com redução de {pct(imp.reducaoBaseIcms)}% (veículo usado).
-              PIS e COFINS incidem sobre a base do ICMS menos o ICMS. Recalcula sozinho conforme
-              o valor da venda muda — o valor de aquisição não altera imposto nenhum.
+              Base do ICMS = a margem (venda − aquisição), que vai na nota como uma redução
+              de {pct(imp.reducaoBaseIcms)}% sobre o valor do veículo. PIS e COFINS incidem
+              sobre a base do ICMS menos o ICMS. Recalcula sozinho conforme os valores acima
+              mudam.
             </p>
             <div className={styles.formGrid}>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Margem (venda − aquisição)</label>
+                <p style={{ margin: 0, fontWeight: 600 }}>{money(imp.margem)}</p>
+              </div>
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>Base do ICMS</label>
                 <p style={{ margin: 0, fontWeight: 600 }}>{money(imp.baseIcms)}</p>
