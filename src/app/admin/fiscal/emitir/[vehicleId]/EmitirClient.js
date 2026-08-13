@@ -4,7 +4,6 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import styles from "../../../admin.module.css";
 import { emitirNotaAction } from "../../actions";
-import { formatValorBR } from "@/lib/money";
 import { impostosVeiculoUsado } from "@/lib/fiscal/impostos";
 import { textoInformacoesComplementares } from "@/lib/fiscal/payload";
 import { destinatarioDoCliente } from "@/lib/clientes/prefill";
@@ -14,8 +13,23 @@ const DEST_VAZIO = {
   nome: "", doc: "", cep: "", logradouro: "", numero: "", bairro: "", municipio: "", uf: "",
 };
 
+// Dinheiro aqui é valor de nota fiscal: SEMPRE duas casas. formatValorBR usa
+// minimumFractionDigits 0 porque serve aos preços do site ("R$ 175.000"), e
+// com ele o PIS de 52,90 aparecia como "R$ 52,9" — que não é como se escreve
+// dinheiro, e numa tela de conferência fiscal parece valor truncado.
 function money(n) {
-  return "R$ " + formatValorBR(Number(n) || 0);
+  return (
+    "R$ " +
+    (Number(n) || 0).toLocaleString("pt-BR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })
+  );
+}
+
+/** 95.238 -> "95,238" — percentual com vírgula, como o resto da tela. */
+function pct(n) {
+  return (Number(n) || 0).toLocaleString("pt-BR", { maximumFractionDigits: 4 });
 }
 
 const STATUS_LABEL = {
@@ -104,6 +118,7 @@ export default function EmitirClient({
   const semChassi = !veiculo.chassi;
   // Mesma função que monta a nota — a tela não pode calcular de um jeito e o
   // payload de outro. Só depende do valor da venda.
+  const custoPreenchido = String(custo).trim() !== "" && Number(custo) > 0;
   const imp = impostosVeiculoUsado(Number(venda) || 0, config || {});
   // Exatamente o texto que vai na nota — a operadora confere antes de emitir.
   const textoComplementar = textoInformacoesComplementares({
@@ -260,7 +275,9 @@ export default function EmitirClient({
                 Informações complementares da nota
               </strong>
               <span style={{ fontFamily: "monospace", wordBreak: "break-word" }}>
-                {textoComplementar}
+                {custoPreenchido
+                  ? textoComplementar
+                  : "preencha o valor de aquisição para ver o texto que vai na nota"}
               </span>
             </div>
           </div>
@@ -269,7 +286,7 @@ export default function EmitirClient({
           <div className={styles.card} style={{ marginBottom: 24 }}>
             <h3 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: 16 }}>Impostos</h3>
             <p style={{ fontSize: "0.85rem", color: "#666", marginTop: 0 }}>
-              Base do ICMS = valor da venda com redução de {imp.reducaoBaseIcms}% (veículo usado).
+              Base do ICMS = valor da venda com redução de {pct(imp.reducaoBaseIcms)}% (veículo usado).
               PIS e COFINS incidem sobre a base do ICMS menos o ICMS. Recalcula sozinho conforme
               o valor da venda muda — o valor de aquisição não altera imposto nenhum.
             </p>
@@ -280,7 +297,7 @@ export default function EmitirClient({
               </div>
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>Alíquota do ICMS</label>
-                <p style={{ margin: 0, fontWeight: 600 }}>{imp.aliquotaIcms}%</p>
+                <p style={{ margin: 0, fontWeight: 600 }}>{pct(imp.aliquotaIcms)}%</p>
               </div>
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>ICMS</label>
@@ -291,11 +308,11 @@ export default function EmitirClient({
                 <p style={{ margin: 0, fontWeight: 600 }}>{money(imp.basePisCofins)}</p>
               </div>
               <div className={styles.formGroup}>
-                <label className={styles.formLabel}>PIS ({imp.aliquotaPis}%)</label>
+                <label className={styles.formLabel}>PIS ({pct(imp.aliquotaPis)}%)</label>
                 <p style={{ margin: 0, fontWeight: 600 }}>{money(imp.pis)}</p>
               </div>
               <div className={styles.formGroup}>
-                <label className={styles.formLabel}>COFINS ({imp.aliquotaCofins}%)</label>
+                <label className={styles.formLabel}>COFINS ({pct(imp.aliquotaCofins)}%)</label>
                 <p style={{ margin: 0, fontWeight: 600 }}>{money(imp.cofins)}</p>
               </div>
             </div>
