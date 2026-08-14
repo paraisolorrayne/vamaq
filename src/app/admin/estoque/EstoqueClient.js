@@ -60,12 +60,15 @@ function EstoqueConteudo({ podeEmitirNota }) {
   // operadora ficava na fila atrás delas: o botão "Editar" parecia travado.
   // Ninguém abre 43 carros; abre um. Prefetch aqui é desperdício puro.
   //
-  // A placa entra na busca — é o jeito mais natural de procurar um carro
-  // específico, e antes ela não era considerada.
+  // A placa e o CHASSI entram na busca — são os dois jeitos naturais de
+  // procurar um carro específico, inclusive anos depois de vendido, e é o que
+  // a proposta prometeu ("busca por placa, chassi ou período").
   const alvo = normalizaBusca(search);
   const filtered = alvo
     ? vehicles.filter((v) =>
-        normalizaBusca(`${v.brand} ${v.model} ${v.color} ${v.placa || ""}`).includes(alvo)
+        normalizaBusca(
+          `${v.brand} ${v.model} ${v.color} ${v.placa || ""} ${v.chassi || ""}`
+        ).includes(alvo)
       )
     : vehicles;
 
@@ -95,7 +98,7 @@ function EstoqueConteudo({ podeEmitirNota }) {
         <div className={styles.toolbar}>
           <input
             type="text"
-            placeholder="Buscar por marca, modelo ou cor..."
+            placeholder="Buscar por marca, modelo, cor, placa ou chassi..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className={`${styles.formInput} ${styles.toolbarSearch}`}
