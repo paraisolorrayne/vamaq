@@ -114,6 +114,7 @@ export function montarPayloadNfe({
   valorVenda,
   custoAquisicao,
   numeroNotaEntrada,
+  vendaPresencial = true,
 }) {
   const venda = Number(valorVenda) || 0;
   if (venda <= 0) return { error: "Informe o valor da venda." };
@@ -137,7 +138,25 @@ export function montarPayloadNfe({
     };
   }
 
+  // Contador, 14/08/2026: o texto das informações complementares é obrigatório
+  // E tem que estar preenchido. Sem o número da nota de entrada ele sai pela
+  // metade — e não existe carro para vender que não tenha entrado antes.
+  //
+  // Vem DEPOIS das checagens de config: CST ou CFOP errados travam toda
+  // emissão e são problema do contador. Mandar a operadora buscar o número da
+  // nota de entrada para depois esbarrar num parâmetro errado é fazê-la
+  // trabalhar à toa.
+  if (!String(numeroNotaEntrada ?? "").trim()) {
+    return {
+      error:
+        "Informe o número da nota de entrada deste veículo — ela é obrigatória nas informações complementares da nota de venda.",
+    };
+  }
+
   const imp = impostosVeiculoUsado(venda, custoAquisicao, config);
+  // Desligável por configuração: se a SEFAZ recusar o grupo da reforma, é um
+  // UPDATE — e o contador avisou que ainda não há multa por não informar.
+  const ibsCbsAtivo = config.ibs_cbs_ativo !== false;
 
   const doc = so_digitos(destinatario.doc);
   if (doc.length !== 11 && doc.length !== 14) {
@@ -157,22 +176,33 @@ export function montarPayloadNfe({
   const ufEmitente = String(config.uf || "MG").trim().toUpperCase();
   const ufDestino = String(destinatario.uf).trim().toUpperCase();
 
+  // Contador, 14/08/2026: o CFOP muda para 6102 APENAS quando a venda não é
+  // presencial. Comprador de outro estado que vem à loja e leva o carro fez uma
+  // operação interna — o fato gerador aconteceu em MG. Só venda a distância
+  // para outra UF é interestadual.
+  const interestadual = !vendaPresencial && ufDestino !== ufEmitente;
+  const cfop = interestadual ? String(config.cfop_interestadual || "6102") : String(config.cfop);
+  const presenca = vendaPresencial ? String(config.presenca_comprador ?? "1") : "2";
+
   const payload = {
     natureza_operacao: config.natureza_operacao || "Venda Dentro do Estado",
     // Estruturais da NF-e de venda (não vêm do contador, são constantes do domínio):
     data_emissao: new Date().toISOString(),
     tipo_documento: 1, // 1 = saída
     finalidade_emissao: 1, // 1 = normal
-    // idDest: 1 = operação interna, 2 = interestadual.
-    local_destino: ufDestino === ufEmitente ? 1 : 2,
+    // idDest: 1 = operação interna, 2 = interestadual. Acompanha o CFOP.
+    local_destino: interestadual ? 2 : 1,
     serie: String(config.serie),
     cnpj_emitente: so_digitos(config.cnpj),
 
     // Os quatro campos abaixo são obrigatórios no schema da NF-e 4.00 e não
     // eram enviados. A SEFAZ recusa um por vez, então a falta deles apareceu
     // como uma fila de erros diferentes na tela da operadora (11/08/2026).
-    modalidade_frete: String(config.modalidade_frete ?? "1"),
-    presenca_comprador: String(config.presenca_comprador ?? "1"),
+    // 9 = sem ocorrência de transporte. As notas antigas saíram com 1 (por conta
+    // do destinatário); o contador corrigiu em 14/08/2026 — o comprador sai
+    // dirigindo, não há transporte nenhum a declarar.
+    modalidade_frete: String(config.modalidade_frete ?? "9"),
+    presenca_comprador: presenca,
     consumidor_final: String(config.consumidor_final ?? "1"),
     ...(ieDestinatario
       ? {
@@ -191,6 +221,19 @@ export function montarPayloadNfe({
     uf_destinatario: ufDestino,
     valor_total: venda,
 
+    // Grupo de pagamento (obrigatório na NF-e 4.00). Contador: a prazo — a venda
+    // é financiada por banco, não é dinheiro na hora. tPag 99 exige descrição.
+    formas_pagamento: [
+      {
+        indicador_pagamento: String(config.indicador_pagamento ?? "1"),
+        forma_pagamento: String(config.forma_pagamento || "99"),
+        ...(String(config.forma_pagamento || "99") === "99"
+          ? { descricao_pagamento: String(config.descricao_pagamento || "A prazo") }
+          : {}),
+        valor_pagamento: venda,
+      },
+    ],
+
     // infCpl — a nota autorizada carrega a origem do veículo aqui.
     informacoes_adicionais_contribuinte: textoInformacoesComplementares({
       config,
@@ -204,7 +247,7 @@ export function montarPayloadNfe({
         codigo_produto: veiculo.placa || veiculo.chassi,
         descricao,
         codigo_ncm: String(config.ncm),
-        cfop: String(config.cfop),
+        cfop,
         unidade_comercial: "UN",
         quantidade_comercial: 1,
         valor_unitario_comercial: venda,
@@ -230,6 +273,27 @@ export function montarPayloadNfe({
         cofins_base_calculo: imp.basePisCofins,
         cofins_aliquota_porcentual: imp.aliquotaCofins,
         cofins_valor: imp.cofins,
+
+        // Reforma tributária — obrigatório desde 03/08/2026 (contador,
+        // 14/08/2026: CST 000, cClassTrib 000001, IBS 0,10% e CBS 0,90%).
+        // `bem_movel_usado` é o que declara o regime de bem usado, e é por isso
+        // que a base é a margem e não o valor cheio do carro.
+        ...(ibsCbsAtivo
+          ? {
+              bem_movel_usado: "1",
+              ibs_cbs_situacao_tributaria: String(config.ibs_cbs_situacao_tributaria || "000"),
+              ibs_cbs_classificacao_tributaria: String(
+                config.ibs_cbs_classificacao_tributaria || "000001"
+              ),
+              ibs_cbs_base_calculo: imp.baseIbsCbs,
+              ibs_uf_aliquota: imp.aliquotaIbsUf,
+              ibs_uf_valor: imp.ibsUf,
+              ibs_mun_aliquota: imp.aliquotaIbsMun,
+              ibs_mun_valor: imp.ibsMun,
+              cbs_aliquota: imp.aliquotaCbs,
+              cbs_valor: imp.cbs,
+            }
+          : {}),
       },
     ],
   };

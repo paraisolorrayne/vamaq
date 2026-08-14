@@ -115,3 +115,32 @@ drop trigger if exists fiscal_config_set_updated_at on fiscal_config;
 create trigger fiscal_config_set_updated_at
   before update on fiscal_config
   for each row execute function set_updated_at();
+
+-- ---------------------------------------------------------------------------
+-- Respostas do contador Rodrigo (14/08/2026) — ver a spec de parâmetros.
+-- ---------------------------------------------------------------------------
+
+-- Frete: "sem ocorrência de transporte" (9), não mais 1. O comprador sai
+-- dirigindo o carro; não há transporte a declarar. As notas de agosto saíram
+-- com 1 e foram autorizadas, mas o certo é 9.
+update fiscal_config set modalidade_frete = '9' where modalidade_frete = '1';
+
+-- Grupo de pagamento: a prazo (a venda é financiada por banco).
+-- tPag 99 (outros) exige descrição no XML.
+alter table fiscal_config add column if not exists indicador_pagamento text not null default '1';
+alter table fiscal_config add column if not exists forma_pagamento text not null default '99';
+alter table fiscal_config add column if not exists descricao_pagamento text not null default 'A prazo';
+
+-- CFOP interestadual: só usado quando a venda NÃO é presencial. Comprador de
+-- outro estado que vem à loja fez operação interna (5102).
+alter table fiscal_config add column if not exists cfop_interestadual text not null default '6102';
+
+-- Reforma tributária (IBS/CBS) — obrigatório desde 03/08/2026. Sem multa por
+-- ora, por isso `ibs_cbs_ativo`: se a SEFAZ recusar o grupo, desliga por UPDATE
+-- em vez de bloquear a emissão.
+alter table fiscal_config add column if not exists ibs_cbs_ativo boolean not null default true;
+alter table fiscal_config add column if not exists ibs_cbs_situacao_tributaria text not null default '000';
+alter table fiscal_config add column if not exists ibs_cbs_classificacao_tributaria text not null default '000001';
+alter table fiscal_config add column if not exists ibs_uf_aliquota numeric(6,4) not null default 0.10;
+alter table fiscal_config add column if not exists ibs_mun_aliquota numeric(6,4) not null default 0;
+alter table fiscal_config add column if not exists cbs_aliquota numeric(6,4) not null default 0.90;

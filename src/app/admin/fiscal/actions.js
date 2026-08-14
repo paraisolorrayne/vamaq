@@ -22,11 +22,11 @@ export async function cancelarNotaAction(ref, justificativa) {
 
 export async function emitirNotaAction(
   vehicleId,
-  { destinatario, valorVenda, custoAquisicao, clienteId, numeroNotaEntrada }
+  { destinatario, valorVenda, custoAquisicao, clienteId, numeroNotaEntrada, vendaPresencial }
 ) {
   await requireRole(["financeiro", "secretaria"]);
   const res = await emitirNotaVeiculo(vehicleId, {
-    destinatario, valorVenda, custoAquisicao, clienteId, numeroNotaEntrada,
+    destinatario, valorVenda, custoAquisicao, clienteId, numeroNotaEntrada, vendaPresencial,
   });
   if (res.error) return { error: res.error };
   revalidatePath("/admin/fiscal");

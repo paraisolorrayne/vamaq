@@ -43,6 +43,11 @@ export const PADRAO_IMPOSTOS = {
   aliquotaCofins: 3,
   /** Só usado quando o método é 'reducao_fixa'. */
   reducaoBaseIcms: 95.238,
+  // Reforma tributária — valores passados pelo contador em 14/08/2026, válidos
+  // desde 03/08/2026. São alíquotas de transição, muito baixas de propósito.
+  aliquotaIbsUf: 0.1,
+  aliquotaIbsMun: 0,
+  aliquotaCbs: 0.9,
 };
 
 /** pRedBC tem 3 a 4 casas no layout da NF-e; o emissor da Vamaq usa 3. */
@@ -80,6 +85,10 @@ export function impostosVeiculoUsado(valorVenda, custoAquisicao, config = {}) {
       venda: 0, margem: 0, metodo,
       reducaoBaseIcms: 0, aliquotaIcms, aliquotaPis, aliquotaCofins,
       baseIcms: 0, icms: 0, basePisCofins: 0, pis: 0, cofins: 0,
+      baseIbsCbs: 0, ibsUf: 0, ibsMun: 0, cbs: 0,
+      aliquotaIbsUf: parametro(config.ibs_uf_aliquota, PADRAO_IMPOSTOS.aliquotaIbsUf),
+      aliquotaIbsMun: parametro(config.ibs_mun_aliquota, PADRAO_IMPOSTOS.aliquotaIbsMun),
+      aliquotaCbs: parametro(config.cbs_aliquota, PADRAO_IMPOSTOS.aliquotaCbs),
     };
   }
 
@@ -94,9 +103,22 @@ export function impostosVeiculoUsado(valorVenda, custoAquisicao, config = {}) {
   const pis = round2((basePisCofins * aliquotaPis) / 100);
   const cofins = round2((basePisCofins * aliquotaCofins) / 100);
 
+  // IBS/CBS (reforma tributária). A base é a MESMA do ICMS — a margem — e não o
+  // valor cheio do carro: é para isso que serve o indicador de bem móvel usado
+  // que vai junto no item. Sobre 175.000 de venda a diferença não é acadêmica:
+  // 0,9% da margem de 10.000 são R$ 90; do valor cheio seriam R$ 1.575.
+  const aliquotaIbsUf = parametro(config.ibs_uf_aliquota, PADRAO_IMPOSTOS.aliquotaIbsUf);
+  const aliquotaIbsMun = parametro(config.ibs_mun_aliquota, PADRAO_IMPOSTOS.aliquotaIbsMun);
+  const aliquotaCbs = parametro(config.cbs_aliquota, PADRAO_IMPOSTOS.aliquotaCbs);
+  const baseIbsCbs = baseIcms;
+  const ibsUf = round2((baseIbsCbs * aliquotaIbsUf) / 100);
+  const ibsMun = round2((baseIbsCbs * aliquotaIbsMun) / 100);
+  const cbs = round2((baseIbsCbs * aliquotaCbs) / 100);
+
   return {
     venda, margem, metodo,
     reducaoBaseIcms, aliquotaIcms, aliquotaPis, aliquotaCofins,
     baseIcms, icms, basePisCofins, pis, cofins,
+    baseIbsCbs, aliquotaIbsUf, aliquotaIbsMun, aliquotaCbs, ibsUf, ibsMun, cbs,
   };
 }

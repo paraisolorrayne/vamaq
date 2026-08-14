@@ -98,7 +98,7 @@ async function salvarRetorno(ref, retorno) {
 
 export async function emitirNotaVeiculo(
   vehicleId,
-  { destinatario, valorVenda, custoAquisicao, clienteId, numeroNotaEntrada }
+  { destinatario, valorVenda, custoAquisicao, clienteId, numeroNotaEntrada, vendaPresencial }
 ) {
   if (!focusEnabled()) return { error: "Emissor fiscal não configurado." };
 
@@ -146,6 +146,7 @@ export async function emitirNotaVeiculo(
     valorVenda,
     custoAquisicao: custo,
     numeroNotaEntrada,
+    vendaPresencial,
   });
   if (montado.error) return { error: montado.error };
 

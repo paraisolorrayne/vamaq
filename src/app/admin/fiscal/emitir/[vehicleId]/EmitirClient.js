@@ -10,7 +10,7 @@ import { destinatarioDoCliente } from "@/lib/clientes/prefill";
 import { formataDoc } from "@/lib/clientes/doc";
 
 const DEST_VAZIO = {
-  nome: "", doc: "", cep: "", logradouro: "", numero: "", bairro: "", municipio: "", uf: "",
+  nome: "", doc: "", ie: "", cep: "", logradouro: "", numero: "", bairro: "", municipio: "", uf: "",
 };
 
 // Dinheiro aqui é valor de nota fiscal: SEMPRE duas casas. formatValorBR usa
@@ -55,6 +55,7 @@ export default function EmitirClient({
   const [dest, setDest] = useState(DEST_VAZIO);
   const [clienteIdSel, setClienteIdSel] = useState("");
   const [notaEntrada, setNotaEntrada] = useState("");
+  const [presencial, setPresencial] = useState(true);
 
   function setCampo(k, v) {
     setDest((p) => ({ ...p, [k]: v }));
@@ -150,6 +151,7 @@ export default function EmitirClient({
         custoAquisicao: fd.get("custoAquisicao"),
         clienteId: clienteIdSel || undefined,
         numeroNotaEntrada: fd.get("numeroNotaEntrada"),
+        vendaPresencial: presencial,
       });
       if (r?.error) setErr(r.error);
       else if (r?.ok) setResultado(r);
@@ -251,16 +253,17 @@ export default function EmitirClient({
                 </p>
               </div>
               <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Nº da nota de entrada</label>
+                <label className={styles.formLabel}>Nº da nota de entrada *</label>
                 <input
                   name="numeroNotaEntrada"
                   value={notaEntrada}
                   onChange={(e) => setNotaEntrada(e.target.value)}
                   className={styles.formInput}
                   inputMode="numeric"
+                  required
                 />
                 <p style={{ fontSize: "0.78rem", color: "#666", margin: 0 }}>
-                  opcional — número da nota de entrada deste carro, se já existir
+                  obrigatório — é a nota que comprova de onde o carro veio
                 </p>
               </div>
             </div>
@@ -288,8 +291,8 @@ export default function EmitirClient({
             <p style={{ fontSize: "0.85rem", color: "#666", marginTop: 0 }}>
               Base do ICMS = a margem (venda − aquisição), que vai na nota como uma redução
               de {pct(imp.reducaoBaseIcms)}% sobre o valor do veículo. PIS e COFINS incidem
-              sobre a base do ICMS menos o ICMS. Recalcula sozinho conforme os valores acima
-              mudam.
+              sobre a base do ICMS menos o ICMS. IBS e CBS (reforma tributária) usam a mesma
+              base da margem. Recalcula sozinho conforme os valores acima mudam.
             </p>
             <div className={styles.formGrid}>
               <div className={styles.formGroup}>
@@ -319,6 +322,14 @@ export default function EmitirClient({
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>COFINS ({pct(imp.aliquotaCofins)}%)</label>
                 <p style={{ margin: 0, fontWeight: 600 }}>{money(imp.cofins)}</p>
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>IBS ({pct(imp.aliquotaIbsUf + imp.aliquotaIbsMun)}%)</label>
+                <p style={{ margin: 0, fontWeight: 600 }}>{money(imp.ibsUf + imp.ibsMun)}</p>
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>CBS ({pct(imp.aliquotaCbs)}%)</label>
+                <p style={{ margin: 0, fontWeight: 600 }}>{money(imp.cbs)}</p>
               </div>
             </div>
           </div>
@@ -353,6 +364,27 @@ export default function EmitirClient({
             <p style={{ fontSize: "0.85rem", color: "#666", marginTop: 0 }}>
               Confira os dados antes de emitir — a nota vai para a SEFAZ com o que estiver aqui.
             </p>
+            <div
+              style={{
+                marginBottom: 16, padding: "12px", background: "#F7F7F8", borderRadius: 6,
+              }}
+            >
+              <label
+                style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 48, cursor: "pointer" }}
+              >
+                <input
+                  type="checkbox"
+                  checked={presencial}
+                  onChange={(e) => setPresencial(e.target.checked)}
+                  style={{ width: 20, height: 20 }}
+                />
+                <span style={{ fontWeight: 600 }}>O comprador veio à loja (venda presencial)</span>
+              </label>
+              <p style={{ fontSize: "0.78rem", color: "#666", margin: "4px 0 0 30px" }}>
+                Deixe marcado no caso normal. Só desmarque se a venda foi fechada a distância —
+                aí, para outro estado, a nota muda de CFOP 5102 para 6102.
+              </p>
+            </div>
             <div className={styles.formGrid}>
               <div className={`${styles.formGroup} ${styles.formGroupFull}`}>
                 <label className={styles.formLabel}>Nome *</label>
@@ -373,6 +405,18 @@ export default function EmitirClient({
                   className={styles.formInput}
                   required
                 />
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Inscrição Estadual</label>
+                <input
+                  name="ie"
+                  value={dest.ie}
+                  onChange={(e) => setCampo("ie", e.target.value)}
+                  className={styles.formInput}
+                />
+                <p style={{ fontSize: "0.78rem", color: "#666", margin: 0 }}>
+                  só quando o comprador é empresa com IE — pessoa física deixa em branco
+                </p>
               </div>
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>CEP *</label>

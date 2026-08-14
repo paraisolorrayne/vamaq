@@ -28,7 +28,7 @@ const DESTINATARIO = {
 function args(over = {}) {
   return {
     config: CONFIG, veiculo: VEICULO, destinatario: DESTINATARIO,
-    valorVenda: 200000, custoAquisicao: 150000, ...over,
+    valorVenda: 200000, custoAquisicao: 150000, numeroNotaEntrada: "10", ...over,
   };
 }
 
@@ -107,7 +107,7 @@ test("PIS e COFINS vão no item, sobre a base do ICMS menos o ICMS", () => {
 // tentando emitir do outro lado. Nomes conferidos na referência da Focus.
 test("payload leva os obrigatórios da NF-e 4.00 que faltavam", () => {
   const { payload } = montarPayloadNfe(args());
-  assert.equal(payload.modalidade_frete, "1", "FOB — por conta do destinatário");
+  assert.equal(payload.modalidade_frete, "9", "sem ocorrência de transporte");
   assert.equal(payload.presenca_comprador, "1");
   assert.equal(payload.consumidor_final, "1");
   assert.equal(payload.indicador_inscricao_estadual_destinatario, 9);
@@ -122,10 +122,13 @@ test("destinatário com inscrição estadual vira contribuinte, não 'não contr
   assert.equal(payload.inscricao_estadual_destinatario, "0054803330093");
 });
 
-test("local_destino separa operação interna de interestadual", () => {
+test("local_destino acompanha o CFOP, e a UF é normalizada", () => {
+  // Este teste já afirmou que só a UF decidia. O contador corrigiu em
+  // 14/08/2026: quem decide é a presencialidade da venda — ver os testes de
+  // CFOP mais abaixo. Aqui fica só a normalização da UF.
   assert.equal(montarPayloadNfe(args()).payload.local_destino, 1, "MG -> MG");
-  const fora = montarPayloadNfe(args({ destinatario: { ...DESTINATARIO, uf: "sp" } }));
-  assert.equal(fora.payload.local_destino, 2, "MG -> SP");
+  const fora = montarPayloadNfe(args({ destinatario: { ...DESTINATARIO, uf: "sp" }, vendaPresencial: false }));
+  assert.equal(fora.payload.local_destino, 2);
   assert.equal(fora.payload.uf_destinatario, "SP", "UF normalizada em maiúscula");
 });
 
@@ -252,6 +255,7 @@ test("o payload manda o CST de dois dígitos, e a origem à parte", () => {
     destinatario: { nome: "Fulano", doc: "11122233344", cep: "38400100", logradouro: "Rua A", numero: "1", bairro: "Centro", municipio: "Uberlândia", uf: "MG" },
     valorVenda: 175000,
     custoAquisicao: 165000,
+    numeroNotaEntrada: "11",
   });
   assert.ok(!r.error, r.error);
   const item = r.payload.items[0];
@@ -271,6 +275,7 @@ test("CST que não existe no regime normal é barrado aqui, não na SEFAZ", () =
     destinatario: { nome: "F", doc: "11122233344", cep: "38400100", logradouro: "R", numero: "1", bairro: "C", municipio: "U", uf: "MG" },
     valorVenda: 1000,
     custoAquisicao: 500,
+    numeroNotaEntrada: "1",
   });
   assert.ok(r.error);
   assert.match(r.error, /contador/i);
@@ -302,4 +307,95 @@ test("só a mensagem curta, sem detalhamento", () => {
 test("resposta sem nada aproveitável cai no status HTTP", () => {
   assert.match(mensagemDeErro({}, 500), /500/);
   assert.match(mensagemDeErro(null, 502), /502/);
+});
+
+// --- Respostas do contador (14/08/2026) --------------------------------------
+
+test("nota de entrada é obrigatória — sem ela a emissão para aqui", () => {
+  for (const vazio of ["", "   ", null, undefined]) {
+    const r = montarPayloadNfe(args({ numeroNotaEntrada: vazio }));
+    assert.ok(r.error, JSON.stringify(vazio));
+    assert.match(r.error, /nota de entrada/i);
+  }
+});
+
+test("grupo de pagamento vai a prazo, com descrição quando a forma é 'outros'", () => {
+  const { payload } = montarPayloadNfe(args());
+  assert.equal(payload.formas_pagamento.length, 1);
+  const pag = payload.formas_pagamento[0];
+  assert.equal(pag.indicador_pagamento, "1", "1 = a prazo");
+  assert.equal(pag.forma_pagamento, "99");
+  assert.equal(pag.descricao_pagamento, "A prazo", "tPag 99 exige xPag");
+  assert.equal(pag.valor_pagamento, 200000);
+});
+
+test("forma de pagamento conhecida não manda descrição", () => {
+  // xPag só existe para tPag 99; mandar junto de outro código é campo indevido.
+  const { payload } = montarPayloadNfe(args({ config: { ...CONFIG, forma_pagamento: "15" } }));
+  assert.equal(payload.formas_pagamento[0].forma_pagamento, "15");
+  assert.equal(payload.formas_pagamento[0].descricao_pagamento, undefined);
+});
+
+// CFOP: o contador foi específico — 6102 só quando a venda NÃO é presencial.
+// Comprador de outro estado que vem à loja fez operação interna.
+
+test("venda presencial para outro estado continua interna (5102)", () => {
+  const { payload } = montarPayloadNfe(
+    args({ destinatario: { ...DESTINATARIO, uf: "SP" }, vendaPresencial: true })
+  );
+  assert.equal(payload.items[0].cfop, "5102");
+  assert.equal(payload.local_destino, 1);
+  assert.equal(payload.presenca_comprador, "1");
+});
+
+test("venda não presencial para outro estado vira interestadual (6102)", () => {
+  const { payload } = montarPayloadNfe(
+    args({ destinatario: { ...DESTINATARIO, uf: "SP" }, vendaPresencial: false })
+  );
+  assert.equal(payload.items[0].cfop, "6102");
+  assert.equal(payload.local_destino, 2);
+  assert.equal(payload.presenca_comprador, "2", "não presencial");
+});
+
+test("venda não presencial dentro de MG continua interna", () => {
+  const { payload } = montarPayloadNfe(args({ vendaPresencial: false }));
+  assert.equal(payload.items[0].cfop, "5102");
+  assert.equal(payload.local_destino, 1);
+});
+
+test("presencial é o padrão — é como a Vamaq vende", () => {
+  const { payload } = montarPayloadNfe(args({ destinatario: { ...DESTINATARIO, uf: "SP" } }));
+  assert.equal(payload.items[0].cfop, "5102");
+});
+
+// Reforma tributária
+
+test("IBS e CBS vão no item, sobre a mesma base do ICMS", () => {
+  const item = montarPayloadNfe(args()).payload.items[0];
+  assert.equal(item.bem_movel_usado, "1");
+  assert.equal(item.ibs_cbs_situacao_tributaria, "000");
+  assert.equal(item.ibs_cbs_classificacao_tributaria, "000001");
+  assert.equal(item.ibs_cbs_base_calculo, 50000, "a margem, não o valor do carro");
+  assert.equal(item.ibs_uf_aliquota, 0.1);
+  assert.equal(item.ibs_uf_valor, 50);
+  assert.equal(item.cbs_aliquota, 0.9);
+  assert.equal(item.cbs_valor, 450);
+});
+
+test("IBS/CBS sobre o valor cheio seria outra ordem de grandeza", () => {
+  // Guarda contra trocar a base sem perceber: 0,9% de 200.000 daria 1.800,
+  // contra os 450 da margem. É o erro que o indicador de bem usado evita.
+  const item = montarPayloadNfe(args()).payload.items[0];
+  assert.notEqual(item.cbs_valor, 1800);
+  assert.equal(item.ibs_cbs_base_calculo, item.icms_base_calculo);
+});
+
+test("IBS/CBS pode ser desligado por configuração, sem bloquear a emissão", () => {
+  const r = montarPayloadNfe(args({ config: { ...CONFIG, ibs_cbs_ativo: false } }));
+  assert.ok(!r.error, r.error);
+  const item = r.payload.items[0];
+  for (const campo of ["bem_movel_usado", "ibs_cbs_situacao_tributaria", "cbs_valor"]) {
+    assert.equal(item[campo], undefined, campo);
+  }
+  assert.equal(item.icms_valor, 2500, "o resto da nota continua igual");
 });
