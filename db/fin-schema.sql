@@ -254,3 +254,51 @@ begin
       (v_company, 'Operacional / Pátio');
   end if;
 end $$;
+
+-- ============================================================================
+-- Categorias personalizadas do plano de contas (14/08/2026).
+--
+-- O seed acima só roda em banco vazio (`if v_company is null`), então tudo que
+-- vier depois precisa do próprio bloco idempotente — em produção a empresa já
+-- existe há meses.
+--
+-- `ativo`: categoria errada NÃO se apaga. Ela fica nos lançamentos que já
+-- aconteceram, e apagar quebraria o histórico (ou a FK). Desativar tira da
+-- lista de escolha e preserva o passado.
+-- ============================================================================
+alter table fin.chart_of_accounts add column if not exists ativo boolean not null default true;
+
+-- As sete categorias que a Mayra pediu em 14/08/2026, pelo nome que ela usa.
+-- Lava jato e chaveiro entram em 4.2 (custo do veículo), não em despesa
+-- administrativa: são gastos de um carro específico e precisam pesar na margem
+-- daquele carro quando o lançamento for ligado a ele.
+do $$
+declare
+  v_company uuid;
+  v_conta record;
+begin
+  select id into v_company from fin.companies limit 1;
+  if v_company is null then return; end if;
+
+  for v_conta in
+    select * from (values
+      ('4.2.1',  'Lava Jato',                     'expense'),
+      ('4.2.2',  'Chaveiro',                      'expense'),
+      ('5.1.7',  'Material de Escritório',        'expense'),
+      ('5.1.8',  'Material de Limpeza',           'expense'),
+      ('5.1.9',  'Alimentação',                   'expense'),
+      ('5.1.10', 'Tonner / Manutenção de Impressora', 'expense'),
+      ('5.2.4',  'Brindes',                       'expense')
+    ) as t(code, name, type)
+  loop
+    -- Casa por CÓDIGO: reaplicar o schema não pode duplicar a conta, e renomear
+    -- pela tela não pode fazer a linha voltar na próxima aplicação.
+    if not exists (
+      select 1 from fin.chart_of_accounts
+       where company_id = v_company and code = v_conta.code
+    ) then
+      insert into fin.chart_of_accounts (company_id, code, name, type, editable)
+        values (v_company, v_conta.code, v_conta.name, v_conta.type, true);
+    end if;
+  end loop;
+end $$;

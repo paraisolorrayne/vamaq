@@ -6,6 +6,7 @@
 import { finQuery } from "@/lib/fin/db";
 import { computeDRE } from "@/lib/fin/calc";
 import { impostosVeiculoUsado } from "@/lib/fiscal/impostos";
+import { GRUPOS, ordenaContas, proximoCodigo, validaNomeConta } from "@/lib/fin/planoContas";
 
 let companyIdCache = null;
 export async function getCompanyId() {
@@ -20,13 +21,19 @@ export async function getReferencias() {
   const company = await getCompanyId();
   if (!company) return { accounts: [], costCenters: [], banks: [], contacts: [] };
   const [accounts, costCenters, banks, contacts] = await Promise.all([
-    finQuery(`select id, code, name, type from fin.chart_of_accounts where company_id=$1 order by code nulls last, name`, [company]),
+    finQuery(
+      `select id, code, name, type, editable, ativo from fin.chart_of_accounts
+        where company_id=$1 and ativo`,
+      [company]
+    ),
     finQuery(`select id, name from fin.cost_centers where company_id=$1 order by name`, [company]),
     finQuery(`select id, name, bank_name from fin.bank_accounts where company_id=$1 order by name`, [company]),
     finQuery(`select id, name, doc, kind from fin.contacts where company_id=$1 order by name`, [company]),
   ]);
   return {
-    accounts: accounts.rows,
+    // Ordem natural (5.1.2 antes de 5.1.10) — ordenar código como texto
+    // embaralha a lista assim que um grupo passa de nove contas.
+    accounts: ordenaContas(accounts.rows),
     costCenters: costCenters.rows,
     banks: banks.rows,
     contacts: contacts.rows,
@@ -266,6 +273,70 @@ export async function getVehicleMargins({ onlyWithActivity = true } = {}) {
 
 function round2(n) {
   return Math.round((Number(n) + Number.EPSILON) * 100) / 100;
+}
+
+// ---- Plano de contas (categorias) ------------------------------------------
+
+/** Todas as contas, inclusive as desativadas — para a tela de categorias. */
+export async function listContas() {
+  const company = await getCompanyId();
+  if (!company) return [];
+  const { rows } = await finQuery(
+    `select id, code, name, type, editable, ativo from fin.chart_of_accounts where company_id=$1`,
+    [company]
+  );
+  return ordenaContas(rows);
+}
+
+/**
+ * Cria uma categoria. O código sai do grupo escolhido — a operadora nunca
+ * digita "5.1.7", porque errar o código põe a despesa no lugar errado do DRE.
+ */
+export async function criarConta({ nome, grupoId }) {
+  const company = await getCompanyId();
+  if (!company) return { error: "Financeiro não configurado." };
+
+  const grupo = GRUPOS.find((g) => g.id === grupoId);
+  if (!grupo) return { error: "Escolha onde a categoria entra." };
+
+  // Valida contra TODAS as contas, inclusive desativadas: recriar uma categoria
+  // com o nome de outra que foi desligada deixaria duas iguais no histórico.
+  const existentes = await listContas();
+  const nomeOk = validaNomeConta(nome, grupo, existentes);
+  if (nomeOk.error) return { error: nomeOk.error };
+
+  const code = proximoCodigo(grupo.prefixo, existentes);
+  const { rows } = await finQuery(
+    `insert into fin.chart_of_accounts (company_id, code, name, type, editable)
+     values ($1,$2,$3,$4,true)
+     returning id, code, name, type, editable, ativo`,
+    [company, code, nomeOk.nome, grupo.tipo]
+  );
+  return { conta: rows[0] };
+}
+
+/**
+ * Liga/desliga uma categoria. Nunca apaga: os lançamentos antigos apontam para
+ * ela, e o DRE de meses fechados precisa continuar batendo.
+ *
+ * As contas do plano original (`editable = false`) não se desativam — o DRE e a
+ * margem por veículo dependem delas existirem.
+ */
+export async function alternarConta(id, ativo) {
+  const company = await getCompanyId();
+  if (!company) return { error: "Financeiro não configurado." };
+  if (typeof ativo !== "boolean") return { error: "Informe se a categoria fica ativa." };
+
+  const { rows } = await finQuery(
+    `update fin.chart_of_accounts set ativo=$3
+      where id=$1 and company_id=$2 and editable
+      returning id, code, name, type, editable, ativo`,
+    [id, company, ativo]
+  );
+  if (!rows.length) {
+    return { error: "Categoria não encontrada ou é uma categoria fixa do plano de contas." };
+  }
+  return { conta: rows[0] };
 }
 
 // ---- Contas a pagar --------------------------------------------------------

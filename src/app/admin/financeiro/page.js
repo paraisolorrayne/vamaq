@@ -52,6 +52,7 @@ export default function FinanceiroDashboard() {
           <Link href="/admin/financeiro/contas-pagar" className={styles.btnSecondary}>📄 Contas a pagar</Link>
           <Link href="/admin/financeiro/cobrancas" className={styles.btnSecondary}>🧾 Cobranças</Link>
           <Link href="/admin/financeiro/contatos" className={styles.btnSecondary}>👤 Contatos</Link>
+          <Link href="/admin/financeiro/categorias" className={styles.btnSecondary}>🏷️ Categorias</Link>
           <Link href="/admin/financeiro/fechamento" className={styles.btnSecondary}>📅 Fechamento</Link>
           <Link href="/admin/financeiro/orcamento" className={styles.btnSecondary}>🎯 Orçamento</Link>
         </div>
