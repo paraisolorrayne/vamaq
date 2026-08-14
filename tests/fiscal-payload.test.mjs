@@ -370,31 +370,48 @@ test("presencial é o padrão — é como a Vamaq vende", () => {
 
 // Reforma tributária
 
-test("IBS e CBS vão no item, sobre a mesma base do ICMS", () => {
+test("IBS e CBS vão no item, sobre o VALOR TOTAL da nota", () => {
+  // Contador, 14/08/2026: "pode deixar no valor total da nota". Eu tinha
+  // assumido a margem por analogia com o ICMS — este teste já afirmou isso e
+  // estava errado.
   const item = montarPayloadNfe(args()).payload.items[0];
-  assert.equal(item.bem_movel_usado, "1");
   assert.equal(item.ibs_cbs_situacao_tributaria, "000");
   assert.equal(item.ibs_cbs_classificacao_tributaria, "000001");
-  assert.equal(item.ibs_cbs_base_calculo, 50000, "a margem, não o valor do carro");
+  assert.equal(item.ibs_cbs_base_calculo, 200000, "valor da venda, não a margem");
   assert.equal(item.ibs_uf_aliquota, 0.1);
-  assert.equal(item.ibs_uf_valor, 50);
+  assert.equal(item.ibs_uf_valor, 200);
   assert.equal(item.cbs_aliquota, 0.9);
-  assert.equal(item.cbs_valor, 450);
+  assert.equal(item.cbs_valor, 1800);
 });
 
-test("IBS/CBS sobre o valor cheio seria outra ordem de grandeza", () => {
-  // Guarda contra trocar a base sem perceber: 0,9% de 200.000 daria 1.800,
-  // contra os 450 da margem. É o erro que o indicador de bem usado evita.
+test("a base do IBS/CBS não é a do ICMS — são regimes diferentes", () => {
+  // Guarda contra alguém "uniformizar" as duas bases achando que é limpeza:
+  // o ICMS do seminovo incide sobre a margem, o IBS/CBS sobre a nota inteira.
   const item = montarPayloadNfe(args()).payload.items[0];
-  assert.notEqual(item.cbs_valor, 1800);
-  assert.equal(item.ibs_cbs_base_calculo, item.icms_base_calculo);
+  assert.equal(item.icms_base_calculo, 50000);
+  assert.equal(item.ibs_cbs_base_calculo, 200000);
+  assert.notEqual(item.ibs_cbs_base_calculo, item.icms_base_calculo);
+});
+
+test("o IBS vai inteiro na competência estadual", () => {
+  const item = montarPayloadNfe(args()).payload.items[0];
+  assert.equal(item.ibs_mun_aliquota, 0);
+  assert.equal(item.ibs_mun_valor, 0);
+  assert.ok(item.ibs_uf_valor > 0);
+});
+
+test("indicador de bem móvel usado não é enviado", () => {
+  // Ele existia para justificar a base reduzida pela margem. Com a base no
+  // valor cheio, a justificativa sumiu — e o contador listou exatamente quais
+  // campos mandar.
+  assert.equal(montarPayloadNfe(args()).payload.items[0].bem_movel_usado, undefined);
 });
 
 test("IBS/CBS pode ser desligado por configuração, sem bloquear a emissão", () => {
   const r = montarPayloadNfe(args({ config: { ...CONFIG, ibs_cbs_ativo: false } }));
   assert.ok(!r.error, r.error);
   const item = r.payload.items[0];
-  for (const campo of ["bem_movel_usado", "ibs_cbs_situacao_tributaria", "cbs_valor"]) {
+  for (const campo of ["ibs_cbs_situacao_tributaria", "ibs_uf_valor", "cbs_valor"]) {
     assert.equal(item[campo], undefined, campo);
   }
   assert.equal(item.icms_valor, 2500, "o resto da nota continua igual");

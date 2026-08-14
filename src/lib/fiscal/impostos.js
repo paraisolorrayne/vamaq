@@ -103,14 +103,18 @@ export function impostosVeiculoUsado(valorVenda, custoAquisicao, config = {}) {
   const pis = round2((basePisCofins * aliquotaPis) / 100);
   const cofins = round2((basePisCofins * aliquotaCofins) / 100);
 
-  // IBS/CBS (reforma tributária). A base é a MESMA do ICMS — a margem — e não o
-  // valor cheio do carro: é para isso que serve o indicador de bem móvel usado
-  // que vai junto no item. Sobre 175.000 de venda a diferença não é acadêmica:
-  // 0,9% da margem de 10.000 são R$ 90; do valor cheio seriam R$ 1.575.
+  // IBS/CBS (reforma tributária). A base é o VALOR TOTAL DA NOTA, não a margem
+  // — contador, 14/08/2026, respondendo à pergunta direta. Eu tinha assumido a
+  // margem por analogia com o ICMS e estava errado: numa venda de 175.000 com
+  // margem de 10.000, a CBS é R$ 1.575 e não R$ 90. Não é diferença de
+  // arredondamento, é uma ordem de grandeza.
+  //
+  // O IBS vai inteiro na competência ESTADUAL na nota de venda (mesma resposta);
+  // por isso a alíquota municipal nasce zerada em fiscal_config.
   const aliquotaIbsUf = parametro(config.ibs_uf_aliquota, PADRAO_IMPOSTOS.aliquotaIbsUf);
   const aliquotaIbsMun = parametro(config.ibs_mun_aliquota, PADRAO_IMPOSTOS.aliquotaIbsMun);
   const aliquotaCbs = parametro(config.cbs_aliquota, PADRAO_IMPOSTOS.aliquotaCbs);
-  const baseIbsCbs = baseIcms;
+  const baseIbsCbs = venda;
   const ibsUf = round2((baseIbsCbs * aliquotaIbsUf) / 100);
   const ibsMun = round2((baseIbsCbs * aliquotaIbsMun) / 100);
   const cbs = round2((baseIbsCbs * aliquotaCbs) / 100);

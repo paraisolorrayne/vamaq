@@ -274,13 +274,18 @@ export function montarPayloadNfe({
         cofins_aliquota_porcentual: imp.aliquotaCofins,
         cofins_valor: imp.cofins,
 
-        // Reforma tributária — obrigatório desde 03/08/2026 (contador,
-        // 14/08/2026: CST 000, cClassTrib 000001, IBS 0,10% e CBS 0,90%).
-        // `bem_movel_usado` é o que declara o regime de bem usado, e é por isso
-        // que a base é a margem e não o valor cheio do carro.
+        // Reforma tributária — obrigatório desde 03/08/2026. O contador foi
+        // específico em 14/08/2026: CST 000, cClassTrib 000001, IBS 0,10%
+        // inteiro na competência estadual, CBS 0,90%, e a base é o VALOR TOTAL
+        // DA NOTA (não a margem, como eu tinha assumido).
+        //
+        // `bem_movel_usado` (indBemMovelUsado) NÃO vai: eu o mandava para
+        // justificar a base reduzida pela margem. Com a base no valor cheio a
+        // justificativa deixou de existir, e o contador listou exatamente estes
+        // campos — mandar um indicador a mais por conta própria é como a fila
+        // de recusas de 11/08 começou.
         ...(ibsCbsAtivo
           ? {
-              bem_movel_usado: "1",
               ibs_cbs_situacao_tributaria: String(config.ibs_cbs_situacao_tributaria || "000"),
               ibs_cbs_classificacao_tributaria: String(
                 config.ibs_cbs_classificacao_tributaria || "000001"

@@ -291,8 +291,8 @@ export default function EmitirClient({
             <p style={{ fontSize: "0.85rem", color: "#666", marginTop: 0 }}>
               Base do ICMS = a margem (venda − aquisição), que vai na nota como uma redução
               de {pct(imp.reducaoBaseIcms)}% sobre o valor do veículo. PIS e COFINS incidem
-              sobre a base do ICMS menos o ICMS. IBS e CBS (reforma tributária) usam a mesma
-              base da margem. Recalcula sozinho conforme os valores acima mudam.
+              sobre a base do ICMS menos o ICMS. IBS e CBS (reforma tributária) incidem sobre
+              o valor total da nota, não sobre a margem. Recalcula sozinho conforme os valores acima mudam.
             </p>
             <div className={styles.formGrid}>
               <div className={styles.formGroup}>
