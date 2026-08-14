@@ -61,6 +61,7 @@ export default async function CrmPage() {
                   <Link
                     key={o.id}
                     href={`/admin/crm/${o.id}`}
+                    prefetch={false}
                     className={`${crm.card} ${o.etapa === "ganho" ? crm.cardGanho : ""} ${o.etapa === "perdido" ? crm.cardPerdido : ""}`}
                   >
                     <div className={crm.cardNome}>{o.cliente_nome}</div>

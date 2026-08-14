@@ -106,7 +106,7 @@ export default function FuncionariosClient({ funcionarios }) {
               {funcionarios.map((f) => (
                 <tr key={f.id} style={{ opacity: f.ativo ? 1 : 0.6 }}>
                   <td>
-                    <Link href={`/admin/funcionarios/${f.id}`}><strong>{f.nome}</strong></Link>
+                    <Link href={`/admin/funcionarios/${f.id}`} prefetch={false}><strong>{f.nome}</strong></Link>
                   </td>
                   <td>{f.cargo || "—"}</td>
                   <td>{fmtData(f.admissao)}</td>

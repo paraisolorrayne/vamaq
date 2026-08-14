@@ -52,6 +52,14 @@ function EstoqueConteudo({ podeEmitirNota }) {
     setRefreshKey((k) => k + 1);
   }
 
+  // POR QUE OS LINKS DE AÇÃO LEVAM prefetch={false} (14/08/2026):
+  // o <Link> do Next pré-carrega toda rota que entra na tela. Com 43 carros na
+  // lista e três ações por linha, isso disparava mais de 100 requisições para
+  // /admin/estoque/novo — uma tela client de ~1.300 linhas — todas de uma vez.
+  // O processo Node engasgava, várias voltavam 503, e o clique de verdade da
+  // operadora ficava na fila atrás delas: o botão "Editar" parecia travado.
+  // Ninguém abre 43 carros; abre um. Prefetch aqui é desperdício puro.
+  //
   // A placa entra na busca — é o jeito mais natural de procurar um carro
   // específico, e antes ela não era considerada.
   const alvo = normalizaBusca(search);
@@ -171,6 +179,7 @@ function EstoqueConteudo({ podeEmitirNota }) {
                       <div className={styles.tableActions}>
                         <Link
                           href={`/admin/estoque/novo?id=${v.id}`}
+                          prefetch={false}
                           className={`${styles.btnSecondary} ${styles.btnSmall}`}
                         >
                           Editar
@@ -178,6 +187,7 @@ function EstoqueConteudo({ podeEmitirNota }) {
                         {podeMarcarVendido(v) && (
                           <Link
                             href={`/admin/estoque/${v.id}/vender`}
+                            prefetch={false}
                             className={`${styles.btnSecondary} ${styles.btnSmall}`}
                             style={{ minHeight: 48 }}
                           >
@@ -187,6 +197,7 @@ function EstoqueConteudo({ podeEmitirNota }) {
                         {v.status === "vendido" && podeEmitirNota && (
                           <Link
                             href={`/admin/fiscal/emitir/${v.id}`}
+                            prefetch={false}
                             className={`${styles.btnSecondary} ${styles.btnSmall}`}
                           >
                             Emitir nota
@@ -243,6 +254,7 @@ function EstoqueConteudo({ podeEmitirNota }) {
                 <div className={styles.vehicleCardActions}>
                   <Link
                     href={`/admin/estoque/novo?id=${v.id}`}
+                    prefetch={false}
                     className={`${styles.btnSecondary} ${styles.btnSmall}`}
                   >
                     Editar
@@ -250,6 +262,7 @@ function EstoqueConteudo({ podeEmitirNota }) {
                   {podeMarcarVendido(v) && (
                     <Link
                       href={`/admin/estoque/${v.id}/vender`}
+                      prefetch={false}
                       className={`${styles.btnSecondary} ${styles.btnSmall}`}
                       style={{ minHeight: 48 }}
                     >
@@ -259,6 +272,7 @@ function EstoqueConteudo({ podeEmitirNota }) {
                   {v.status === "vendido" && podeEmitirNota && (
                     <Link
                       href={`/admin/fiscal/emitir/${v.id}`}
+                      prefetch={false}
                       className={`${styles.btnSecondary} ${styles.btnSmall}`}
                     >
                       Emitir nota

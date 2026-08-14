@@ -247,7 +247,7 @@ export default function ClientesClient() {
                     <td>{c.veiculos_count ?? 0}</td>
                     <td>
                       <div className={styles.tableActions}>
-                        <Link href={`/admin/clientes/${c.id}`} className={`${styles.btnSecondary} ${styles.btnSmall}`}>
+                        <Link href={`/admin/clientes/${c.id}`} prefetch={false} className={`${styles.btnSecondary} ${styles.btnSmall}`}>
                           Abrir ficha
                         </Link>
                       </div>
