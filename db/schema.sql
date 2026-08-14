@@ -83,6 +83,21 @@ end $$;
 -- (ver src/lib/anoVeiculo.js). Sem essa coluna preenchida, nada muda em
 -- nenhuma tela.
 alter table vehicles add column if not exists ano_modelo integer;
+
+-- Registro de entrada e saída (escopo do Dossiê do Veículo). `date` e não
+-- timestamp: ninguém sabe a que HORAS o carro entrou na loja, e guardar hora
+-- inventada é o que faz filtro por período errar por um dia no fuso.
+--
+-- Nascem NULAS de propósito. Os 43 carros que já estavam no estoque quando
+-- estas colunas foram criadas não têm data real, e `created_at` é a data em
+-- que alguém cadastrou no sistema — num estoque migrado, é a data da
+-- importação. Preencher com ela seria inventar um registro que existe
+-- justamente para provar quando o carro entrou e saiu.
+alter table vehicles add column if not exists data_entrada date;
+alter table vehicles add column if not exists data_saida date;
+
+create index if not exists vehicles_data_entrada_idx on vehicles(data_entrada);
+create index if not exists vehicles_data_saida_idx on vehicles(data_saida);
 do $$ begin
   if not exists (select 1 from pg_constraint where conname = 'ano_modelo_check') then
     -- O ano do modelo nunca é anterior ao de fabricação — é a única regra de

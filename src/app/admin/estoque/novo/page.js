@@ -24,6 +24,8 @@ const EMPTY_VEHICLE = {
   color: "",
   placa: "",
   chassi: "",
+  data_entrada: "",
+  data_saida: "",
   bodyType: "Sedan",
   featured: false,
   published: true,
@@ -134,6 +136,8 @@ function NovoVeiculoForm() {
             badge: data.badge || "",
             placa: data.placa || "",
             chassi: data.chassi || "",
+            data_entrada: (data.data_entrada || "").slice(0, 10),
+            data_saida: (data.data_saida || "").slice(0, 10),
             renave: { status: "nao_iniciado", protocolo: "", obs: "", ...(data.renave || {}) },
           });
         }
@@ -540,6 +544,30 @@ function NovoVeiculoForm() {
                 placeholder="9BWZZZ377VT004251"
                 maxLength={17}
               />
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Data de entrada na loja</label>
+              <input
+                type="date"
+                value={form.data_entrada}
+                onChange={(e) => handleChange("data_entrada", e.target.value)}
+                className={styles.formInput}
+              />
+              <p style={{ fontSize: "0.78rem", color: "#666", margin: 0 }}>
+                quando o carro chegou — não é a data do cadastro no sistema
+              </p>
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Data de saída</label>
+              <input
+                type="date"
+                value={form.data_saida}
+                onChange={(e) => handleChange("data_saida", e.target.value)}
+                className={styles.formInput}
+              />
+              <p style={{ fontSize: "0.78rem", color: "#666", margin: 0 }}>
+                preenchida sozinha ao marcar o carro como vendido; edite se a data for outra
+              </p>
             </div>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Combustível</label>

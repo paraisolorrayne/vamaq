@@ -13,6 +13,7 @@ const SELECT_COLS = `
   fuel, transmission, power, color, body_type, featured, badge,
   opcionais, blindagem, images, specs, description, published, status,
   placa, chassi, documentos, renave,
+  data_entrada, data_saida,
   created_at, updated_at
 `;
 
@@ -75,7 +76,18 @@ function normalize(body) {
     placa: body.placa ? String(body.placa).toUpperCase().trim() : null,
     chassi: body.chassi ? String(body.chassi).toUpperCase().trim() : null,
     renave: body.renave && typeof body.renave === 'object' ? body.renave : {},
+    // Datas do registro de entrada e saída. Vazio = null e NÃO a data de hoje:
+    // um carro sem data de entrada é um cadastro incompleto, e preencher
+    // sozinho com hoje transformaria isso num registro falso.
+    data_entrada: dataOuNull(body.data_entrada),
+    data_saida: dataOuNull(body.data_saida),
   };
+}
+
+/** "AAAA-MM-DD" do <input type="date">; qualquer outra coisa vira null. */
+function dataOuNull(valor) {
+  const t = String(valor ?? '').trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(t) ? t : null;
 }
 
 export async function readVehicles() {
@@ -106,10 +118,11 @@ export async function addVehicle(body) {
     `insert into vehicles (
        slug, brand, model, year, ano_modelo, price, quilometragem,
        fuel, transmission, power, color, body_type, featured, badge,
-       opcionais, blindagem, images, specs, description, published, placa, chassi, renave
+       opcionais, blindagem, images, specs, description, published, placa, chassi, renave,
+       data_entrada, data_saida
      ) values (
        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,
-       $15::jsonb,$16::jsonb,$17::jsonb,$18::jsonb,$19,$20,$21,$22,$23::jsonb
+       $15::jsonb,$16::jsonb,$17::jsonb,$18::jsonb,$19,$20,$21,$22,$23::jsonb,$24,$25
      )
      returning ${SELECT_COLS}`,
     [
@@ -117,7 +130,7 @@ export async function addVehicle(body) {
       v.fuel, v.transmission, v.power, v.color, v.body_type, v.featured, v.badge,
       JSON.stringify(v.opcionais), JSON.stringify(v.blindagem),
       JSON.stringify(v.images), JSON.stringify(v.specs), v.description, v.published,
-      v.placa, v.chassi, JSON.stringify(v.renave),
+      v.placa, v.chassi, JSON.stringify(v.renave), v.data_entrada, v.data_saida,
     ]
   );
   return rowToVehicle(rows[0]);
@@ -133,7 +146,8 @@ export async function updateVehicle(id, body) {
        fuel=$8, transmission=$9, power=$10, color=$11, body_type=$12,
        featured=$13, badge=$14,
        opcionais=$15::jsonb, blindagem=$16::jsonb, images=$17::jsonb, specs=$18::jsonb,
-       description=$19, published=$20, placa=$21, chassi=$22, renave=$23::jsonb
+       description=$19, published=$20, placa=$21, chassi=$22, renave=$23::jsonb,
+       data_entrada=$24, data_saida=$25
      where id=$1
      returning ${SELECT_COLS}`,
     [
@@ -141,7 +155,7 @@ export async function updateVehicle(id, body) {
       v.fuel, v.transmission, v.power, v.color, v.body_type, v.featured, v.badge,
       JSON.stringify(v.opcionais), JSON.stringify(v.blindagem),
       JSON.stringify(v.images), JSON.stringify(v.specs), v.description, v.published,
-      v.placa, v.chassi, JSON.stringify(v.renave),
+      v.placa, v.chassi, JSON.stringify(v.renave), v.data_entrada, v.data_saida,
     ]
   );
   return rows.length ? rowToVehicle(rows[0]) : null;
@@ -165,10 +179,19 @@ export async function setVehicleStatus(id, status) {
   }
   // vendido/inativo somem do site; disponível/reservado não mexem em published.
   const unpublish = status === 'vendido' || status === 'inativo';
+  // Marcar vendido carimba a data de saída — é o momento em que ela é
+  // conhecida, e pedir para a operadora digitar de novo o que o sistema acabou
+  // de saber é como o campo ficaria sempre vazio. `coalesce` protege quem já
+  // tinha data: reprocessar uma venda não reescreve a saída original, e a
+  // pessoa continua podendo corrigir a data na tela de edição.
   const { rows } = await pool.query(
     `update vehicles
         set status = $2,
-            published = case when $3 then false else published end
+            published = case when $3 then false else published end,
+            data_saida = case
+              when $2 = 'vendido' then coalesce(data_saida, current_date)
+              else data_saida
+            end
       where id = $1
       returning ${SELECT_COLS}`,
     [id, status, unpublish]

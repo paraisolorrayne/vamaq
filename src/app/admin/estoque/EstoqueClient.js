@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { normalizaBusca } from "@/lib/buscaVeiculo";
+import { filtraPorPeriodo, semData } from "@/lib/estoque/periodo";
 import { anoVeiculo } from "@/lib/anoVeiculo";
 import { podeMarcarVendido } from "@/lib/vendaVeiculo";
 import styles from "../admin.module.css";
@@ -23,6 +24,9 @@ function EstoqueConteudo({ podeEmitirNota }) {
   // Vem do atalho "Buscar por placa" do Dashboard: /admin/estoque?busca=ABC1D23
   const [search, setSearch] = useState(searchParams.get("busca") || "");
   const [refreshKey, setRefreshKey] = useState(0);
+  const [de, setDe] = useState("");
+  const [ate, setAte] = useState("");
+  const [campo, setCampo] = useState("data_entrada");
 
   useEffect(() => {
     let cancelled = false;
@@ -63,14 +67,15 @@ function EstoqueConteudo({ podeEmitirNota }) {
   // A placa e o CHASSI entram na busca — são os dois jeitos naturais de
   // procurar um carro específico, inclusive anos depois de vendido, e é o que
   // a proposta prometeu ("busca por placa, chassi ou período").
+  const porPeriodo = filtraPorPeriodo(vehicles, { de, ate, campo });
   const alvo = normalizaBusca(search);
   const filtered = alvo
-    ? vehicles.filter((v) =>
+    ? porPeriodo.filter((v) =>
         normalizaBusca(
           `${v.brand} ${v.model} ${v.color} ${v.placa || ""} ${v.chassi || ""}`
         ).includes(alvo)
       )
-    : vehicles;
+    : porPeriodo;
 
   const pendentes = vehicles.filter((v) => vehiclePendencias(v).length > 0).length;
 
@@ -103,10 +108,73 @@ function EstoqueConteudo({ podeEmitirNota }) {
             onChange={(e) => setSearch(e.target.value)}
             className={`${styles.formInput} ${styles.toolbarSearch}`}
           />
+          <Link href="/admin/estoque/entradas-saidas" className={styles.btnSecondary}>
+            📋 Entradas e saídas
+          </Link>
           <Link href="/admin/estoque/novo" className={styles.btnPrimary}>
             + Novo Veículo
           </Link>
         </div>
+
+        <div
+          style={{
+            display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end",
+            marginTop: 16, paddingTop: 16, borderTop: "1px solid #eee",
+          }}
+        >
+          <div>
+            <label className={styles.formLabel}>Período por</label>
+            <select
+              value={campo}
+              onChange={(e) => setCampo(e.target.value)}
+              className={styles.formSelect}
+              style={{ minHeight: 48 }}
+            >
+              <option value="data_entrada">data de entrada</option>
+              <option value="data_saida">data de saída</option>
+            </select>
+          </div>
+          <div>
+            <label className={styles.formLabel}>De</label>
+            <input
+              type="date"
+              value={de}
+              onChange={(e) => setDe(e.target.value)}
+              className={styles.formInput}
+              style={{ minHeight: 48 }}
+            />
+          </div>
+          <div>
+            <label className={styles.formLabel}>Até</label>
+            <input
+              type="date"
+              value={ate}
+              onChange={(e) => setAte(e.target.value)}
+              className={styles.formInput}
+              style={{ minHeight: 48 }}
+            />
+          </div>
+          {(de || ate) && (
+            <button
+              type="button"
+              onClick={() => { setDe(""); setAte(""); }}
+              className={`${styles.btnSecondary} ${styles.btnSmall}`}
+              style={{ minHeight: 48 }}
+            >
+              Limpar período
+            </button>
+          )}
+        </div>
+
+        {/* Sem este aviso, um período que devolve poucos carros parece um mês
+            fraco — quando na verdade é cadastro incompleto. */}
+        {(de || ate) && semData(vehicles, campo) > 0 && (
+          <p style={{ fontSize: "0.8rem", color: "#a8752e", margin: "12px 0 0" }}>
+            {semData(vehicles, campo)} de {vehicles.length} veículos ainda estão sem{" "}
+            {campo === "data_entrada" ? "data de entrada" : "data de saída"} e ficam de fora
+            deste período. Preencha na edição de cada carro.
+          </p>
+        )}
       </div>
 
       <div className={styles.card}>

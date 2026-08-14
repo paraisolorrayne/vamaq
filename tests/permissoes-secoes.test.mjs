@@ -74,6 +74,19 @@ test("quem não pode emitir nota também não vê a seção", () => {
   }
 });
 
+test("entradas e saídas: quem vê o estoque entra, mas os valores são financeiros", () => {
+  // A tela é do estoque (datas), com as colunas de compra/venda escondidas de
+  // quem não acessa o financeiro — mesma regra do botão "Emitir nota".
+  for (const papel of ["estoque", "vendedor"]) {
+    assert.equal(canAccessPath(papel, "/admin/estoque/entradas-saidas"), true, papel);
+    assert.equal(canAccessPath(papel, "/admin/financeiro"), false, `${papel} veria valores`);
+  }
+  for (const papel of ["financeiro", "secretaria"]) {
+    assert.equal(canAccessPath(papel, "/admin/estoque/entradas-saidas"), true, papel);
+    assert.equal(canAccessPath(papel, "/admin/financeiro"), true, papel);
+  }
+});
+
 test("subrota herda o acesso da seção", () => {
   // /admin/fiscal/emitir/<id> é onde o botão leva; se a herança quebrar, o
   // botão volta a expulsar.
