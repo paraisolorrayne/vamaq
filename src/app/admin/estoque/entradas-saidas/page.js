@@ -43,9 +43,13 @@ export default async function EntradasSaidasPage() {
       status: v.status,
       data_entrada: v.data_entrada ? String(v.data_entrada).slice(0, 10) : null,
       data_saida: v.data_saida ? String(v.data_saida).slice(0, 10) : null,
-      compra: m ? m.custo_aquisicao : null,
-      venda: m ? m.receita : null,
-      resultado: m ? m.resultado_liquido : null,
+      // Zero NÃO é valor: getVehicleMargins devolve 0 para carro sem lançamento
+      // nenhum, e "R$ 0,00" na coluna Compra se lê como "comprado de graça".
+      // Ausência de lançamento tem que aparecer como ausência.
+      compra: m && m.custo_aquisicao > 0 ? m.custo_aquisicao : null,
+      venda: m && m.receita > 0 ? m.receita : null,
+      resultado:
+        m && (m.custo_aquisicao > 0 || m.receita > 0) ? m.resultado_liquido : null,
     };
   });
 

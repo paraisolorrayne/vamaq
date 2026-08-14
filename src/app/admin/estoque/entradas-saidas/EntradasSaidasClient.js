@@ -184,7 +184,12 @@ export default function EntradasSaidasClient({ linhas, podeVerValores }) {
                             style={{
                               fontVariantNumeric: "tabular-nums",
                               fontWeight: 600,
-                              color: Number(v.resultado) >= 0 ? "#15803d" : "#b91c1c",
+                              color:
+                                v.resultado == null
+                                  ? "#888"
+                                  : Number(v.resultado) >= 0
+                                    ? "#15803d"
+                                    : "#b91c1c",
                             }}
                           >
                             {money(v.resultado)}
