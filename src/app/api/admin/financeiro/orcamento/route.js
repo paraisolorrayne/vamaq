@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireApiRole } from "@/lib/auth/api";
 import { parseValorBR } from "@/lib/money";
-import { getOrcamento, saveOrcamentoMes } from "@/lib/fin/repositories/finance";
+import { getOrcamento, saveOrcamentoMes, getSaudeFinanceira } from "@/lib/fin/repositories/finance";
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +9,8 @@ export async function GET(request) {
   const auth = await requireApiRole(["financeiro", "secretaria"]);
   if (auth.error) return auth.error;
   const ano = parseInt(new URL(request.url).searchParams.get("ano") || String(new Date().getFullYear()), 10);
-  return NextResponse.json({ ano, meses: await getOrcamento(ano) });
+  const [meses, saude] = await Promise.all([getOrcamento(ano), getSaudeFinanceira(ano)]);
+  return NextResponse.json({ ano, meses, saude });
 }
 
 export async function POST(request) {

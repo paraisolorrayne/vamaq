@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { faixaSaude } from "@/lib/fin/saude";
 import Link from "next/link";
 import styles from "../../admin.module.css";
 import { formatValorBR, parseValorBR } from "@/lib/money";
@@ -19,13 +20,14 @@ export default function OrcamentoPage() {
   const now = new Date();
   const [ano, setAno] = useState(now.getFullYear());
   const [meses, setMeses] = useState([]);
+  const [saude, setSaude] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
     fetch(`/api/admin/financeiro/orcamento?ano=${ano}`)
       .then((r) => r.json())
-      .then((d) => { if (active) { setMeses(d.meses || []); setLoading(false); } })
+      .then((d) => { if (active) { setMeses(d.meses || []); setSaude(d.saude || null); setLoading(false); } })
       .catch(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [ano]);
@@ -54,6 +56,56 @@ export default function OrcamentoPage() {
         <h1 className={styles.pageTitle}>Orçamento</h1>
         <p className={styles.pageSubtitle}>Metas mensais vs. realizado</p>
       </div>
+
+      {saude && (
+        <div className={styles.card} style={{ marginBottom: 24 }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
+            <h3 style={{ fontSize: "1rem", fontWeight: 600, margin: 0 }}>Saúde financeira</h3>
+            {saude.score === null ? (
+              <span style={{ color: "#888", fontSize: "0.9rem" }}>
+                ainda não há dados suficientes neste ano
+              </span>
+            ) : (
+              <>
+                <strong
+                  style={{ fontSize: "1.6rem", color: faixaSaude(saude.score).cor, lineHeight: 1 }}
+                >
+                  {saude.score}
+                </strong>
+                <span style={{ color: faixaSaude(saude.score).cor, fontWeight: 600 }}>
+                  {faixaSaude(saude.score).rotulo}
+                </span>
+                <span style={{ color: "#888", fontSize: "0.8rem" }}>
+                  de 0 a 100 · {saude.avaliados} de {saude.total} itens avaliados
+                </span>
+              </>
+            )}
+          </div>
+
+          <div className={styles.tableWrap} style={{ marginTop: 12 }}>
+            <table className={styles.table}>
+              <tbody>
+                {saude.componentes.map((c) => (
+                  <tr key={c.id} style={{ opacity: c.avaliado ? 1 : 0.55 }}>
+                    <td style={{ width: 240 }}><strong>{c.rotulo}</strong></td>
+                    <td style={{ width: 90, fontVariantNumeric: "tabular-nums", color: "#666" }}>
+                      {c.avaliado ? `${c.pontos}/${c.max}` : "—"}
+                    </td>
+                    <td style={{ fontSize: "0.85rem", color: "#666" }}>{c.detalhe}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <p style={{ fontSize: "0.78rem", color: "#888", margin: "10px 0 0" }}>
+            É um indicador gerencial, não uma nota de crédito. Item sem dado fica de fora da
+            conta em vez de valer zero — não ter orçamento cadastrado não é sinal de empresa
+            doente, e o score não pode dizer que é.
+          </p>
+        </div>
+      )}
+
 
       <div className={styles.card} style={{ marginBottom: 24 }}>
         <div className={styles.toolbar} style={{ gap: 10 }}>

@@ -38,7 +38,31 @@ export default function FechamentoPage() {
   const dre = data?.dre;
   const pend = data?.pendencias || {};
   const closed = data?.closed;
-  const totalPend = (pend.pendentes || 0) + (pend.sem_conta || 0);
+  // O checklist agora cobre caixa E pátio: um mês pode estar impecável nos
+  // lançamentos e ter carro vendido sem nota emitida.
+  const itens = [
+    pend.pendentes > 0 && {
+      texto: `${pend.pendentes} lançamento(s) pendente(s) — ficam fora dos números até serem confirmados`,
+      link: "/admin/financeiro/lancamentos",
+    },
+    pend.sem_conta > 0 && {
+      texto: `${pend.sem_conta} lançamento(s) confirmado(s) sem categoria no plano de contas`,
+      link: "/admin/financeiro/lancamentos",
+    },
+    pend.contas_vencidas > 0 && {
+      texto: `${pend.contas_vencidas} conta(s) a pagar vencida(s) e ainda em aberto`,
+      link: "/admin/financeiro/contas-pagar",
+    },
+    pend.vendidos_sem_nota > 0 && {
+      texto: `${pend.vendidos_sem_nota} veículo(s) vendido(s) no mês sem nota fiscal emitida`,
+      link: "/admin/fiscal",
+    },
+    pend.vendidos_sem_data > 0 && {
+      texto: `${pend.vendidos_sem_data} veículo(s) vendido(s) sem data de saída preenchida`,
+      link: "/admin/estoque/entradas-saidas",
+    },
+  ].filter(Boolean);
+  const totalPend = itens.length;
 
   return (
     <>
@@ -82,9 +106,13 @@ export default function FechamentoPage() {
             {totalPend === 0 ? (
               <p style={{ color: "#15803d", fontSize: "0.9rem" }}>✓ Nenhuma pendência neste mês.</p>
             ) : (
-              <ul style={{ paddingLeft: 20, fontSize: "0.9rem", color: "#333" }}>
-                {pend.pendentes > 0 && <li><strong>{pend.pendentes}</strong> lançamento(s) <strong>pendente(s)</strong> (fora dos números até confirmar)</li>}
-                {pend.sem_conta > 0 && <li><strong>{pend.sem_conta}</strong> lançamento(s) confirmado(s) <strong>sem conta</strong> no plano de contas</li>}
+              <ul style={{ paddingLeft: 20, fontSize: "0.9rem", color: "#333", margin: 0 }}>
+                {itens.map((i) => (
+                  <li key={i.texto} style={{ marginBottom: 6 }}>
+                    {i.texto} —{" "}
+                    <Link href={i.link} prefetch={false}>resolver</Link>
+                  </li>
+                ))}
               </ul>
             )}
             <p style={{ fontSize: "0.8rem", color: "#888", marginTop: 8 }}>

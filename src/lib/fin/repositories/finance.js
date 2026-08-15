@@ -4,9 +4,13 @@
  * pela única empresa (Vamaq).
  */
 import { finQuery } from "@/lib/fin/db";
+// Conexão principal: a role do financeiro só tem SELECT em public.vehicles
+// (ver db/fin-blindagem.sql), e o checklist precisa ler notas_fiscais também.
+import { query } from "@/lib/db";
 import { computeDRE } from "@/lib/fin/calc";
 import { impostosVeiculoUsado } from "@/lib/fiscal/impostos";
 import { GRUPOS, ordenaContas, proximoCodigo, validaNomeConta } from "@/lib/fin/planoContas";
+import { scoreSaudeFinanceira } from "@/lib/fin/saude";
 
 let companyIdCache = null;
 export async function getCompanyId() {
@@ -440,10 +444,146 @@ export async function getFechamentoMes(ano, mes) {
       where company_id=$1 and date >= $2 and date <= $3`,
     [company, from, to]
   );
+  // Contas a pagar vencidas e ainda em aberto até o fim do mês. Vencida é
+  // pendência de fechamento tanto quanto lançamento sem categoria.
+  const contas = await finQuery(
+    `select
+        count(*) filter (where paid_at is null and due_date <= $3)::int as vencidas,
+        count(*)::int as total
+       from fin.bills_payable
+      where company_id=$1 and due_date >= $2 and due_date <= $3`,
+    [company, from, to]
+  );
+
   const closed = company
     ? (await finQuery(`select closed_at, snapshot from fin.monthly_close where company_id=$1 and ano=$2 and mes=$3`, [company, ano, mes])).rows[0] || null
     : null;
-  return { ano, mes, dre, pendencias: pend.rows[0] || { pendentes: 0, sem_conta: 0 }, closed };
+
+  return {
+    ano, mes, dre, closed,
+    pendencias: {
+      ...(pend.rows[0] || { pendentes: 0, sem_conta: 0 }),
+      contas_vencidas: contas.rows[0]?.vencidas || 0,
+      contas_total: contas.rows[0]?.total || 0,
+      // Pendências do PÁTIO, não do caixa: carro vendido no mês sem nota
+      // emitida ou sem data de saída. Antes o checklist só olhava lançamento,
+      // e o mês fechava "limpo" com carro vendido e nota nenhuma.
+      ...(await pendenciasDeVeiculos(from, to)),
+    },
+  };
+}
+
+/**
+ * Pendências operacionais do mês que impedem o fechamento de ser confiável.
+ *
+ * Vive fora do schema `fin` (lê `public.vehicles` e `public.notas_fiscais`),
+ * por isso usa `query` e não `finQuery` — a role do financeiro só LÊ o público,
+ * e é justamente o que fazemos aqui.
+ */
+async function pendenciasDeVeiculos(from, to) {
+  try {
+    const { rows } = await query(
+      `select
+          count(*) filter (where v.data_saida is null)::int as vendidos_sem_data,
+          count(*) filter (where n.id is null)::int as vendidos_sem_nota,
+          count(*)::int as vendidos
+         from public.vehicles v
+         left join public.notas_fiscais n
+           on n.vehicle_id = v.id and n.status in ('processando','autorizada')
+        where v.status = 'vendido'
+          and v.data_saida >= $1 and v.data_saida <= $2`,
+      [from, to]
+    );
+    return rows[0] || { vendidos: 0, vendidos_sem_data: 0, vendidos_sem_nota: 0 };
+  } catch (err) {
+    // O checklist é um auxílio: se esta consulta falhar, o fechamento continua
+    // funcionando com as pendências financeiras, em vez de quebrar a tela.
+    // Mas o erro vai para o log — zero pendência por falha silenciosa é pior
+    // que tela quebrada, porque o mês fecha parecendo limpo.
+    console.error("Checklist de fechamento: falha ao ler pendências de veículos:", err);
+    return { vendidos: 0, vendidos_sem_data: 0, vendidos_sem_nota: 0 };
+  }
+}
+
+/**
+ * Score de saúde financeira do ANO (módulo Planejamento).
+ *
+ * Reúne o que já existe espalhado — DRE, orçamento, contas a pagar, qualidade
+ * dos lançamentos e margem dos carros — e entrega ao componente puro
+ * `scoreSaudeFinanceira`, que faz a conta e explica cada pedaço.
+ *
+ * Componente sem dado vira `null` e SAI da conta em vez de valer zero: é por
+ * isso que os campos de meta não são forçados a 0 aqui.
+ */
+export async function getSaudeFinanceira(ano) {
+  const company = await getCompanyId();
+  if (!company) return scoreSaudeFinanceira({});
+
+  const from = `${ano}-01-01`;
+  const to = `${ano}-12-31`;
+
+  const dre = await getDRE({ from, to });
+
+  const metas = await finQuery(
+    `select coalesce(sum(receita_meta),0) as receita_meta,
+            coalesce(sum(custo_meta),0) as custo_meta,
+            coalesce(sum(despesa_meta),0) as despesa_meta
+       from fin.budgets where company_id=$1 and ano=$2`,
+    [company, ano]
+  );
+
+  const lanc = await finQuery(
+    `select count(*)::int as total,
+            count(*) filter (where status='pending')::int as pendentes,
+            count(*) filter (where status in ('confirmed','reconciled') and account_id is null)::int as sem_conta
+       from fin.transactions
+      where company_id=$1 and date >= $2 and date <= $3`,
+    [company, from, to]
+  );
+
+  // Vencidas: comparado com HOJE, não com o fim do ano — uma conta que vence em
+  // dezembro não está vencida em agosto.
+  const contas = await finQuery(
+    `select count(*)::int as total,
+            count(*) filter (where paid_at is null and due_date < current_date)::int as vencidas
+       from fin.bills_payable
+      where company_id=$1 and due_date >= $2 and due_date <= $3`,
+    [company, from, to]
+  );
+
+  let vendidos = 0;
+  let comLucro = 0;
+  try {
+    const margens = await getVehicleMargins({ onlyWithActivity: true });
+    const vendidosComValor = margens.filter((m) => m.status === "vendido" && m.receita > 0);
+    vendidos = vendidosComValor.length;
+    comLucro = vendidosComValor.filter((m) => m.resultado_liquido > 0).length;
+  } catch (err) {
+    // Sem margens o componente fica "não avaliado" — melhor do que pontuar
+    // zero e dizer que a loja vende no prejuízo.
+    console.error("Saúde financeira: falha ao ler margens por veículo:", err);
+  }
+
+  const m = metas.rows[0] || {};
+  const l = lanc.rows[0] || {};
+  const c = contas.rows[0] || {};
+
+  return scoreSaudeFinanceira({
+    receita: dre.receita,
+    lucroLiquido: dre.lucroLiquido,
+    custos: dre.custos,
+    despesas: dre.despesas,
+    receitaMeta: Number(m.receita_meta) || 0,
+    custoMeta: Number(m.custo_meta) || 0,
+    despesaMeta: Number(m.despesa_meta) || 0,
+    contasVencidas: c.vencidas || 0,
+    contasTotal: c.total || 0,
+    lancamentosPendentes: l.pendentes || 0,
+    lancamentosSemConta: l.sem_conta || 0,
+    lancamentosTotal: l.total || 0,
+    veiculosVendidos: vendidos,
+    veiculosComLucro: comLucro,
+  });
 }
 
 export async function fecharMes(ano, mes, userId) {
