@@ -130,12 +130,26 @@ const AVALIADORES = [
   ["margem", "Margem dos veículos vendidos", avaliaMargem],
 ];
 
-/** Faixa em português — é assim que a tela fala, não em número solto. */
-export function faixaSaude(score) {
-  if (score === null) return { rotulo: "sem dados", cor: "#888" };
-  if (score >= 80) return { rotulo: "saudável", cor: "#15803d" };
-  if (score >= 60) return { rotulo: "atenção", cor: "#a8752e" };
-  return { rotulo: "crítico", cor: "#b91c1c" };
+/** Abaixo disto o score existe, mas não sustenta um veredito sobre a empresa. */
+export const MINIMO_PARA_VEREDITO = 3;
+
+/**
+ * Faixa em português — é assim que a tela fala, não em número solto.
+ *
+ * `avaliados` não é enfeite: com dois componentes, uma única conta vencida
+ * derruba o score para 43 e a loja é chamada de "crítica" sem que ninguém
+ * tenha olhado receita, orçamento ou margem. Nesse caso o número continua
+ * aparecendo — ele é verdadeiro — mas sem veredito, porque o veredito seria
+ * falso. Visto em produção em 14/08/2026.
+ */
+export function faixaSaude(score, avaliados = MINIMO_PARA_VEREDITO) {
+  if (score === null) return { rotulo: "sem dados", cor: "#888", parcial: false };
+  if (avaliados < MINIMO_PARA_VEREDITO) {
+    return { rotulo: "avaliação parcial", cor: "#666", parcial: true };
+  }
+  if (score >= 80) return { rotulo: "saudável", cor: "#15803d", parcial: false };
+  if (score >= 60) return { rotulo: "atenção", cor: "#a8752e", parcial: false };
+  return { rotulo: "crítico", cor: "#b91c1c", parcial: false };
 }
 
 /**

@@ -8,7 +8,7 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { faixaSaude, scoreSaudeFinanceira } from "../src/lib/fin/saude.js";
+import { faixaSaude, MINIMO_PARA_VEREDITO, scoreSaudeFinanceira } from "../src/lib/fin/saude.js";
 
 /** Mês bom: lucro de 12%, dentro do orçamento, tudo em dia. */
 const MES_BOM = {
@@ -134,4 +134,31 @@ test("faixas em português cobrem a escala inteira", () => {
   assert.equal(faixaSaude(60).rotulo, "atenção");
   assert.equal(faixaSaude(59).rotulo, "crítico");
   assert.equal(faixaSaude(0).rotulo, "crítico");
+});
+
+// --- Veredito exige base (14/08/2026) ---------------------------------------
+// Em produção o score deu 43 e a tela chamou a loja de "crítica" — com dois
+// componentes avaliados, por causa de uma única conta vencida. O número estava
+// certo; o veredito, não.
+
+test("com menos de três itens avaliados, não há veredito", () => {
+  const f = faixaSaude(43, 2);
+  assert.equal(f.rotulo, "avaliação parcial");
+  assert.equal(f.parcial, true);
+});
+
+test("um item avaliado também não dá veredito, nem o melhor caso", () => {
+  assert.equal(faixaSaude(100, 1).parcial, true);
+  assert.equal(faixaSaude(0, 1).parcial, true);
+});
+
+test("com base suficiente, o veredito volta", () => {
+  assert.equal(faixaSaude(90, MINIMO_PARA_VEREDITO).rotulo, "saudável");
+  assert.equal(faixaSaude(43, 5).rotulo, "crítico");
+  assert.equal(faixaSaude(43, 5).parcial, false);
+});
+
+test("sem dados continua sem dados, independente da contagem", () => {
+  assert.equal(faixaSaude(null, 5).rotulo, "sem dados");
+  assert.equal(faixaSaude(null, 0).rotulo, "sem dados");
 });

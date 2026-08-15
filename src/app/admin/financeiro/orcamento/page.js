@@ -68,15 +68,17 @@ export default function OrcamentoPage() {
             ) : (
               <>
                 <strong
-                  style={{ fontSize: "1.6rem", color: faixaSaude(saude.score).cor, lineHeight: 1 }}
+                  style={{ fontSize: "1.6rem", color: faixaSaude(saude.score, saude.avaliados).cor, lineHeight: 1 }}
                 >
                   {saude.score}
                 </strong>
-                <span style={{ color: faixaSaude(saude.score).cor, fontWeight: 600 }}>
-                  {faixaSaude(saude.score).rotulo}
+                <span style={{ color: faixaSaude(saude.score, saude.avaliados).cor, fontWeight: 600 }}>
+                  {faixaSaude(saude.score, saude.avaliados).rotulo}
                 </span>
                 <span style={{ color: "#888", fontSize: "0.8rem" }}>
                   de 0 a 100 · {saude.avaliados} de {saude.total} itens avaliados
+                  {faixaSaude(saude.score, saude.avaliados).parcial &&
+                    " — poucos itens para julgar a saúde da loja"}
                 </span>
               </>
             )}
