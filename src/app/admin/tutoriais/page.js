@@ -1,8 +1,6 @@
 import Link from "next/link";
 import styles from "../admin.module.css";
 import t from "./tutorial.module.css";
-import { requireRole } from "@/lib/auth/dal";
-import EnviarGravacao from "./EnviarGravacao";
 
 export const metadata = {
   title: "Tutoriais — Vamaq Motors",
@@ -67,17 +65,7 @@ const TUTORIAIS = [
   },
 ];
 
-// As gravações que os tutoriais exibem. Cada slug casa com um
-// <Demonstracao slug="..."> dentro do tutorial correspondente.
-const GRAVACOES = [
-  { slug: "conta-a-pagar", titulo: "Financeiro · cadastrar conta lendo o boleto" },
-  { slug: "criar-categoria", titulo: "Financeiro · criar uma categoria nova" },
-  { slug: "emitir-nota", titulo: "Notas Fiscais · emitir a nota de venda" },
-  { slug: "marcar-vendido", titulo: "Estoque · marcar um carro como vendido" },
-];
-
-export default async function TutoriaisPage() {
-  const user = await requireRole();
+export default function TutoriaisPage() {
   return (
     <div className={t.wrap}>
       <div className={styles.pageHeader}>
@@ -105,8 +93,6 @@ export default async function TutoriaisPage() {
           )
         )}
       </div>
-
-      {user.role === "admin" && <EnviarGravacao slugs={GRAVACOES} />}
     </div>
   );
 }
