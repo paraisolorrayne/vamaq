@@ -9,6 +9,7 @@ export default function AdminDashboard() {
   const router = useRouter();
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [aprovar, setAprovar] = useState(null);
 
   useEffect(() => {
     fetch("/api/admin/vehicles")
@@ -18,6 +19,28 @@ export default function AdminDashboard() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
+  }, []);
+
+  // Contas esperando aprovação. Antes disto, a secretária cadastrava a conta,
+  // ela ficava parada em "aguardando aprovação" e o gestor só descobria se
+  // abrisse a tela por conta própria — a conta vencia sem ninguém errar nada.
+  // Quem não enxerga o financeiro recebe 403 e o aviso simplesmente não aparece.
+  useEffect(() => {
+    let ativo = true;
+    fetch("/api/admin/financeiro/contas-pagar")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!ativo || !d?.bills) return;
+        const pendentes = d.bills.filter((b) => b.approval_status === "awaiting_approval");
+        if (pendentes.length) {
+          setAprovar({
+            quantidade: pendentes.length,
+            valor: pendentes.reduce((s, b) => s + Number(b.value || 0), 0),
+          });
+        }
+      })
+      .catch(() => {});
+    return () => { ativo = false; };
   }, []);
 
   const totalVehicles = vehicles.length;
@@ -35,6 +58,29 @@ export default function AdminDashboard() {
           Visão geral do estoque e operações
         </p>
       </div>
+
+      {aprovar && (
+        <div
+          className={styles.card}
+          style={{ marginBottom: 24, borderLeft: "4px solid #a8752e", background: "#fff7e8" }}
+        >
+          <strong style={{ color: "#a8752e" }}>
+            {aprovar.quantidade} conta{aprovar.quantidade === 1 ? "" : "s"} esperando sua aprovação
+          </strong>
+          <p style={{ fontSize: "0.9rem", color: "#666", margin: "6px 0 0" }}>
+            Total de{" "}
+            {aprovar.valor.toLocaleString("pt-BR", {
+              style: "currency", currency: "BRL", minimumFractionDigits: 2,
+            })}
+            . Sem aprovação, a conta não pode ser marcada como paga.
+          </p>
+          <p style={{ margin: "14px 0 0" }}>
+            <Link href="/admin/financeiro/contas-pagar" className={styles.btnPrimary} prefetch={false}>
+              Ver contas a aprovar
+            </Link>
+          </p>
+        </div>
+      )}
 
       {loading ? (
         <div className={styles.loading}>Carregando...</div>
