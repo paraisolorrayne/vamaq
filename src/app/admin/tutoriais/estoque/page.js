@@ -36,9 +36,16 @@ export default function TutorialEstoquePage() {
           <h3 className={t.stepTitle}>Abra o cadastro</h3>
           <p>
             Em <span className={t.uiField}>Estoque</span>, clique em{" "}
-            <span className={t.uiButton}>+ Adicionar Veículo</span>. Para mexer
-            num carro que já existe, use <span className={t.uiField}>Editar</span>{" "}
-            no card dele. A busca no topo filtra por marca, modelo ou cor.
+            <span className={t.uiButton}>+ Novo Veículo</span>. Para mexer num
+            carro que já existe, use <span className={t.uiButton}>Editar</span> na
+            linha dele.
+          </p>
+          <p>
+            A busca no topo acha por <strong>marca, modelo, cor, placa ou
+            chassi</strong> — inclusive pelos últimos dígitos do chassi, que é
+            como se costuma conferir. Logo abaixo dela há o filtro por{" "}
+            <strong>período</strong>, que mostra os carros que entraram (ou
+            saíram) entre duas datas.
           </p>
         </div>
       </div>
@@ -239,6 +246,55 @@ export default function TutorialEstoquePage() {
               completo. Os dois caminhos levam ao mesmo lugar: o carro vendido
               aparece em <Link href="/admin/tutoriais/fiscal">Notas
               Fiscais</Link>, pronto para emitir a nota.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <h2 className={t.sectionTitle}>Entradas e saídas</h2>
+
+      <div className={t.step}>
+        <div className={t.stepNumber}>7</div>
+        <div className={t.stepBody}>
+          <h3 className={t.stepTitle}>Registre quando o carro entrou e saiu</h3>
+          <p>
+            No cadastro de cada veículo há{" "}
+            <span className={t.uiField}>Data de entrada na loja</span> e{" "}
+            <span className={t.uiField}>Data de saída</span>. A de entrada é o dia
+            em que o carro chegou — <strong>não</strong> é a data em que alguém
+            cadastrou no sistema. A de saída é preenchida sozinha quando o carro é
+            marcado como vendido, e continua editável se a data real for outra.
+          </p>
+          <div className={t.warning}>
+            <span className={t.boxLabel}>Os carros antigos estão sem data</span>
+            <p>
+              Os veículos que já estavam no estoque quando esse campo passou a
+              existir nasceram <strong>sem data</strong>, de propósito — inventar
+              uma data seria pior que deixar em branco. Preencha conforme for
+              mexendo em cada carro. Enquanto isso, o filtro por período avisa
+              quantos ficaram de fora.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className={t.step}>
+        <div className={t.stepNumber}>8</div>
+        <div className={t.stepBody}>
+          <h3 className={t.stepTitle}>Veja tudo junto</h3>
+          <p>
+            O botão <span className={t.uiButton}>📋 Entradas e saídas</span>, no
+            topo do Estoque, abre a lista de todos os carros com entrada, saída e —
+            para quem tem acesso ao Financeiro — os valores de compra, venda e
+            resultado. Dá para filtrar por período e buscar por placa ou chassi.
+          </p>
+          <div className={t.tip}>
+            <span className={t.boxLabel}>De onde vêm os valores</span>
+            <p>
+              Não são digitados ali: saem dos lançamentos do{" "}
+              <strong>Financeiro</strong> ligados a cada veículo. Carro sem compra
+              ou venda lançada aparece com um travessão — é sinal de lançamento
+              faltando, não de carro sem valor.
             </p>
           </div>
         </div>

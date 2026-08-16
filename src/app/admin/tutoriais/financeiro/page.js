@@ -183,7 +183,7 @@ export default function TutorialFinanceiroPage() {
             </li>
             <li>
               <strong>Aprovar não paga</strong> — depois de aprovada, use{" "}
-              <span className={t.uiField}>Marcar pago</span> quando o pagamento
+              <span className={t.uiButton}>Marcar pago</span> quando o pagamento
               sair;
             </li>
             <li>
@@ -191,6 +191,151 @@ export default function TutorialFinanceiroPage() {
               <strong>Usuários</strong> (admin tem alçada ilimitada).
             </li>
           </ul>
+          <div className={t.tip}>
+            <span className={t.boxLabel}>Quem aprova é avisado</span>
+            <p>
+              Conta parada em <strong>aguardando aprovação</strong> aparece no{" "}
+              <strong>Dashboard</strong> de quem tem alçada, logo ao entrar, com a
+              quantidade e o total. Enquanto não for aprovada, ela não pode ser
+              marcada como paga.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className={t.step}>
+        <div className={t.stepNumber}>8</div>
+        <div className={t.stepBody}>
+          <h3 className={t.stepTitle}>Conta que chega todo mês</h3>
+          <p>
+            Água, luz, internet e aluguel não precisam ser cadastrados um por um.
+            No formulário, em{" "}
+            <span className={t.uiField}>Repetir mensalmente</span>, escolha por
+            quantos meses — o sistema cria a série inteira de uma vez, numerada
+            (<em>Conta de água (1/12)</em>, <em>(2/12)</em>…).
+          </p>
+          <div className={t.warning}>
+            <span className={t.boxLabel}>O valor é uma previsão</span>
+            <p>
+              Conta de água não vem igual todo mês. As parcelas nascem com o valor
+              que você informou e <strong>devem ser corrigidas</strong> quando a
+              conta real chegar. Isso não atrapalha o resultado do mês: conta a
+              pagar não entra no DRE — quem entra é o lançamento do pagamento.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className={t.step}>
+        <div className={t.stepNumber}>9</div>
+        <div className={t.stepBody}>
+          <h3 className={t.stepTitle}>Ler o boleto e guardar a conta</h3>
+          <p>
+            No alto do formulário há{" "}
+            <span className={t.uiField}>Linha digitável do boleto ou da conta</span>.
+            Digite ou cole os números impressos <strong>abaixo do código de
+            barras</strong> e clique em <span className={t.uiButton}>Ler conta</span>:
+            o valor é preenchido sozinho e, quando é boleto bancário, o vencimento
+            também.
+          </p>
+          <div className={t.tip}>
+            <span className={t.boxLabel}>Serve para conferir, não só para poupar digitação</span>
+            <p>
+              Os números trazem dígitos de conferência. Se você trocar um algarismo
+              sem perceber, o sistema recusa <strong>na hora</strong> — em vez de a
+              loja descobrir o valor errado só na conciliação. Em conta de água e
+              luz o vencimento não vem no código: preencha à mão.
+            </p>
+          </div>
+          <p>
+            Na lista, o botão <span className={t.uiButton}>Anexar</span> guarda o
+            PDF ou a foto do boleto e do comprovante junto da conta. No celular ele
+            abre a câmera direto. Depois de anexado, vira{" "}
+            <span className={t.uiButton}>Ver anexo</span>.
+          </p>
+        </div>
+      </div>
+
+      <h2 className={t.sectionTitle}>5. Categorias, fechamento e saúde</h2>
+
+      <div className={t.step}>
+        <div className={t.stepNumber}>10</div>
+        <div className={t.stepBody}>
+          <h3 className={t.stepTitle}>Criar uma categoria que falta</h3>
+          <p>
+            Em <span className={t.uiField}>Categorias</span>, a loja cria as
+            próprias categorias de receita e despesa, sem pedir desenvolvimento.
+            Você escolhe o <strong>nome</strong> e <strong>onde ela entra</strong> —
+            “Despesas administrativas”, “Custos do veículo”, “Despesas
+            comerciais” — e o resto o sistema resolve.
+          </p>
+          <div className={t.warning}>
+            <span className={t.boxLabel}>Custo do veículo ou despesa da loja?</span>
+            <p>
+              É a pergunta que muda o número. Gasto que pertence a{" "}
+              <strong>um carro</strong> — lava jato, chaveiro, funilaria — vai em{" "}
+              <strong>Custos do veículo</strong> e pesa na margem daquele carro
+              quando o lançamento é ligado a ele. Gasto de manter a loja aberta vai
+              em <strong>Despesas administrativas</strong>.
+            </p>
+          </div>
+          <p>
+            Categoria errada <strong>não se apaga</strong>: use{" "}
+            <span className={t.uiButton}>Desativar</span>. Ela some da lista na hora
+            de lançar, mas continua nos lançamentos antigos — apagar quebraria o
+            resultado de meses já fechados. As marcadas como{" "}
+            <strong>fixas do plano</strong> são as que o DRE e a margem usam para
+            montar o resultado e não podem ser desligadas.
+          </p>
+        </div>
+      </div>
+
+      <div className={t.step}>
+        <div className={t.stepNumber}>11</div>
+        <div className={t.stepBody}>
+          <h3 className={t.stepTitle}>Fechar o mês</h3>
+          <p>
+            Em <span className={t.uiField}>Fechamento mensal</span>, escolha o mês e
+            confira o retrato do resultado. Antes do botão de fechar há um{" "}
+            <strong>checklist de pendências</strong>, e cada linha leva à tela onde
+            se resolve:
+          </p>
+          <ul>
+            <li>lançamentos pendentes — ficam fora dos números até confirmar;</li>
+            <li>lançamentos sem categoria;</li>
+            <li>contas a pagar vencidas e ainda em aberto;</li>
+            <li>veículos vendidos no mês <strong>sem nota fiscal emitida</strong>;</li>
+            <li>veículos vendidos <strong>sem data de saída</strong>.</li>
+          </ul>
+          <p>
+            Fechar o mês é um marco gerencial: dá para fechar mesmo com pendências,
+            e lançamento retroativo continua permitido.
+          </p>
+        </div>
+      </div>
+
+      <div className={t.step}>
+        <div className={t.stepNumber}>12</div>
+        <div className={t.stepBody}>
+          <h3 className={t.stepTitle}>Score de saúde financeira</h3>
+          <p>
+            Na tela de <span className={t.uiField}>Orçamento</span>, acima das metas,
+            fica o <strong>score de saúde</strong> — uma nota de 0 a 100 formada por
+            cinco itens: resultado do período, aderência ao orçamento, contas em
+            dia, organização dos lançamentos e margem dos veículos vendidos.
+          </p>
+          <div className={t.tip}>
+            <span className={t.boxLabel}>O número explica a si mesmo</span>
+            <p>
+              Cada item mostra quantos pontos deu, de quantos podia dar, e o porquê
+              — “1 de 1 conta vencida e em aberto”. É para agir, não para decorar.
+              Item <strong>sem dado</strong> fica de fora da conta em vez de valer
+              zero: não ter orçamento cadastrado não é sinal de empresa doente. E
+              quando poucos itens puderam ser avaliados, o sistema diz{" "}
+              <strong>avaliação parcial</strong> em vez de dar um veredito que o
+              dado não sustenta.
+            </p>
+          </div>
         </div>
       </div>
     </div>

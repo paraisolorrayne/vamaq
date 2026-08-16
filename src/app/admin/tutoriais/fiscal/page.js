@@ -76,6 +76,13 @@ export default function TutorialFiscalPage() {
             aquisição), e <strong>PIS e COFINS</strong> incidem sobre essa base
             menos o ICMS. Tudo com as alíquotas que o contador configurou.
           </p>
+          <p>
+            Desde agosto de 2026 a nota também sai com <strong>IBS e CBS</strong>,
+            os tributos da reforma. Eles aparecem no mesmo quadro e são bem
+            maiores que os outros na tela — é normal: diferente do ICMS, eles
+            incidem sobre o <strong>valor total da nota</strong>, não sobre a
+            margem. Não há nada a preencher; é só conferir.
+          </p>
           <div className={t.warning}>
             <span className={t.boxLabel}>O valor de aquisição é a base do imposto</span>
             <p>
@@ -94,14 +101,13 @@ export default function TutorialFiscalPage() {
               informação.
             </p>
           </div>
-          <div className={t.warning}>
-            <span className={t.boxLabel}>Nº da nota de entrada</span>
+          <div className={t.danger}>
+            <span className={t.boxLabel}>Nº da nota de entrada é obrigatório</span>
             <p>
-              Campo opcional. Se este carro já tem uma <strong>nota de
-              entrada</strong> emitida, coloque o número dela: o texto das
-              informações complementares passa a citar a nota, que é como as
-              notas da Vamaq já saíam. Sem o número, o texto sai só com o valor
-              de aquisição.
+              É o número da nota que comprova de onde o carro veio. O contador
+              confirmou que o texto das informações complementares é obrigatório e
+              precisa estar preenchido — e não existe carro para vender que não
+              tenha entrado antes. Sem esse número a emissão não segue.
             </p>
           </div>
         </div>
@@ -111,6 +117,21 @@ export default function TutorialFiscalPage() {
         <div className={t.stepNumber}>3</div>
         <div className={t.stepBody}>
           <h3 className={t.stepTitle}>O destinatário</h3>
+          <div className={t.warning}>
+            <span className={t.boxLabel}>O comprador veio à loja?</span>
+            <p>
+              A caixa <span className={t.uiField}>O comprador veio à loja (venda
+              presencial)</span> vem marcada, que é o caso normal.{" "}
+              <strong>Só desmarque se a venda foi fechada a distância.</strong>
+            </p>
+            <p>
+              Ela não é detalhe: quem decide se a nota é interna ou interestadual
+              não é o estado do comprador, e sim onde a venda aconteceu. Alguém de
+              São Paulo que vem buscar o carro em Uberlândia fez uma operação
+              <strong> dentro do estado</strong>. Desmarcar sem motivo faz a nota
+              sair com o CFOP errado.
+            </p>
+          </div>
           <p>
             Em <span className={t.uiField}>Cliente cadastrado</span>,
             escolher um nome preenche sozinhos os oito campos do
@@ -118,6 +139,12 @@ export default function TutorialFiscalPage() {
             município, UF), vindos do{" "}
             <Link href="/admin/clientes">cadastro de clientes</Link>. Se o
             comprador não estiver cadastrado, preencha os campos à mão.
+          </p>
+          <p>
+            O campo <span className={t.uiField}>Inscrição Estadual</span> fica em
+            branco para pessoa física. Preencha só quando o comprador é{" "}
+            <strong>empresa com IE</strong> — nesse caso o contador confirmou que
+            informar é obrigatório.
           </p>
           <div className={t.tip}>
             <span className={t.boxLabel}>Confira antes de emitir</span>
