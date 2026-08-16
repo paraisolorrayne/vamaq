@@ -11,6 +11,8 @@ import { computeDRE } from "@/lib/fin/calc";
 import { impostosVeiculoUsado } from "@/lib/fiscal/impostos";
 import { GRUPOS, ordenaContas, proximoCodigo, validaNomeConta } from "@/lib/fin/planoContas";
 import { scoreSaudeFinanceira } from "@/lib/fin/saude";
+import { datasDaSerie, descricaoDaParcela } from "@/lib/fin/recorrencia";
+import { randomUUID } from "node:crypto";
 
 let companyIdCache = null;
 export async function getCompanyId() {
@@ -349,7 +351,8 @@ const BILL_SELECT = `
          b.paid_at, b.created_by, b.approved_by, b.approved_at,
          b.contact_id, ct.name as contact_name,
          b.account_id, a.code as account_code, a.name as account_name,
-         b.cost_center_id, cc.name as cost_center_name
+         b.cost_center_id, cc.name as cost_center_name,
+         b.serie_id, b.serie_total, b.linha_digitavel, b.anexo
     from fin.bills_payable b
     left join fin.contacts ct on ct.id = b.contact_id
     left join fin.chart_of_accounts a on a.id = b.account_id
@@ -377,16 +380,64 @@ export async function getBill(id) {
 }
 
 // approvalStatus decidido pelo servidor (alçada) — nunca vem do cliente.
+/**
+ * Cria uma conta a pagar — ou a SÉRIE inteira, quando `parcelas` for maior
+ * que 1 (água, luz, internet).
+ *
+ * A série nasce toda de uma vez, com as parcelas visíveis na lista. Sem tarefa
+ * agendada: agendador que falha, falha calado, e ninguém descobre que a conta
+ * de setembro não nasceu até ela vencer.
+ *
+ * Devolve a PRIMEIRA parcela, que é a que a tela mostra em seguida.
+ */
 export async function createBill(data, approvalStatus, createdBy) {
   const company = await getCompanyId();
+  const parcelas = Math.max(1, Math.floor(Number(data.parcelas) || 1));
+  const datas = datasDaSerie(data.due_date, parcelas);
+  if (!datas.length) return null;
+
+  const serieId = datas.length > 1 ? randomUUID() : null;
+  const total = datas.length > 1 ? datas.length : null;
+  let primeira = null;
+
+  for (let i = 0; i < datas.length; i++) {
+    const { rows } = await finQuery(
+      `insert into fin.bills_payable
+         (company_id, description, value, due_date, contact_id, account_id, cost_center_id,
+          approval_status, created_by, serie_id, serie_total, linha_digitavel)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) returning id`,
+      [
+        company,
+        descricaoDaParcela(data.description, i, datas.length),
+        data.value,
+        datas[i],
+        data.contact_id || null,
+        data.account_id || null,
+        data.cost_center_id || null,
+        approvalStatus,
+        createdBy || null,
+        serieId,
+        total,
+        // A linha digitável vale só para a primeira: as próximas ainda nem
+        // foram emitidas, e repetir o código do mês passado faria a operadora
+        // pagar duas vezes o mesmo boleto.
+        i === 0 ? data.linha_digitavel || null : null,
+      ]
+    );
+    if (i === 0) primeira = rows[0].id;
+  }
+  return getBill(primeira);
+}
+
+/** Grava os metadados do comprovante/boleto anexado a uma conta. */
+export async function setBillAnexo(id, anexo) {
+  const company = await getCompanyId();
   const { rows } = await finQuery(
-    `insert into fin.bills_payable
-       (company_id, description, value, due_date, contact_id, account_id, cost_center_id, approval_status, created_by)
-     values ($1,$2,$3,$4,$5,$6,$7,$8,$9) returning id`,
-    [company, data.description, data.value, data.due_date, data.contact_id || null,
-     data.account_id || null, data.cost_center_id || null, approvalStatus, createdBy || null]
+    `update fin.bills_payable set anexo = $3::jsonb
+      where id=$1 and company_id=$2 returning id`,
+    [id, company, anexo ? JSON.stringify(anexo) : null]
   );
-  return getBill(rows[0].id);
+  return rows.length ? getBill(id) : null;
 }
 
 export async function setBillApproval(id, status, approverId) {

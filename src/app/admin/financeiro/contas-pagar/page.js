@@ -4,11 +4,16 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import styles from "../../admin.module.css";
 import { formatValorBR } from "@/lib/money";
+import { leLinhaDigitavel } from "@/lib/fin/linhaDigitavel";
+import { datasDaSerie, MAX_PARCELAS } from "@/lib/fin/recorrencia";
 
 function money(n) { return "R$ " + formatValorBR(Number(n) || 0); }
 function brDate(d) { return d ? String(d).slice(0, 10).split("-").reverse().join("/") : "—"; }
 function today() { return new Date().toISOString().slice(0, 10); }
-const EMPTY = { description: "", value: "", due_date: today(), contact_id: "", account_id: "", cost_center_id: "" };
+const EMPTY = {
+  description: "", value: "", due_date: today(), contact_id: "", account_id: "",
+  cost_center_id: "", parcelas: 1, linha_digitavel: "",
+};
 
 function situacao(b) {
   if (b.approval_status === "rejected") return { label: "Rejeitada", bg: "#f3f4f6", color: "#6b7280" };
@@ -23,6 +28,9 @@ export default function ContasPagarPage() {
   const [refs, setRefs] = useState({ accounts: [], costCenters: [], contacts: [] });
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(EMPTY);
+  const [linha, setLinha] = useState("");
+  const [linhaAviso, setLinhaAviso] = useState(null);
+  const [anexando, setAnexando] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState(null);
@@ -72,6 +80,57 @@ export default function ContasPagarPage() {
     setReload((n) => n + 1);
   }
 
+  // Lê a linha digitável e preenche valor e vencimento. Não sobrescreve o que
+  // a operadora já digitou sem avisar — o aviso diz exatamente o que mudou.
+  function aplicarLinha() {
+    const r = leLinhaDigitavel(linha);
+    if (r.error) {
+      setLinhaAviso({ erro: true, texto: r.error });
+      return;
+    }
+    const mudou = [];
+    setForm((f) => {
+      const novo = { ...f, linha_digitavel: linha.trim() };
+      if (r.valor) {
+        novo.value = r.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        mudou.push("valor");
+      }
+      if (r.vencimento) {
+        novo.due_date = r.vencimento;
+        mudou.push("vencimento");
+      }
+      return novo;
+    });
+    setLinhaAviso({
+      erro: false,
+      texto: mudou.length
+        ? `${r.tipo === "boleto" ? "Boleto" : "Conta de concessionária"} reconhecido — ${mudou.join(" e ")} preenchido${mudou.length > 1 ? "s" : ""}. Confira antes de salvar.`
+        : "Números conferidos, mas sem valor legível. Preencha à mão.",
+    });
+  }
+
+  async function anexar(bill, file) {
+    if (!file) return;
+    setAnexando(bill.id);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const r = await fetch(`/api/admin/financeiro/contas-pagar/${bill.id}/anexo`, {
+        method: "POST", body: fd,
+      });
+      if (!r.ok) {
+        const d = await r.json().catch(() => ({}));
+        alert(d.error || "Não foi possível anexar o arquivo.");
+        return;
+      }
+      setReload((n) => n + 1);
+    } finally {
+      // No finally: sem isto o botão fica "Enviando…" para sempre quando o
+      // upload falha, e a operadora acha que travou.
+      setAnexando(null);
+    }
+  }
+
   const totalAberto = bills.filter((b) => b.approval_status === "approved" && !b.paid_at).reduce((s, b) => s + b.value, 0);
   const aguardando = bills.filter((b) => b.approval_status === "awaiting_approval").length;
 
@@ -96,6 +155,42 @@ export default function ContasPagarPage() {
         <div className={styles.card} style={{ marginBottom: 24 }}>
           <h3 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: 16 }}>Nova conta a pagar</h3>
           <form onSubmit={save} className={styles.formGrid}>
+            <div
+              className={`${styles.formGroup} ${styles.formGroupFull}`}
+              style={{ background: "#F7F7F8", padding: "12px 14px", borderRadius: 6 }}
+            >
+              <label className={styles.formLabel}>Linha digitável do boleto ou da conta</label>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <input
+                  className={styles.formInput}
+                  value={linha}
+                  onChange={(e) => { setLinha(e.target.value); setLinhaAviso(null); }}
+                  placeholder="Digite ou cole os números impressos abaixo do código de barras"
+                  inputMode="numeric"
+                  style={{ flex: "1 1 18rem", minHeight: 48 }}
+                />
+                <button
+                  type="button"
+                  onClick={aplicarLinha}
+                  className={styles.btnSecondary}
+                  disabled={!linha.trim()}
+                  style={{ minHeight: 48 }}
+                >
+                  Ler conta
+                </button>
+              </div>
+              <p
+                style={{
+                  fontSize: "0.8rem", margin: "6px 0 0",
+                  color: linhaAviso ? (linhaAviso.erro ? "#b91c1c" : "#15803d") : "#666",
+                }}
+              >
+                {linhaAviso
+                  ? linhaAviso.texto
+                  : "Opcional. Preenche o valor sozinho e confere se você digitou algum número trocado."}
+              </p>
+            </div>
+
             <div className={`${styles.formGroup} ${styles.formGroupFull}`}>
               <label className={styles.formLabel}>Descrição</label>
               <input className={styles.formInput} value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="Ex: Aluguel de julho" required />
@@ -108,6 +203,32 @@ export default function ContasPagarPage() {
               <label className={styles.formLabel}>Vencimento</label>
               <input type="date" className={styles.formInput} value={form.due_date} onChange={(e) => set("due_date", e.target.value)} required />
             </div>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Repetir mensalmente</label>
+              <select
+                className={styles.formSelect}
+                value={form.parcelas}
+                onChange={(e) => set("parcelas", Number(e.target.value))}
+              >
+                <option value={1}>Não repetir — conta avulsa</option>
+                {[3, 6, 12, MAX_PARCELAS].map((n) => (
+                  <option key={n} value={n}>por {n} meses</option>
+                ))}
+              </select>
+              {form.parcelas > 1 && (
+                <p style={{ fontSize: "0.8rem", color: "#666", margin: "6px 0 0" }}>
+                  Cria {form.parcelas} contas de uma vez, do primeiro vencimento até{" "}
+                  {(() => {
+                    const d = datasDaSerie(form.due_date, form.parcelas);
+                    if (!d.length) return "—";
+                    const [a, m, dia] = d[d.length - 1].split("-");
+                    return `${dia}/${m}/${a}`;
+                  })()}
+                  . O valor de cada mês é uma previsão — edite quando a conta chegar.
+                </p>
+              )}
+            </div>
+
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Fornecedor</label>
               <select className={styles.formSelect} value={form.contact_id} onChange={(e) => set("contact_id", e.target.value)}>
@@ -155,7 +276,19 @@ export default function ContasPagarPage() {
                   return (
                     <tr key={b.id}>
                       <td style={{ whiteSpace: "nowrap" }}>{brDate(b.due_date)}</td>
-                      <td><strong>{b.description}</strong>{b.account_code && <span style={{ display: "block", fontSize: "0.75rem", color: "#888" }}>{b.account_code} · {b.account_name}</span>}</td>
+                      <td>
+                        <strong>{b.description}</strong>
+                        {b.account_code && (
+                          <span style={{ display: "block", fontSize: "0.75rem", color: "#888" }}>
+                            {b.account_code} · {b.account_name}
+                          </span>
+                        )}
+                        {b.serie_id && (
+                          <span style={{ display: "block", fontSize: "0.72rem", color: "#a8752e" }}>
+                            conta mensal · {b.serie_total} parcelas
+                          </span>
+                        )}
+                      </td>
                       <td style={{ fontSize: "0.85rem" }}>{b.contact_name || "—"}</td>
                       <td style={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums", fontWeight: 600 }}>{money(b.value)}</td>
                       <td><span className={styles.badgeWarning} style={{ background: s.bg, color: s.color }}>{s.label}</span></td>
@@ -172,6 +305,33 @@ export default function ContasPagarPage() {
                           )}
                           {b.paid_at && (
                             <button onClick={() => act(b, "unpay")} className={`${styles.btnSecondary} ${styles.btnSmall}`}>Desfazer</button>
+                          )}
+                          {b.anexo?.arquivo ? (
+                            <a
+                              href={`/api/admin/financeiro/contas-pagar/${b.id}/anexo`}
+                              target="_blank"
+                              rel="noopener"
+                              className={`${styles.btnSecondary} ${styles.btnSmall}`}
+                            >
+                              Ver anexo
+                            </a>
+                          ) : (
+                            <label
+                              className={`${styles.btnSecondary} ${styles.btnSmall}`}
+                              style={{ cursor: "pointer", display: "inline-flex", alignItems: "center" }}
+                            >
+                              {anexando === b.id ? "Enviando…" : "Anexar"}
+                              {/* capture="environment" abre a câmera direto no
+                                  celular — é como a conta de papel entra. */}
+                              <input
+                                type="file"
+                                accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,image/*,application/pdf"
+                                capture="environment"
+                                onChange={(e) => { anexar(b, e.target.files?.[0]); e.target.value = ""; }}
+                                disabled={anexando === b.id}
+                                style={{ display: "none" }}
+                              />
+                            </label>
                           )}
                           {!b.paid_at && (
                             <button onClick={() => remove(b)} className={styles.btnDanger}>Remover</button>

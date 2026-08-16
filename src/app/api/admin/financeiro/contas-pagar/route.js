@@ -24,6 +24,9 @@ export async function POST(request) {
     // Alçada no servidor: dentro do limite → já aprovado; acima → aguarda aprovação.
     const approvalStatus = podeAprovar(auth.user, value) ? "approved" : "awaiting_approval";
     const bill = await createBill({ ...body, value }, approvalStatus, auth.user.id);
+    if (!bill) {
+      return NextResponse.json({ error: "Vencimento inválido." }, { status: 400 });
+    }
     return NextResponse.json(bill, { status: 201 });
   } catch (err) {
     console.error("Conta a pagar create error:", err);

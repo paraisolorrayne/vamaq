@@ -302,3 +302,24 @@ begin
     end if;
   end loop;
 end $$;
+
+-- ============================================================================
+-- Contas recorrentes e comprovante anexado (15/08/2026).
+--
+-- `serie_id` liga as parcelas de uma mesma conta mensal (água, luz, internet).
+-- A série é gerada na hora, com todas as parcelas visíveis — não há tarefa
+-- agendada criando conta de madrugada, porque agendador que falha, falha
+-- calado, e ninguém descobre até a conta vencer.
+--
+-- `linha_digitavel` guarda os números lidos do boleto/conta: é o que permite
+-- conferir o valor depois e repetir o pagamento sem procurar o papel.
+-- `anexo` guarda os metadados do arquivo; o arquivo em si fica em disco
+-- privado (data/contas/), servido só com login, igual aos documentos do
+-- veículo.
+-- ============================================================================
+alter table fin.bills_payable add column if not exists serie_id uuid;
+alter table fin.bills_payable add column if not exists serie_total integer;
+alter table fin.bills_payable add column if not exists linha_digitavel text;
+alter table fin.bills_payable add column if not exists anexo jsonb;
+
+create index if not exists bills_payable_serie_idx on fin.bills_payable(serie_id);
