@@ -88,19 +88,22 @@ export default function ContasPagarPage() {
       setLinhaAviso({ erro: true, texto: r.error });
       return;
     }
+    // O que mudou é decidido AQUI, não dentro do setForm: o atualizador do
+    // React roda depois, então um array preenchido lá dentro chega vazio na
+    // montagem da mensagem — o valor aparecia no campo e a tela dizia "sem
+    // valor legível". Visto em produção em 16/08/2026.
     const mudou = [];
-    setForm((f) => {
-      const novo = { ...f, linha_digitavel: linha.trim() };
-      if (r.valor) {
-        novo.value = r.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        mudou.push("valor");
-      }
-      if (r.vencimento) {
-        novo.due_date = r.vencimento;
-        mudou.push("vencimento");
-      }
-      return novo;
-    });
+    if (r.valor) mudou.push("valor");
+    if (r.vencimento) mudou.push("vencimento");
+
+    setForm((f) => ({
+      ...f,
+      linha_digitavel: linha.trim(),
+      ...(r.valor
+        ? { value: r.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }
+        : {}),
+      ...(r.vencimento ? { due_date: r.vencimento } : {}),
+    }));
     setLinhaAviso({
       erro: false,
       texto: mudou.length
