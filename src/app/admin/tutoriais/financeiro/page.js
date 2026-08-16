@@ -1,6 +1,7 @@
 import Link from "next/link";
 import styles from "../../admin.module.css";
 import t from "../tutorial.module.css";
+import Demonstracao from "../Demonstracao";
 
 export const metadata = {
   title: "Tutorial: Financeiro — Vamaq Motors",
@@ -247,6 +248,11 @@ export default function TutorialFinanceiroPage() {
               luz o vencimento não vem no código: preencha à mão.
             </p>
           </div>
+          <Demonstracao
+            slug="conta-a-pagar"
+            titulo="cadastrar uma conta lendo o boleto"
+            legenda="Abrir Nova conta, colar a linha digitável, clicar em Ler conta — o valor entra sozinho — e escrever a descrição."
+          />
           <p>
             Na lista, o botão <span className={t.uiButton}>Anexar</span> guarda o
             PDF ou a foto do boleto e do comprovante junto da conta. No celular ele
