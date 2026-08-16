@@ -1,6 +1,7 @@
 import Link from "next/link";
 import styles from "../../admin.module.css";
 import t from "../tutorial.module.css";
+import Demonstracao from "../Demonstracao";
 
 export const metadata = {
   title: "Tutorial: Notas Fiscais — Vamaq Motors",
@@ -83,6 +84,11 @@ export default function TutorialFiscalPage() {
             incidem sobre o <strong>valor total da nota</strong>, não sobre a
             margem. Não há nada a preencher; é só conferir.
           </p>
+          <Demonstracao
+            slug="emitir-nota"
+            titulo="da lista até os impostos conferidos"
+            legenda="Escolher o veículo vendido, preencher venda, aquisição e o nº da nota de entrada, e conferir os impostos que o sistema calcula — inclusive a caixa de venda presencial."
+          />
           <div className={t.warning}>
             <span className={t.boxLabel}>O valor de aquisição é a base do imposto</span>
             <p>

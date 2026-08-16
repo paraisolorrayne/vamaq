@@ -71,6 +71,9 @@ const TUTORIAIS = [
 // <Demonstracao slug="..."> dentro do tutorial correspondente.
 const GRAVACOES = [
   { slug: "conta-a-pagar", titulo: "Financeiro · cadastrar conta lendo o boleto" },
+  { slug: "criar-categoria", titulo: "Financeiro · criar uma categoria nova" },
+  { slug: "emitir-nota", titulo: "Notas Fiscais · emitir a nota de venda" },
+  { slug: "marcar-vendido", titulo: "Estoque · marcar um carro como vendido" },
 ];
 
 export default async function TutoriaisPage() {

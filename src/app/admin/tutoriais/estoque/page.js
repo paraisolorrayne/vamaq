@@ -1,6 +1,7 @@
 import Link from "next/link";
 import styles from "../../admin.module.css";
 import t from "../tutorial.module.css";
+import Demonstracao from "../Demonstracao";
 
 export const metadata = {
   title: "Tutorial: Estoque — Vamaq Motors",
@@ -236,6 +237,11 @@ export default function TutorialEstoquePage() {
               margem dele não aparece nos relatórios.
             </p>
           </div>
+          <Demonstracao
+            slug="marcar-vendido"
+            titulo="marcar um carro como vendido"
+            legenda="Do Estoque, o botão Marcar vendido abre uma tela que explica o que vai acontecer antes de confirmar."
+          />
           <div className={t.tip}>
             <span className={t.boxLabel}>Venda veio de um lead? Use o CRM</span>
             <p>

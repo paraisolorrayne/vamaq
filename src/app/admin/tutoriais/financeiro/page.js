@@ -285,6 +285,11 @@ export default function TutorialFinanceiroPage() {
               em <strong>Despesas administrativas</strong>.
             </p>
           </div>
+          <Demonstracao
+            slug="criar-categoria"
+            titulo="criar uma categoria nova"
+            legenda="Nome, onde ela entra, e pronto — o código sai sozinho e ela já aparece na hora de lançar."
+          />
           <p>
             Categoria errada <strong>não se apaga</strong>: use{" "}
             <span className={t.uiButton}>Desativar</span>. Ela some da lista na hora
