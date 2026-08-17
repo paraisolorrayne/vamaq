@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import styles from "../../admin.module.css";
+import Novidade from "../../Novidade";
 import { anoVeiculo } from "@/lib/anoVeiculo";
 
 const fmtData = (d) =>
@@ -228,6 +230,31 @@ export default function GeradosClient({ documentos: iniciais, assinaturaConfigur
           Contratos e documentos já gerados, guardados para consulta
         </p>
       </div>
+
+      {/* A mesma novidade aparece no tutorial de Documentos, com a mesma
+          chave: dispensar num lugar dispensa nos dois. Aqui é o lugar que
+          importa — é nesta tela que ela vai clicar, não no tutorial. */}
+      {assinaturaConfigurada && (
+        <Novidade
+          id="assinatura-eletronica-2026-08"
+          titulo="Agora dá para mandar o contrato para o cliente assinar pela internet"
+        >
+          <p>
+            Cada contrato ganhou o botão <strong>Enviar para assinatura</strong>.
+            O cliente recebe por e-mail e assina no celular; a Vamaq assina
+            depois dele. Quando os dois assinam, o contrato assinado volta para
+            cá sozinho, no botão <strong>Via assinada</strong>.
+          </p>
+          <p>
+            Imprimir continua funcionando como sempre. O{" "}
+            <Link href="/admin/tutoriais/documentos">
+              tutorial de Documentos, passo 7
+            </Link>{" "}
+            explica o resto — inclusive o que fazer se o cliente disser que não
+            recebeu o e-mail.
+          </p>
+        </Novidade>
+      )}
 
       <div className={styles.card}>
         <div style={{ marginBottom: 16 }}>

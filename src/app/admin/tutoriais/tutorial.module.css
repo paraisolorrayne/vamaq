@@ -346,3 +346,19 @@
     font-size: 0.95rem;
   }
 }
+
+/* Selo "Novo" num passo de tutorial que acabou de mudar. */
+.novoBadge {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #2f4d8f;
+  background: #eef2fb;
+  border: 1px solid #7f9ad6;
+  border-radius: 999px;
+  padding: 1px 8px;
+  margin-left: 8px;
+  vertical-align: middle;
+}

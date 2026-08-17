@@ -892,3 +892,78 @@
     padding: 10px 12px;
   }
 }
+/* ---------- "O que há de novo" ----------
+   Faixa que aparece na primeira vez que a pessoa chega a uma tela que mudou,
+   e desaparece quando ela dispensa. Azul de propósito: verde (.tip) é dica,
+   amarelo (.warning) é atenção e vermelho (.danger) é perigo — novidade não é
+   nenhum dos três, e reusar uma dessas cores ensinaria a ignorar o aviso
+   errado. */
+.novidade {
+  background: #eef2fb;
+  border: 1px solid #7f9ad6;
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin: 14px 0;
+}
+
+/* Rótulo completo aqui, e não reusando `.boxLabel`: aquele mora em
+   tutorial.module.css. Um `.novidade .boxLabel { color }` solto neste arquivo
+   pegaria só a cor e deixaria a caixa-alta e o espaçamento para trás — o
+   rótulo sairia parecendo texto comum. */
+.novidadeLabel {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 6px;
+  color: #2f4d8f;
+}
+
+.novidade p {
+  font-size: 0.9rem;
+  color: #333;
+  margin: 6px 0 0;
+  max-width: 68ch;
+}
+
+.novidadeTopo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* 48px de alvo mínimo — a equipe abre isto no celular, no meio do
+   expediente (mesma regra do CRM). */
+.novidadeFechar {
+  flex: none;
+  min-width: 48px;
+  min-height: 48px;
+  margin: -12px -12px 0 0;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  color: #2f4d8f;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.novidadeFechar:hover {
+  background: #dfe6f6;
+}
+
+
+/* 44px de alvo — a equipe dispensa isto no celular. */
+.novidadeEntendi {
+  min-height: 44px;
+  padding: 0 4px;
+  background: none;
+  border: none;
+  color: #2f4d8f;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}

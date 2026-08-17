@@ -1,6 +1,7 @@
 import Link from "next/link";
 import styles from "../../admin.module.css";
 import guia from "../tutorial.module.css";
+import Novidade from "../../Novidade";
 import { DEFAULT_TEMPLATES } from "@/lib/contractTemplates";
 
 export const metadata = {
@@ -57,6 +58,23 @@ export default function TutorialDocumentosPage() {
           conferência final
         </p>
       </div>
+
+      <Novidade
+        id="assinatura-eletronica-2026-08"
+        titulo="O contrato agora pode ser assinado pela internet, sem imprimir"
+      >
+        <p>
+          Depois de gerar o contrato, apareceu um botão{" "}
+          <span className={guia.uiButton}>Enviar para assinatura</span> em{" "}
+          <Link href="/admin/documentos/gerados">Documentos gerados</Link>. O
+          cliente recebe por e-mail, assina no celular dele, e o contrato
+          assinado volta e fica guardado aqui automaticamente.
+        </p>
+        <p>
+          O <strong>passo 7</strong>, no fim desta página, explica como funciona
+          — inclusive o que fazer quando o cliente diz que o e-mail não chegou.
+        </p>
+      </Novidade>
 
       <h2 className={guia.sectionTitle}>Antes de começar</h2>
       <p className={guia.lead}>
@@ -369,6 +387,88 @@ export default function TutorialDocumentosPage() {
               <Link href="/admin/documentos/gerados">Documentos gerados</Link>{" "}
               e, quando um carro do estoque foi selecionado, também na ficha
               desse veículo, em Contratos gerados.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className={guia.step}>
+        <div className={guia.stepNumber}>7</div>
+        <div className={guia.stepBody}>
+          <h3 className={guia.stepTitle}>
+            Envie para assinatura pela internet
+            <span className={guia.novoBadge}>Novo</span>
+          </h3>
+          <p>
+            Não precisa mais imprimir para colher assinatura. Em{" "}
+            <Link href="/admin/documentos/gerados">Documentos gerados</Link>,
+            cada contrato tem o botão{" "}
+            <span className={guia.uiButton}>Enviar para assinatura</span>.
+            Confira o PDF primeiro — depois de enviado, o cliente já recebe.
+          </p>
+          <p>
+            Se o cliente estiver cadastrado com e-mail, o envio é direto. Se não
+            tiver e-mail no cadastro, aparece um campo ali mesmo na linha para
+            você digitar.
+          </p>
+
+          <div className={guia.tip}>
+            <span className={guia.boxLabel}>A ordem é cliente primeiro</span>
+            <p>
+              O cliente assina, e <strong>só depois</strong> a Vamaq recebe o
+              pedido de assinatura. Enquanto o cliente não assinar, o Mateus não
+              é chamado — então não adianta cobrar a assinatura dele antes.
+            </p>
+          </div>
+
+          <p>
+            A coluna <strong>Assinatura</strong> mostra em que pé está:{" "}
+            <em>Processando</em>, <em>Aguardando assinatura</em>,{" "}
+            <em>Assinado</em>, ou <em>Recusado pelo cliente</em>. Quando fica{" "}
+            <em>Assinado</em>, aparece o botão{" "}
+            <span className={guia.uiButton}>Via assinada</span> — é o contrato
+            com as duas assinaturas e a folha de validade jurídica, guardado
+            junto do original.
+          </p>
+
+          <div className={guia.warning}>
+            <span className={guia.boxLabel}>
+              &quot;O cliente diz que não recebeu o e-mail&quot;
+            </span>
+            <p>
+              Use <span className={guia.uiButton}>Reenviar e-mail</span>, que
+              manda a mesma cobrança de assinatura de novo. Ou{" "}
+              <span className={guia.uiButton}>Copiar link</span>, e cole o link
+              no WhatsApp do cliente — é o mesmo link do e-mail, funciona igual.
+            </p>
+            <p>
+              <strong>
+                Não use &quot;Enviar para assinatura&quot; uma segunda vez para
+                isso.
+              </strong>{" "}
+              Enviar de novo cria um segundo contrato para assinar, com dois
+              links valendo ao mesmo tempo — e a Vamaq tem um limite de{" "}
+              <strong>100 contratos por mês</strong> nesse serviço. Reenviar e
+              copiar o link não gastam nada desse limite.
+            </p>
+          </div>
+
+          <div className={guia.tip}>
+            <span className={guia.boxLabel}>Se o cliente recusar</span>
+            <p>
+              O status vira <em>Recusado pelo cliente</em> e o botão de envio
+              volta a aparecer. Converse com ele, corrija o que for preciso no
+              contrato, gere de novo e envie o contrato corrigido.
+            </p>
+          </div>
+
+          <div className={guia.warning}>
+            <span className={guia.boxLabel}>Imprimir continua valendo</span>
+            <p>
+              Nada foi tirado: quem preferir assinar no papel continua baixando
+              e imprimindo o PDF como sempre. A assinatura pela internet é uma
+              opção a mais — útil quando o cliente já foi embora, mora longe, ou
+              o carro está sendo negociado por telefone.
             </p>
           </div>
         </div>
