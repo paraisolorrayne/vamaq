@@ -56,9 +56,17 @@ async function api(path, init = {}) {
   return json.data;
 }
 
+// O `token=` da URL É o segredo do webhook. Imprimir cru deixaria ele no
+// scrollback do terminal e no histórico de quem rodou — inclusive na consulta,
+// que é o modo em que o script mais é usado.
+function mascararToken(url) {
+  if (!url) return "(nenhuma)";
+  return url.replace(/([?&]token=)[^&]+/, "$1***");
+}
+
 const atual = await api(`/v1/accounts/${ASSINAFY_ACCOUNT_ID}/webhooks/subscriptions`);
 console.log("Inscrição atual:");
-console.log(`  url:      ${atual?.url || "(nenhuma)"}`);
+console.log(`  url:      ${mascararToken(atual?.url)}`);
 console.log(`  ativa:    ${atual?.is_active}`);
 console.log(`  eventos:  ${(atual?.events || []).join(", ") || "(nenhum)"}`);
 
