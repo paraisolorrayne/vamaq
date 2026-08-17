@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import styles from "../../admin.module.css";
+import { hojeISO } from "@/lib/dataISO";
 import { formatValorBR } from "@/lib/money";
 import { anoVeiculo } from "@/lib/anoVeiculo";
 
@@ -12,9 +13,7 @@ function money(n) {
 function brDate(d) {
   return d ? String(d).slice(0, 10).split("-").reverse().join("/") : "—";
 }
-function today() {
-  return new Date().toISOString().slice(0, 10);
-}
+const today = hojeISO;
 const EMPTY = { contact_id: "", name: "", cpfCnpj: "", email: "", billingType: "BOLETO", value: "", dueDate: today(), description: "", vehicle_id: "" };
 
 const STATUS_STYLE = {

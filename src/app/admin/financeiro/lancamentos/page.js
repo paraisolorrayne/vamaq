@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import styles from "../../admin.module.css";
+import { hojeISO } from "@/lib/dataISO";
 import NovaCategoria from "../NovaCategoria";
 import { formatValorBR } from "@/lib/money";
 import { anoVeiculo } from "@/lib/anoVeiculo";
@@ -10,9 +11,7 @@ import { anoVeiculo } from "@/lib/anoVeiculo";
 function money(n) {
   return "R$ " + formatValorBR(Number(n) || 0);
 }
-function today() {
-  return new Date().toISOString().slice(0, 10);
-}
+const today = hojeISO;
 const EMPTY = {
   date: today(),
   description: "",

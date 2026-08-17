@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import styles from "../../admin.module.css";
+import { hojeISO } from "@/lib/dataISO";
 import NovaCategoria from "../NovaCategoria";
 import { formatValorBR } from "@/lib/money";
 import { leLinhaDigitavel } from "@/lib/fin/linhaDigitavel";
@@ -10,7 +11,7 @@ import { datasDaSerie, MAX_PARCELAS } from "@/lib/fin/recorrencia";
 
 function money(n) { return "R$ " + formatValorBR(Number(n) || 0); }
 function brDate(d) { return d ? String(d).slice(0, 10).split("-").reverse().join("/") : "—"; }
-function today() { return new Date().toISOString().slice(0, 10); }
+const today = hojeISO;
 const EMPTY = {
   description: "", value: "", due_date: today(), contact_id: "", account_id: "",
   cost_center_id: "", parcelas: 1, linha_digitavel: "",

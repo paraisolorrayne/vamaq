@@ -8,6 +8,7 @@
  * Ex.: DATABASE_URL=postgres://vamaq:senha@localhost:5432/vamaq
  */
 import { Pool } from 'pg';
+import { usarDatasComoTexto } from '@/lib/pgTypes';
 
 let pool = null;
 let warned = false;
@@ -26,6 +27,9 @@ export function getPool() {
     return null;
   }
 
+  // Antes de abrir a conexão: colunas `date` chegam como texto 'YYYY-MM-DD',
+  // não como Date em meia-noite local. Ver src/lib/pgTypes.js.
+  usarDatasComoTexto();
   pool = new Pool({
     connectionString,
     max: 5,
