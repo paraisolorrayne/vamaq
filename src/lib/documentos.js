@@ -78,11 +78,29 @@ function escapeCuringasLike(str) {
   return str.replace(/[\\%_]/g, (c) => `\\${c}`);
 }
 
+// A assinatura entra por lateral e não por join simples porque um documento
+// pode ter vários envios (recusado, expirado, reenviado) e a lista só quer o
+// que está valendo: o envio vivo, ou o último de todos quando nenhum está.
+// Um join comum multiplicaria a linha do contrato por tentativa.
 const SELECT = `
-  select d.*, v.brand, v.model, v.year, v.ano_modelo, v.placa, u.name as criado_por_nome
+  select d.*, v.brand, v.model, v.year, v.ano_modelo, v.placa, u.name as criado_por_nome,
+         a.status as assinatura_status,
+         a.arquivo_assinado is not null as tem_via_assinada,
+         a.signers as assinatura_signers,
+         c.email as cliente_email
     from documentos_gerados d
     left join vehicles v on v.id = d.vehicle_id
     left join users u on u.id = d.criado_por
+    left join clientes c on c.id = d.cliente_id
+    left join lateral (
+      select da.status, da.arquivo_assinado, da.signers
+        from documento_assinaturas da
+       where da.documento_id = d.id
+       order by (da.status in ('uploading','uploaded','metadata_processing',
+                               'metadata_ready','pending_signature','certificating')) desc,
+                da.created_at desc
+       limit 1
+    ) a on true
 `;
 
 export async function listDocumentos({ busca } = {}) {
@@ -111,6 +129,48 @@ export async function listDocumentosDoVeiculo(vehicleId) {
 // escape de DOCS_ROOT (path traversal) — não é paranoia, é não depender para
 // sempre da invariante de quem escreve na tabela.
 const ARQUIVO_VALIDO = /^\d{4}\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.pdf$/i;
+
+/**
+ * Guarda um PDF que não é um contrato recém-gerado — hoje, a via assinada que
+ * volta do Assinafy. Fica no mesmo cofre (data/documentos/<ano>/<uuid>.pdf) e
+ * no mesmo formato de caminho, então herda a validação de ARQUIVO_VALIDO e o
+ * mesmo tratamento de backup do original.
+ *
+ * Não escreve no banco: quem chama é dono da linha que vai apontar para o
+ * arquivo (documento_assinaturas.arquivo_assinado) e sabe desfazer se o insert
+ * falhar.
+ */
+export async function salvarPdfAvulso(buffer) {
+  if (!buffer?.length) throw new Error("Arquivo vazio.");
+  if (buffer.length > MAX_BYTES) throw new Error("Arquivo acima de 20 MB.");
+  const ano = String(new Date().getFullYear());
+  const relativo = path.join(ano, `${uuidv4()}.pdf`);
+  await fs.mkdir(path.join(DOCS_ROOT, ano), { recursive: true });
+  await fs.writeFile(path.join(DOCS_ROOT, relativo), buffer);
+  return relativo;
+}
+
+/** Apaga um PDF guardado por salvarPdfAvulso. Silencioso se já não existir. */
+export async function apagarPdfAvulso(relativo) {
+  if (!ARQUIVO_VALIDO.test(relativo || "")) return;
+  await fs.unlink(path.join(DOCS_ROOT, relativo)).catch(() => {});
+}
+
+/**
+ * Caminho absoluto de um arquivo do cofre a partir do caminho relativo, com a
+ * mesma blindagem contra path traversal de getDocumentoArquivo. Null se o
+ * formato não bater ou o arquivo tiver sumido do disco.
+ */
+export async function caminhoAbsolutoDoArquivo(relativo) {
+  if (!ARQUIVO_VALIDO.test(relativo || "")) return null;
+  const caminhoAbsoluto = path.join(DOCS_ROOT, relativo);
+  try {
+    await fs.access(caminhoAbsoluto);
+  } catch {
+    return null;
+  }
+  return caminhoAbsoluto;
+}
 
 /** Caminho absoluto do PDF, ou null se a linha ou o arquivo não existirem. */
 export async function getDocumentoArquivo(id) {
