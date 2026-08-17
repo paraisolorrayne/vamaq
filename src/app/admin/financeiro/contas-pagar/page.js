@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import styles from "../../admin.module.css";
+import NovaCategoria from "../NovaCategoria";
 import { formatValorBR } from "@/lib/money";
 import { leLinhaDigitavel } from "@/lib/fin/linhaDigitavel";
 import { datasDaSerie, MAX_PARCELAS } from "@/lib/fin/recorrencia";
@@ -52,6 +53,12 @@ export default function ContasPagarPage() {
   }, []);
 
   function set(f, v) { setForm((s) => ({ ...s, [f]: v })); }
+
+  // Categoria recém-criada entra na lista e já fica escolhida.
+  function adicionarCategoria(conta) {
+    setRefs((r) => ({ ...r, accounts: [...r.accounts, conta] }));
+    set("account_id", conta.id);
+  }
 
   async function save(e) {
     e.preventDefault(); setSaving(true); setErr(null);
@@ -240,11 +247,16 @@ export default function ContasPagarPage() {
               </select>
             </div>
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Conta (plano de contas)</label>
+              {/* "Conta (plano de contas)" era o nome contábil. Quem cadastra
+                  a conta a pagar chama de categoria. */}
+              <label className={styles.formLabel}>Categoria</label>
               <select className={styles.formSelect} value={form.account_id} onChange={(e) => set("account_id", e.target.value)}>
                 <option value="">—</option>
                 {refs.accounts.map((a) => <option key={a.id} value={a.id}>{a.code ? `${a.code} · ` : ""}{a.name}</option>)}
               </select>
+              {/* Só despesa: esta tela lista contas a PAGAR, e refs.accounts
+                  já vem filtrado por type === "expense". */}
+              <NovaCategoria tipo="expense" onCriada={adicionarCategoria} />
             </div>
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Centro de custo</label>
