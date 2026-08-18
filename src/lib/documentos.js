@@ -15,7 +15,10 @@ const DOCS_ROOT = path.join(process.cwd(), "data", "documentos");
 const MAX_BYTES = 20 * 1024 * 1024; // 20 MB — um contrato em PDF vetorial tem poucos KB
 const TIPOS = ["compra-venda", "venda", "consignacao", "termo-vistoria"];
 
-export async function salvarDocumento({ tipo, titulo, cliente, clienteId, vehicleId, criadoPor, buffer }) {
+export async function salvarDocumento({
+  tipo, titulo, cliente, clienteId, vehicleId, criadoPor, buffer,
+  dados, corrigeDocumentoId,
+}) {
   if (!TIPOS.includes(tipo)) return { error: "Tipo de documento desconhecido." };
   if (!titulo) return { error: "Documento sem título." };
   if (!buffer?.length) return { error: "Arquivo vazio." };
@@ -29,9 +32,18 @@ export async function salvarDocumento({ tipo, titulo, cliente, clienteId, vehicl
   let rows;
   try {
     ({ rows } = await query(
-      `insert into documentos_gerados (tipo, titulo, cliente, cliente_id, vehicle_id, arquivo, tamanho, criado_por)
-       values ($1,$2,$3,$4,$5,$6,$7,$8) returning *`,
-      [tipo, titulo, cliente || null, clienteId || null, vehicleId || null, relativo, buffer.length, criadoPor || null]
+      `insert into documentos_gerados
+         (tipo, titulo, cliente, cliente_id, vehicle_id, arquivo, tamanho, criado_por,
+          dados, corrige_documento_id)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10) returning *`,
+      [
+        tipo, titulo, cliente || null, clienteId || null, vehicleId || null, relativo,
+        buffer.length, criadoPor || null,
+        // Os campos digitados, para o contrato poder ser corrigido sem
+        // redigitar. Sem eles, trocar uma linha custa preencher tudo de novo.
+        dados ? JSON.stringify(dados) : null,
+        corrigeDocumentoId || null,
+      ]
     ));
   } catch (err) {
     // insert falhou (vehicleId inválido, banco fora do ar etc.) — sem a linha
@@ -82,8 +94,16 @@ function escapeCuringasLike(str) {
 // pode ter vários envios (recusado, expirado, reenviado) e a lista só quer o
 // que está valendo: o envio vivo, ou o último de todos quando nenhum está.
 // Um join comum multiplicaria a linha do contrato por tentativa.
+// `d.*` NÃO entra aqui de propósito: a coluna `dados` guarda CPF, CNH e
+// endereço das partes, e a listagem vai inteira para o navegador de quem abrir
+// a tela. Só o formulário de correção precisa desses campos, e ele os busca um
+// a um por getDocumentoDados(). `tem_dados` diz se dá para corrigir sem
+// carregar nada de pessoal.
 const SELECT = `
-  select d.*, v.brand, v.model, v.year, v.ano_modelo, v.placa, u.name as criado_por_nome,
+  select d.id, d.tipo, d.titulo, d.cliente, d.cliente_id, d.vehicle_id, d.arquivo,
+         d.tamanho, d.criado_por, d.created_at, d.corrige_documento_id,
+         d.dados is not null as tem_dados,
+         v.brand, v.model, v.year, v.ano_modelo, v.placa, u.name as criado_por_nome,
          a.status as assinatura_status,
          a.arquivo_assinado is not null as tem_via_assinada,
          a.signers as assinatura_signers,
@@ -170,6 +190,23 @@ export async function caminhoAbsolutoDoArquivo(relativo) {
     return null;
   }
   return caminhoAbsoluto;
+}
+
+/**
+ * Os campos digitados de um contrato, para reabrir e corrigir.
+ *
+ * Separado da listagem porque carrega dado pessoal (CPF, CNH, endereço): a
+ * tela de documentos mostra dezenas de linhas e não precisa de nada disso;
+ * quem corrige pede um contrato de cada vez.
+ */
+export async function getDocumentoDados(id) {
+  const { rows } = await query(
+    `select id, tipo, titulo, dados, vehicle_id, cliente_id, created_at
+       from documentos_gerados where id = $1`,
+    [id]
+  );
+  if (!rows.length || !rows[0].dados) return null;
+  return rows[0];
 }
 
 /** Caminho absoluto do PDF, ou null se a linha ou o arquivo não existirem. */

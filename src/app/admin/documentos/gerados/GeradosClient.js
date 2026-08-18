@@ -126,6 +126,14 @@ export default function GeradosClient({ documentos: iniciais, assinaturaConfigur
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Quais contratos já ganharam uma versão corrigida. Sem esta marca, a lista
+  // mostra os dois lado a lado sem dizer qual vale — e o risco é imprimir o
+  // errado, que é exatamente o problema que a correção veio resolver.
+  const substituidos = useMemo(
+    () => new Set(documentos.map((d) => d.corrige_documento_id).filter(Boolean)),
+    [documentos]
+  );
+
   const filtrados = useMemo(() => {
     const termo = busca.trim().toLowerCase();
     if (!termo) return documentos;
@@ -287,7 +295,19 @@ export default function GeradosClient({ documentos: iniciais, assinaturaConfigur
                 return (
                   <tr key={d.id}>
                     <td>{fmtData(d.created_at)}</td>
-                    <td>{TIPO_LABEL[d.tipo] || d.tipo}</td>
+                    <td>
+                      {TIPO_LABEL[d.tipo] || d.tipo}
+                      {d.corrige_documento_id && (
+                        <div style={{ fontSize: "0.75rem", color: "#2f4d8f" }}>
+                          versão corrigida
+                        </div>
+                      )}
+                      {substituidos.has(d.id) && (
+                        <div style={{ fontSize: "0.75rem", color: "#b45309" }}>
+                          substituído por uma correção
+                        </div>
+                      )}
+                    </td>
                     <td>{d.cliente || "—"}</td>
                     <td>{veiculoDoDocumento(d)}</td>
                     <td>{d.criado_por_nome || "—"}</td>
@@ -342,6 +362,19 @@ export default function GeradosClient({ documentos: iniciais, assinaturaConfigur
                         >
                           Abrir
                         </a>
+
+                        {/* Só aparece quando o contrato guardou os campos
+                            digitados. Os gerados antes de 18/08/2026 têm só o
+                            PDF — oferecer "Corrigir" neles levaria a um erro
+                            depois do clique, que é pior que não oferecer. */}
+                        {d.tem_dados && (
+                          <Link
+                            href={`/admin/documentos?corrigir=${d.id}`}
+                            className={styles.btnSecondary}
+                          >
+                            Corrigir
+                          </Link>
+                        )}
 
                         {d.tem_via_assinada && (
                           <a

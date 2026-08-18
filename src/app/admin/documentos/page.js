@@ -44,6 +44,10 @@ export default function DocumentosPage() {
   const [clienteIdSel, setClienteIdSel] = useState("");
   const [salvandoCliente, setSalvandoCliente] = useState(false);
   const [avisoCliente, setAvisoCliente] = useState(null); // { tipo: "erro" | "sucesso", texto }
+  // Contrato que está sendo corrigido (veio de ?corrigir=<id>). O documento
+  // antigo NÃO é apagado — a correção é um contrato novo que aponta para ele.
+  const [corrigindo, setCorrigindo] = useState(null);
+  const [erroCorrecao, setErroCorrecao] = useState(null);
 
   // Pré-visualização fiel: gera o PDF real (mesmo do "Baixar PDF") e exibe
   // num iframe. O texto puro fica disponível como visão alternativa.
@@ -84,10 +88,56 @@ export default function DocumentosPage() {
       .catch(() => {});
   }, []);
 
+  // Abrir um contrato já gerado para CORRIGIR: /admin/documentos?corrigir=<id>.
+  //
+  // A Mayra gerou um contrato, viu que a chave reserva estava errada e teve que
+  // preencher a minuta inteira de novo. Aqui os campos voltam como estavam e
+  // ela troca só o que mudou.
+  //
+  // O `setState` acontece só dentro do .then — chamar direto no corpo do efeito
+  // é o que a regra react-hooks/set-state-in-effect recusa.
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("corrigir");
+    if (!id) return;
+    let cancelado = false;
+
+    fetch(`/api/admin/documentos-gerados/${encodeURIComponent(id)}/dados`)
+      .then(async (r) => {
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(d.error || "Não foi possível abrir este contrato.");
+        return d.documento;
+      })
+      .then((doc) => {
+        if (cancelado || !doc) return;
+        const template = DEFAULT_TEMPLATES.find((t) => t.id === doc.tipo);
+        if (!template) throw new Error("O modelo deste contrato não existe mais.");
+        const inicial = {};
+        template.fields.forEach((f) => {
+          inicial[f.key] = f.type === "select" ? f.options?.[0] || "" : "";
+        });
+        setSelectedTemplate(template);
+        setPreview(null);
+        setValues({ ...inicial, ...doc.dados });
+        setVehicleIdSel(doc.vehicle_id || "");
+        setClienteIdSel(doc.cliente_id || "");
+        setCorrigindo({ id: doc.id, titulo: doc.titulo, created_at: doc.created_at });
+      })
+      .catch((e) => {
+        if (!cancelado) setErroCorrecao(e.message);
+      });
+
+    return () => {
+      cancelado = true;
+    };
+  }, []);
+
   const selectTemplate = useCallback((template) => {
     setSelectedTemplate(template);
     setPreview(null);
     setActivePrefillId(null);
+    // Trocar de modelo abandona a correção: os campos não são os mesmos.
+    setCorrigindo(null);
+    setErroCorrecao(null);
     setVehicleIdSel("");
     setClienteIdSel("");
     setAvisoCliente(null);
@@ -230,6 +280,10 @@ export default function DocumentosPage() {
       if (cliente) fd.set("cliente", cliente);
       if (vehicleIdSel) fd.set("vehicleId", vehicleIdSel);
       if (clienteIdSel) fd.set("clienteId", clienteIdSel);
+      // Os campos digitados vão junto: é o que permite corrigir uma linha do
+      // contrato depois sem preencher a minuta inteira de novo.
+      fd.set("dados", JSON.stringify(values));
+      if (corrigindo) fd.set("corrigeDocumentoId", corrigindo.id);
       const res = await fetch("/api/admin/documentos-gerados", { method: "POST", body: fd });
       if (!res.ok) throw new Error();
     } catch {
@@ -237,6 +291,10 @@ export default function DocumentosPage() {
         "O PDF foi baixado, mas não deu para guardar a cópia no sistema. Guarde o arquivo e avise o suporte."
       );
     }
+
+    // A correção terminou: o contrato novo foi gerado e guardado. Sair do modo
+    // evita que um segundo download crie outra correção do mesmo original.
+    setCorrigindo(null);
 
     // Rascunho de uso único: baixou o PDF, o rascunho sai da edição.
     if (activePrefillId) {
@@ -276,6 +334,39 @@ export default function DocumentosPage() {
           </Link>
         </div>
       </div>
+
+      {erroCorrecao && (
+        <div
+          className={styles.card}
+          style={{ borderLeft: "4px solid #b91c1c", marginBottom: 20 }}
+        >
+          <strong style={{ color: "#b91c1c" }}>Não deu para abrir o contrato para correção</strong>
+          <p style={{ margin: "6px 0 0", fontSize: "0.9rem", color: "#333" }}>
+            {erroCorrecao} Contratos gerados antes de 18/08/2026 não guardaram os
+            campos preenchidos — nesses, o jeito é preencher um novo.
+          </p>
+        </div>
+      )}
+
+      {corrigindo && (
+        <div
+          className={styles.card}
+          style={{ borderLeft: "4px solid #2f4d8f", marginBottom: 20 }}
+        >
+          <strong>Corrigindo um contrato já gerado</strong>
+          <p style={{ margin: "6px 0 0", fontSize: "0.9rem", color: "#333" }}>
+            Os campos abaixo vieram de <strong>{corrigindo.titulo}</strong>, gerado em{" "}
+            {new Date(corrigindo.created_at).toLocaleDateString("pt-BR")}. Troque o
+            que precisa e gere de novo.
+          </p>
+          <p style={{ margin: "6px 0 0", fontSize: "0.85rem", color: "#666" }}>
+            O contrato antigo continua guardado — ele é prova de que existiu. O novo
+            entra na lista apontando para ele. Se o antigo já foi impresso, assinado
+            ou enviado para assinatura, destrua ou cancele aquela via: quem vale é a
+            que for assinada.
+          </p>
+        </div>
+      )}
 
       {!selectedTemplate ? (
         <div>
