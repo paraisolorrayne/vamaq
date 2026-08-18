@@ -115,8 +115,14 @@ export async function emitirNotaVeiculo(
     [vehicleId]
   );
   if (existentes.length) {
+    // Mesma distinção da tela: nota em processamento não se cancela (não tem
+    // protocolo ainda) — ela termina sozinha. Mandar cancelar é conselho que
+    // não funciona e assusta quem acabou de emitir certo.
     return {
-      error: `Este veículo já tem nota (${existentes[0].status}). Cancele antes de reemitir.`,
+      error:
+        existentes[0].status === "processando"
+          ? "A nota deste veículo já foi enviada e está sendo autorizada pela SEFAZ. Aguarde alguns segundos e veja em Notas Fiscais — não emita de novo."
+          : "Este veículo já tem nota autorizada. Cancele a atual antes de emitir outra.",
     };
   }
 

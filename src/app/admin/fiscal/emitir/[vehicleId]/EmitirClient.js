@@ -91,6 +91,41 @@ export default function EmitirClient({
     );
   }
 
+  // "processando" e "autorizada" bloqueiam a emissão pelo mesmo motivo — já
+  // existe nota para este carro — mas pedem instruções OPOSTAS. Tratá-los com
+  // a mesma frase mandava a Mayra cancelar uma nota que estava simplesmente
+  // sendo autorizada pela SEFAZ (e que nem dá para cancelar: nota sem
+  // protocolo não tem o que cancelar). Aconteceu em 18/08/2026: ela emitiu,
+  // leu "cancele a nota atual primeiro", achou que tinha dado erro — e a nota
+  // estava a caminho de ser autorizada normalmente.
+  if (notaExistente?.status === "processando") {
+    return (
+      <>
+        <Link href="/admin/fiscal" className={styles.backLinkContent}>← Notas Fiscais</Link>
+        <div className={styles.pageHeader}>
+          <h1 className={styles.pageTitle}>Emitir nota fiscal</h1>
+        </div>
+        <div
+          className={styles.card}
+          style={{ borderLeft: "4px solid #7cb08e", background: "#eef6f0" }}
+        >
+          <strong style={{ color: "#2e7d4f" }}>A nota já foi enviada — a SEFAZ está autorizando</strong>
+          <p style={{ fontSize: "0.9rem", color: "#333", margin: "6px 0 0" }}>
+            A nota do {veiculo.brand} {veiculo.model} {veiculo.year} saiu daqui e está
+            na fila da SEFAZ. Costuma levar poucos segundos.
+          </p>
+          <p style={{ fontSize: "0.9rem", color: "#333", margin: "6px 0 0" }}>
+            <strong>Não emita de novo.</strong> Abra Notas Fiscais: o status vira{" "}
+            <strong>Autorizada</strong> sozinho, e a DANFE e o XML aparecem ali.
+          </p>
+          <p style={{ margin: "16px 0 0" }}>
+            <Link href="/admin/fiscal" className={styles.btnPrimary}>Ver em Notas Fiscais</Link>
+          </p>
+        </div>
+      </>
+    );
+  }
+
   if (notaExistente) {
     return (
       <>

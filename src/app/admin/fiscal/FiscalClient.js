@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect, useRef } from "react";
 import Link from "next/link";
 import styles from "../admin.module.css";
 import { atualizarStatusAction, cancelarNotaAction } from "./actions";
@@ -32,6 +32,44 @@ export default function FiscalClient({ notas, ativo, vendidos }) {
   const [err, setErr] = useState(null);
   const [pendingRef, setPendingRef] = useState(null);
   const [veiculoSel, setVeiculoSel] = useState("");
+
+  // Notas que este carregamento da tela já foi consultar. Sem isto, cada
+  // revalidação devolve `notas` novo, o efeito roda de novo e a consulta vira
+  // um laço batendo na Focus sem parar.
+  const jaConsultadas = useRef(new Set());
+
+  // A emissão é ASSÍNCRONA: a Focus responde "processando_autorizacao" e a
+  // autorização chega depois, numa consulta. Existia o botão "Atualizar", mas
+  // ele deixava o trabalho para a operadora — em 18/08/2026 a Mayra emitiu,
+  // não viu nada acontecer e só descobriu que tinha dado certo porque foi na
+  // lista e atualizou a página por conta própria.
+  //
+  // Aqui a tela consulta sozinha o que está em processamento. Poucas
+  // tentativas, espaçadas, e só uma vez por nota a cada abertura: se a SEFAZ
+  // demorar mais que isso, o botão manual continua ali.
+  useEffect(() => {
+    const pendentes = notas.filter(
+      (n) => n.status === "processando" && !jaConsultadas.current.has(n.ref)
+    );
+    if (!pendentes.length) return;
+    pendentes.forEach((n) => jaConsultadas.current.add(n.ref));
+
+    let cancelado = false;
+    (async () => {
+      for (const n of pendentes) {
+        for (let i = 0; i < 3 && !cancelado; i++) {
+          const r = await atualizarStatusAction(n.ref).catch(() => null);
+          // Saiu de "processando" (autorizada ou rejeitada) — nada mais a fazer.
+          if (!r || r.error || r.status !== "processando") break;
+          await new Promise((resolve) => setTimeout(resolve, 2500));
+        }
+      }
+    })();
+
+    return () => {
+      cancelado = true;
+    };
+  }, [notas]);
 
   function handleAtualizar(ref) {
     setErr(null);
