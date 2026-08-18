@@ -4,7 +4,7 @@
  */
 import { randomUUID } from "node:crypto";
 import { query } from "@/lib/db";
-import { montarPayloadNfe } from "@/lib/fiscal/payload";
+import { montarPayloadNfe, montarPayloadEntrada } from "@/lib/fiscal/payload";
 import { focusEnabled, emitirNfe, consultarNfe, cancelarNfe, focusFileUrl } from "@/lib/fiscal/focus/client";
 import { getVehicleMargins } from "@/lib/fin/repositories/finance";
 import { ligarVeiculo } from "@/lib/clientes/repo";
@@ -109,9 +109,12 @@ export async function emitirNotaVeiculo(
   if (dados.veiculo.status !== "vendido") {
     return { error: "Só é possível emitir nota de veículo vendido." };
   }
+  // Por OPERAÇÃO: um carro tem uma nota de entrada (quando comprado de pessoa
+  // física) e uma de saída. Sem este filtro, a entrada recém-emitida bloquearia
+  // a venda do mesmo carro.
   const { rows: existentes } = await query(
     `select ref, status from notas_fiscais
-      where vehicle_id=$1 and status in ('processando','autorizada')`,
+      where vehicle_id=$1 and operacao='saida' and status in ('processando','autorizada')`,
     [vehicleId]
   );
   if (existentes.length) {
@@ -160,8 +163,8 @@ export async function emitirNotaVeiculo(
   const ref = `vamaq-${randomUUID()}`;
   try {
     await query(
-      `insert into notas_fiscais (ref, vehicle_id, status, valor, destinatario, serie, cliente_id)
-       values ($1,$2,'processando',$3,$4::jsonb,$5,$6)`,
+      `insert into notas_fiscais (ref, vehicle_id, status, valor, destinatario, serie, cliente_id, operacao)
+       values ($1,$2,'processando',$3,$4::jsonb,$5,$6,'saida')`,
       [ref, vehicleId, Number(valorVenda), JSON.stringify(destinatario), String(dados.config.serie), clienteId || null]
     );
   } catch (err) {
@@ -245,4 +248,74 @@ export async function listNotas() {
       order by n.created_at desc`
   );
   return rows.map((r) => ({ ...r, valor: r.valor != null ? Number(r.valor) : 0 }));
+}
+
+/**
+ * Emite a NF-e de ENTRADA de um veículo comprado de pessoa física.
+ *
+ * É o passo que hoje trava a operação: o texto obrigatório da nota de VENDA
+ * cita o número da nota de ENTRADA, então enquanto a entrada depender do
+ * escritório, nenhuma venda sai. Ver montarPayloadEntrada().
+ *
+ * A guarda é por operação: um carro pode ter entrada E saída. O que não pode é
+ * ter duas entradas.
+ */
+export async function emitirNotaEntradaVeiculo(
+  vehicleId,
+  { remetente, valorAquisicao, consignacao = false }
+) {
+  if (!focusEnabled()) return { error: "Emissor fiscal não configurado." };
+
+  const dados = await getDadosEmissao(vehicleId);
+  if (!dados) return { error: "Veículo não encontrado." };
+  if (!dados.config) return { error: "Parâmetros fiscais não cadastrados. Peça ao contador." };
+
+  // Diferente da saída, a entrada NÃO exige veículo vendido — ela acontece na
+  // compra, com o carro entrando no estoque.
+  const { rows: existentes } = await query(
+    `select ref, status from notas_fiscais
+      where vehicle_id=$1 and operacao='entrada' and status in ('processando','autorizada')`,
+    [vehicleId]
+  );
+  if (existentes.length) {
+    return {
+      error:
+        existentes[0].status === "processando"
+          ? "A nota de entrada deste veículo já foi enviada e está sendo autorizada pela SEFAZ. Aguarde alguns segundos — não emita de novo."
+          : "Este veículo já tem nota de entrada autorizada. Cancele a atual antes de emitir outra.",
+    };
+  }
+
+  const montado = montarPayloadEntrada({
+    config: dados.config,
+    veiculo: dados.veiculo,
+    remetente,
+    valorAquisicao,
+    consignacao,
+  });
+  if (montado.error) return { error: montado.error };
+
+  const ref = `vamaq-ent-${randomUUID()}`;
+  await query(
+    `insert into notas_fiscais (ref, vehicle_id, status, valor, destinatario, serie, operacao)
+     values ($1,$2,'processando',$3,$4::jsonb,$5,'entrada')`,
+    [
+      ref,
+      vehicleId,
+      Number(valorAquisicao),
+      JSON.stringify(remetente),
+      String(dados.config.serie),
+    ]
+  );
+
+  try {
+    const retorno = await emitirNfe(ref, montado.payload);
+    return { nota: await salvarRetorno(ref, retorno) };
+  } catch (err) {
+    const { rows } = await query(
+      `update notas_fiscais set status='erro', mensagem=$2, raw=$3::jsonb where ref=$1 returning *`,
+      [ref, String(err.message), JSON.stringify(err.focus ?? {})]
+    );
+    return { nota: rows[0], error: err.message };
+  }
 }

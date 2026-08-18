@@ -107,6 +107,20 @@ export function textoInformacoesComplementares({ config, custoAquisicao, numeroN
   return partes.join(" ");
 }
 
+/**
+ * A descrição do item na nota. Igual na entrada e na saída de propósito: é o
+ * mesmo carro, e a SEFAZ liga uma à outra pelo chassi.
+ */
+function descricaoVeiculo(veiculo) {
+  return [
+    `${veiculo.brand} ${veiculo.model} ${veiculo.year}`,
+    veiculo.placa ? `Placa ${veiculo.placa}` : null,
+    `Chassi ${veiculo.chassi}`,
+  ]
+    .filter(Boolean)
+    .join(" - ");
+}
+
 export function montarPayloadNfe({
   config,
   veiculo,
@@ -164,11 +178,7 @@ export function montarPayloadNfe({
   }
   const ehCnpj = doc.length === 14;
 
-  const descricao = [
-    `${veiculo.brand} ${veiculo.model} ${veiculo.year}`,
-    veiculo.placa ? `Placa ${veiculo.placa}` : null,
-    `Chassi ${veiculo.chassi}`,
-  ].filter(Boolean).join(" - ");
+  const descricao = descricaoVeiculo(veiculo);
 
   // indIEDest: 1 quando o destinatário é contribuinte e informou a IE;
   // 9 (não contribuinte) no resto — que é o caso de toda venda a pessoa física.
@@ -304,4 +314,149 @@ export function montarPayloadNfe({
   };
 
   return { payload, impostos: imp };
+}
+
+/**
+ * Monta a NF-e de ENTRADA (modelo 55, tpNF = 0) — a nota que a Vamaq emite ao
+ * COMPRAR um veículo de pessoa física.
+ *
+ * POR QUE ELA IMPORTA: o texto obrigatório da nota de VENDA cita o número da
+ * nota de ENTRADA do veículo. Sem a entrada, a venda não sai. É a ordem que a
+ * própria NF 12 impõe.
+ *
+ * SÓ PESSOA FÍSICA. Comprando de PJ quem emite é a PJ — ela é contribuinte e
+ * emite a própria nota de venda; a Vamaq recebe e escritura. Emitir aqui
+ * também poria duas notas na mesma compra, com o carro entrando duas vezes no
+ * estoque fiscal.
+ *
+ * SEM IMPOSTO A DESTACAR: CST 041 (não tributada), ICMS, PIS e COFINS zerados
+ * — é o que as notas 14 e 15 da Vamaq, autorizadas pela SEFAZ-MG, registram.
+ * Quem vendeu é pessoa física e não destaca imposto nenhum.
+ *
+ * `remetente` é quem VENDEU o carro para a Vamaq. Ele vai nos campos de
+ * destinatário do layout: numa nota de entrada é o `tipo_documento: 0` que diz
+ * que a mercadoria entra no estabelecimento de quem emite, e a contraparte
+ * continua ocupando o grupo do destinatário.
+ */
+export function montarPayloadEntrada({
+  config,
+  veiculo,
+  remetente,
+  valorAquisicao,
+  consignacao = false,
+}) {
+  const valor = Number(valorAquisicao) || 0;
+  if (valor <= 0) return { error: "Informe o valor pago pelo veículo." };
+
+  for (const [campo, rotulo] of [
+    ["cnpj", "CNPJ do emitente"],
+    ["ncm", "NCM"],
+    ["serie", "série"],
+  ]) {
+    if (!config?.[campo]) {
+      return { error: `Parâmetro fiscal ausente: ${rotulo}. Peça ao contador.` };
+    }
+  }
+  if (!veiculo?.chassi) return { error: "O veículo está sem chassi. Preencha no cadastro." };
+  for (const [campo, rotulo] of CAMPOS_DESTINATARIO) {
+    if (!remetente?.[campo]) return { error: `Quem vendeu o veículo está sem ${rotulo}.` };
+  }
+
+  const doc = so_digitos(remetente.doc);
+  if (doc.length !== 11) {
+    return {
+      error:
+        "A nota de entrada é só para compra de pessoa física (CPF). Comprando de empresa, quem emite a nota é ela — a Vamaq só recebe e escritura.",
+    };
+  }
+
+  const cfop = consignacao
+    ? String(config.cfop_entrada_consignacao || "1917")
+    : String(config.cfop_entrada || "1102");
+  const natureza = consignacao
+    ? String(
+        config.natureza_entrada_consignacao ||
+          "entrada de mercadoria recebida em consignacao mercantil ou industrial"
+      )
+    : String(config.natureza_entrada || "Compra Dentro do Estado");
+
+  const cstNormalizado = normalizaCstIcms(config.cst_entrada || "041", config.origem);
+  if (cstNormalizado.error) return { error: cstNormalizado.error };
+
+  const descricao = descricaoVeiculo(veiculo);
+
+  return {
+    payload: {
+      natureza_operacao: natureza,
+      data_emissao: new Date().toISOString(),
+      // 0 = ENTRADA. É este campo que diz que a mercadoria entra no
+      // estabelecimento de quem emite a nota.
+      tipo_documento: 0,
+      finalidade_emissao: 1,
+      local_destino: 1, // compra dentro do estado
+      serie: String(config.serie),
+      cnpj_emitente: so_digitos(config.cnpj),
+
+      // Na entrada o frete continua 1 (confirmado em 18/08/2026), diferente da
+      // saída, que o contador corrigiu para 9 em 14/08.
+      modalidade_frete: String(config.modalidade_frete_entrada ?? "1"),
+      presenca_comprador: "1",
+      consumidor_final: "1",
+      // Pessoa física não tem inscrição estadual.
+      indicador_inscricao_estadual_destinatario: 9,
+
+      nome_destinatario: remetente.nome,
+      cpf_destinatario: doc,
+      cep_destinatario: so_digitos(remetente.cep),
+      logradouro_destinatario: remetente.logradouro,
+      numero_destinatario: String(remetente.numero),
+      bairro_destinatario: remetente.bairro,
+      municipio_destinatario: remetente.municipio,
+      uf_destinatario: String(remetente.uf).toUpperCase(),
+      valor_total: valor,
+
+      formas_pagamento: [
+        {
+          indicador_pagamento: String(config.indicador_pagamento ?? "1"),
+          forma_pagamento: String(config.forma_pagamento || "99"),
+          ...(String(config.forma_pagamento || "99") === "99"
+            ? { descricao_pagamento: String(config.descricao_pagamento || "A prazo") }
+            : {}),
+          valor_pagamento: valor,
+        },
+      ],
+
+      items: [
+        {
+          numero_item: 1,
+          codigo_produto: veiculo.placa || veiculo.chassi,
+          descricao,
+          codigo_ncm: String(config.ncm),
+          cfop,
+          unidade_comercial: "UN",
+          quantidade_comercial: 1,
+          valor_unitario_comercial: valor,
+          valor_bruto: valor,
+
+          // CST 41 = não tributada. Tudo zerado — é o que as notas 14 e 15
+          // autorizadas registram.
+          icms_situacao_tributaria: cstNormalizado.cst,
+          icms_base_calculo: 0,
+          icms_aliquota: 0,
+          icms_valor: 0,
+          ...(config.origem ? { icms_origem: String(config.origem) } : {}),
+
+          pis_situacao_tributaria: String(config.pis_situacao_tributaria_entrada || "07"),
+          pis_base_calculo: 0,
+          pis_aliquota_porcentual: 0,
+          pis_valor: 0,
+
+          cofins_situacao_tributaria: String(config.cofins_situacao_tributaria_entrada || "07"),
+          cofins_base_calculo: 0,
+          cofins_aliquota_porcentual: 0,
+          cofins_valor: 0,
+        },
+      ],
+    },
+  };
 }

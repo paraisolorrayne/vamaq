@@ -1,8 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth/dal";
-import { atualizarStatus, cancelarNota, emitirNotaVeiculo } from "@/lib/fiscal/notas";
+import {
+  atualizarStatus,
+  cancelarNota,
+  emitirNotaVeiculo,
+  emitirNotaEntradaVeiculo,
+} from "@/lib/fiscal/notas";
 
 export async function atualizarStatusAction(ref) {
   await requireRole(["financeiro", "secretaria"]);
@@ -31,4 +37,19 @@ export async function emitirNotaAction(
   if (res.error) return { error: res.error };
   revalidatePath("/admin/fiscal");
   return { ok: true, ref: res.nota.ref, status: res.nota.status };
+}
+
+/**
+ * Emite a nota de ENTRADA — compra de veículo de pessoa física.
+ *
+ * Ação separada da emissão de venda de propósito: são operações fiscais
+ * diferentes (tpNF 0 × 1, CFOP 1102 × 5102, imposto zerado × destacado), e um
+ * único ponto de entrada com um flag seria convite a emitir a errada.
+ */
+export async function emitirNotaEntradaAction(vehicleId, { remetente, valorAquisicao, consignacao }) {
+  await requireRole(["financeiro", "secretaria"]);
+  const res = await emitirNotaEntradaVeiculo(vehicleId, { remetente, valorAquisicao, consignacao });
+  if (res.error) return { error: res.error };
+  revalidatePath("/admin/fiscal");
+  redirect("/admin/fiscal");
 }

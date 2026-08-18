@@ -27,11 +27,12 @@ const STATUS_STYLE = {
   cancelada: { background: "#f3f4f6", color: "#6b7280" },
 };
 
-export default function FiscalClient({ notas, ativo, vendidos }) {
+export default function FiscalClient({ notas, ativo, vendidos, semEntrada = [] }) {
   const [isPending, startTransition] = useTransition();
   const [err, setErr] = useState(null);
   const [pendingRef, setPendingRef] = useState(null);
   const [veiculoSel, setVeiculoSel] = useState("");
+  const [entradaSel, setEntradaSel] = useState("");
 
   // Notas que este carregamento da tela já foi consultar. Sem isto, cada
   // revalidação devolve `notas` novo, o efeito roda de novo e a consulta vira
@@ -151,6 +152,63 @@ export default function FiscalClient({ notas, ativo, vendidos }) {
         </div>
       )}
 
+      {/* Nota de ENTRADA — a que a Vamaq emite ao COMPRAR de pessoa física.
+          Fica num cartão próprio, e não como opção dentro do de cima, porque é
+          a operação inversa: uma nasce da venda, a outra da compra. Misturar as
+          duas num seletor só seria convite a emitir a errada. */}
+      {ativo && (
+        <div className={styles.card} style={{ marginBottom: 24 }}>
+          <h3 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: 4 }}>
+            Emitir nota de entrada
+          </h3>
+          <p style={{ fontSize: "0.85rem", color: "#666", margin: "0 0 12px" }}>
+            Ao <strong>comprar</strong> um carro de pessoa física. É esta nota que
+            destrava a venda — o texto da nota de venda cita o número dela.
+            Comprando de empresa, quem emite é ela.
+          </p>
+          {semEntrada.length === 0 ? (
+            <p style={{ fontSize: "0.9rem", color: "#666", margin: 0 }}>
+              Todos os veículos do estoque já têm nota de entrada.
+            </p>
+          ) : (
+            <div className={styles.formGrid}>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Veículo comprado</label>
+                <select
+                  className={styles.formSelect}
+                  value={entradaSel}
+                  onChange={(e) => setEntradaSel(e.target.value)}
+                >
+                  <option value="">— escolha —</option>
+                  {semEntrada.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.brand} {v.model} {v.year}
+                      {v.placa ? ` — ${v.placa}` : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className={styles.formGroup} style={{ display: "flex", alignItems: "flex-end" }}>
+                <Link
+                  href={entradaSel ? `/admin/fiscal/entrada/${entradaSel}` : "#"}
+                  className={styles.btnPrimary}
+                  aria-disabled={!entradaSel}
+                  style={{
+                    minHeight: 48,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    pointerEvents: entradaSel ? "auto" : "none",
+                    opacity: entradaSel ? 1 : 0.5,
+                  }}
+                >
+                  Emitir nota de entrada
+                </Link>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {!ativo && (
         <div
           className={styles.card}
@@ -202,6 +260,23 @@ export default function FiscalClient({ notas, ativo, vendidos }) {
                       <span style={{ fontSize: "0.8rem", color: "#6b7280" }}>
                         {n.placa || "sem placa"}
                       </span>
+                      {/* Entrada e saída convivem na mesma lista e do mesmo
+                          carro. Sem dizer qual é qual, "duas notas do Cayenne"
+                          parece duplicidade — e é o contrário: é o par certo. */}
+                      {n.operacao === "entrada" && (
+                        <div
+                          style={{
+                            fontSize: "0.72rem",
+                            fontWeight: 700,
+                            letterSpacing: "0.06em",
+                            textTransform: "uppercase",
+                            color: "#2f4d8f",
+                            marginTop: 2,
+                          }}
+                        >
+                          Entrada · compra
+                        </div>
+                      )}
                     </td>
                     <td>
                       {n.numero ? `${n.numero}/${n.serie || "—"}` : "—"}

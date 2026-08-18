@@ -11,7 +11,26 @@ export const metadata = {
 export default async function FiscalPage() {
   await requireRole(["financeiro", "secretaria"]);
   const notas = await listNotas();
-  // A nota nasce da venda: só veículo vendido pode ser emitido.
-  const vendidos = (await readVehicles()).filter((v) => v.status === "vendido");
-  return <FiscalClient notas={notas} ativo={focusEnabled()} vendidos={vendidos} />;
+  const veiculos = await readVehicles();
+  // A nota de saída nasce da venda: só veículo vendido pode ser emitido.
+  const vendidos = veiculos.filter((v) => v.status === "vendido");
+
+  // A de ENTRADA é o contrário: nasce da COMPRA, e é ela que destrava a venda
+  // (o texto da nota de saída cita o número da entrada). Sai da lista o carro
+  // que já tem entrada viva — não existe segunda entrada para o mesmo veículo.
+  const comEntrada = new Set(
+    notas
+      .filter((n) => n.operacao === "entrada" && ["processando", "autorizada"].includes(n.status))
+      .map((n) => n.vehicle_id)
+  );
+  const semEntrada = veiculos.filter((v) => !comEntrada.has(v.id));
+
+  return (
+    <FiscalClient
+      notas={notas}
+      ativo={focusEnabled()}
+      vendidos={vendidos}
+      semEntrada={semEntrada}
+    />
+  );
 }
