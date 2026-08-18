@@ -8,7 +8,7 @@
  * Ex.: DATABASE_URL=postgres://vamaq:senha@localhost:5432/vamaq
  */
 import { Pool } from 'pg';
-import { usarDatasComoTexto } from '@/lib/pgTypes';
+import { usarDatasComoTexto, OPCOES_CONEXAO } from '@/lib/pgTypes';
 
 let pool = null;
 let warned = false;
@@ -32,6 +32,7 @@ export function getPool() {
   usarDatasComoTexto();
   pool = new Pool({
     connectionString,
+    ...OPCOES_CONEXAO,
     max: 5,
     idleTimeoutMillis: 30000,
   });

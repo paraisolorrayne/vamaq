@@ -9,7 +9,7 @@
  * vazio — o build e o site não quebram em ambiente sem o financeiro.
  */
 import { Pool } from "pg";
-import { usarDatasComoTexto } from "@/lib/pgTypes";
+import { usarDatasComoTexto, OPCOES_CONEXAO } from "@/lib/pgTypes";
 
 let pool = null;
 let warned = false;
@@ -26,7 +26,7 @@ export function getFinPool() {
   }
   // Colunas `date` como texto 'YYYY-MM-DD'. Ver src/lib/pgTypes.js.
   usarDatasComoTexto();
-  pool = new Pool({ connectionString, max: 5, idleTimeoutMillis: 30000 });
+  pool = new Pool({ connectionString, ...OPCOES_CONEXAO, max: 5, idleTimeoutMillis: 30000 });
   return pool;
 }
 

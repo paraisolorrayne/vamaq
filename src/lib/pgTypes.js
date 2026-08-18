@@ -28,6 +28,29 @@
  */
 import pg from "pg";
 
+/**
+ * O fuso em que o banco pensa. A loja é em Uberlândia; a VPS veio do provedor
+ * em Europe/Berlin, e o Postgres herdou isso.
+ *
+ * MUDA O QUE "HOJE" SIGNIFICA no SQL: `current_date` alimenta a data de
+ * pagamento de uma conta, a data de saída do veículo vendido e a contagem de
+ * contas vencidas. Em Berlim, a partir das 19h de Uberlândia esses três já
+ * usavam o dia seguinte — conta paga hoje gravada com a data de amanhã.
+ *
+ * Vai na CONEXÃO e não só no servidor de propósito: assim a regra viaja com o
+ * código. Um banco restaurado noutra máquina, ou uma VPS trocada, continuam
+ * respondendo no fuso da loja sem depender de alguém lembrar de configurar.
+ * (O `alter database ... set timezone` também está aplicado, como base para
+ * psql e scripts de manutenção — os dois juntos, não um ou outro.)
+ *
+ * `timestamptz` não muda de valor com isto: o instante gravado é absoluto. O
+ * que muda é a leitura — e ler no fuso de quem opera é justamente o certo.
+ */
+export const TIMEZONE_APP = "America/Sao_Paulo";
+
+/** Opções de conexão comuns aos dois pools (site e financeiro). */
+export const OPCOES_CONEXAO = { options: `-c timezone=${TIMEZONE_APP}` };
+
 let aplicado = false;
 
 /** Idempotente: `setTypeParser` é global no módulo pg, mas os dois pools chamam. */
