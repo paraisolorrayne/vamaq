@@ -345,8 +345,79 @@ export function montarPayloadEntrada({
   valorAquisicao,
   consignacao = false,
 }) {
-  const valor = Number(valorAquisicao) || 0;
-  if (valor <= 0) return { error: "Informe o valor pago pelo veículo." };
+  return montarPayloadSemImposto({
+    config,
+    veiculo,
+    contraparte: remetente,
+    valor: valorAquisicao,
+    saida: false,
+    papel: "Quem vendeu o veículo",
+    rotuloValor: "valor pago pelo veículo",
+    cfop: consignacao
+      ? String(config.cfop_entrada_consignacao || "1917")
+      : String(config.cfop_entrada || "1102"),
+    natureza: consignacao
+      ? String(
+          config.natureza_entrada_consignacao ||
+            "entrada de mercadoria recebida em consignacao mercantil ou industrial"
+        )
+      : String(config.natureza_entrada || "Compra Dentro do Estado"),
+  });
+}
+
+/**
+ * Devolução de veículo recebido em CONSIGNAÇÃO — o carro que não vendeu e
+ * volta para o dono. CFOP 5918, resposta do contador em 14/08/2026.
+ *
+ * É uma SAÍDA (tpNF 1) sem imposto: o carro nunca foi comprado, então não há
+ * nada a tributar na volta — espelha a entrada 1917 que o trouxe.
+ *
+ * `consignante` é quem deixou o carro. Vem gravado na nota de entrada, então a
+ * tela não precisa pedir o endereço de novo: redigitar oito campos para
+ * devolver um carro é a receita para o endereço sair diferente do que entrou.
+ */
+export function montarPayloadDevolucaoConsignacao({ config, veiculo, consignante, valor }) {
+  return montarPayloadSemImposto({
+    config,
+    veiculo,
+    contraparte: consignante,
+    valor,
+    saida: true,
+    papel: "O dono do carro",
+    rotuloValor: "valor pelo qual o carro foi recebido",
+    cfop: String(config.cfop_devolucao_consignacao || "5918"),
+    natureza: String(
+      config.natureza_devolucao_consignacao ||
+        "devolucao de mercadoria recebida em consignacao mercantil ou industrial"
+    ),
+  });
+}
+
+/**
+ * O corpo comum das notas SEM imposto destacado: entrada de compra de pessoa
+ * física, entrada de consignação e devolução de consignação.
+ *
+ * As três têm a mesma natureza fiscal — CST 041, ICMS/PIS/COFINS zerados,
+ * contraparte pessoa física sem IE — e diferem só no CFOP, na natureza da
+ * operação e no sentido (`tipo_documento`). Duplicar o corpo para cada uma
+ * seria três lugares para corrigir quando a SEFAZ recusar um campo.
+ */
+function montarPayloadSemImposto({
+  config,
+  veiculo,
+  contraparte,
+  valor,
+  saida,
+  cfop,
+  natureza,
+  papel,
+  rotuloValor,
+}) {
+  const total = Number(valor) || 0;
+  // A mensagem nomeia o valor e a pessoa. Generalizar para "a outra parte" e
+  // "o valor" economizaria duas linhas aqui e custaria clareza na tela de quem
+  // está preenchendo — o operador não sabe o que é "a outra parte".
+  if (total <= 0) return { error: `Informe o ${rotuloValor}.` };
 
   for (const [campo, rotulo] of [
     ["cnpj", "CNPJ do emitente"],
@@ -359,26 +430,16 @@ export function montarPayloadEntrada({
   }
   if (!veiculo?.chassi) return { error: "O veículo está sem chassi. Preencha no cadastro." };
   for (const [campo, rotulo] of CAMPOS_DESTINATARIO) {
-    if (!remetente?.[campo]) return { error: `Quem vendeu o veículo está sem ${rotulo}.` };
+    if (!contraparte?.[campo]) return { error: `${papel} está sem ${rotulo}.` };
   }
 
-  const doc = so_digitos(remetente.doc);
+  const doc = so_digitos(contraparte.doc);
   if (doc.length !== 11) {
     return {
       error:
         "A nota de entrada é só para compra de pessoa física (CPF). Comprando de empresa, quem emite a nota é ela — a Vamaq só recebe e escritura.",
     };
   }
-
-  const cfop = consignacao
-    ? String(config.cfop_entrada_consignacao || "1917")
-    : String(config.cfop_entrada || "1102");
-  const natureza = consignacao
-    ? String(
-        config.natureza_entrada_consignacao ||
-          "entrada de mercadoria recebida em consignacao mercantil ou industrial"
-      )
-    : String(config.natureza_entrada || "Compra Dentro do Estado");
 
   const cstNormalizado = normalizaCstIcms(config.cst_entrada || "041", config.origem);
   if (cstNormalizado.error) return { error: cstNormalizado.error };
@@ -389,9 +450,9 @@ export function montarPayloadEntrada({
     payload: {
       natureza_operacao: natureza,
       data_emissao: new Date().toISOString(),
-      // 0 = ENTRADA. É este campo que diz que a mercadoria entra no
-      // estabelecimento de quem emite a nota.
-      tipo_documento: 0,
+      // 0 = entrada (a mercadoria entra no estabelecimento de quem emite),
+      // 1 = saída. É só isto que separa receber o carro de devolvê-lo.
+      tipo_documento: saida ? 1 : 0,
       finalidade_emissao: 1,
       local_destino: 1, // compra dentro do estado
       serie: String(config.serie),
@@ -405,15 +466,15 @@ export function montarPayloadEntrada({
       // Pessoa física não tem inscrição estadual.
       indicador_inscricao_estadual_destinatario: 9,
 
-      nome_destinatario: remetente.nome,
+      nome_destinatario: contraparte.nome,
       cpf_destinatario: doc,
-      cep_destinatario: so_digitos(remetente.cep),
-      logradouro_destinatario: remetente.logradouro,
-      numero_destinatario: String(remetente.numero),
-      bairro_destinatario: remetente.bairro,
-      municipio_destinatario: remetente.municipio,
-      uf_destinatario: String(remetente.uf).toUpperCase(),
-      valor_total: valor,
+      cep_destinatario: so_digitos(contraparte.cep),
+      logradouro_destinatario: contraparte.logradouro,
+      numero_destinatario: String(contraparte.numero),
+      bairro_destinatario: contraparte.bairro,
+      municipio_destinatario: contraparte.municipio,
+      uf_destinatario: String(contraparte.uf).toUpperCase(),
+      valor_total: total,
 
       formas_pagamento: [
         {
@@ -422,7 +483,7 @@ export function montarPayloadEntrada({
           ...(String(config.forma_pagamento || "99") === "99"
             ? { descricao_pagamento: String(config.descricao_pagamento || "A prazo") }
             : {}),
-          valor_pagamento: valor,
+          valor_pagamento: total,
         },
       ],
 
@@ -435,8 +496,8 @@ export function montarPayloadEntrada({
           cfop,
           unidade_comercial: "UN",
           quantidade_comercial: 1,
-          valor_unitario_comercial: valor,
-          valor_bruto: valor,
+          valor_unitario_comercial: total,
+          valor_bruto: total,
 
           // CST 41 = não tributada. Tudo zerado — é o que as notas 14 e 15
           // autorizadas registram.

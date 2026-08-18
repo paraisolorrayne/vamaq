@@ -4,7 +4,11 @@
  */
 import { randomUUID } from "node:crypto";
 import { query } from "@/lib/db";
-import { montarPayloadNfe, montarPayloadEntrada } from "@/lib/fiscal/payload";
+import {
+  montarPayloadNfe,
+  montarPayloadEntrada,
+  montarPayloadDevolucaoConsignacao,
+} from "@/lib/fiscal/payload";
 import { focusEnabled, emitirNfe, consultarNfe, cancelarNfe, focusFileUrl } from "@/lib/fiscal/focus/client";
 import { getVehicleMargins } from "@/lib/fin/repositories/finance";
 import { ligarVeiculo } from "@/lib/clientes/repo";
@@ -163,9 +167,13 @@ export async function emitirNotaVeiculo(
   const ref = `vamaq-${randomUUID()}`;
   try {
     await query(
-      `insert into notas_fiscais (ref, vehicle_id, status, valor, destinatario, serie, cliente_id, operacao)
-       values ($1,$2,'processando',$3,$4::jsonb,$5,$6,'saida')`,
-      [ref, vehicleId, Number(valorVenda), JSON.stringify(destinatario), String(dados.config.serie), clienteId || null]
+      `insert into notas_fiscais (ref, vehicle_id, status, valor, destinatario, serie, cliente_id, operacao, cfop)
+       values ($1,$2,'processando',$3,$4::jsonb,$5,$6,'saida',$7)`,
+      [
+        ref, vehicleId, Number(valorVenda), JSON.stringify(destinatario),
+        String(dados.config.serie), clienteId || null,
+        montado.payload.items[0].cfop,
+      ]
     );
   } catch (err) {
     // Formato válido mas cliente apagado entre a tela abrir e o operador
@@ -298,13 +306,123 @@ export async function emitirNotaEntradaVeiculo(
   const ref = `vamaq-ent-${randomUUID()}`;
   await query(
     `insert into notas_fiscais (ref, vehicle_id, status, valor, destinatario, serie, operacao)
-     values ($1,$2,'processando',$3,$4::jsonb,$5,'entrada')`,
+     values ($1,$2,'processando',$3,$4::jsonb,$5,'entrada',$6)`,
     [
       ref,
       vehicleId,
       Number(valorAquisicao),
       JSON.stringify(remetente),
       String(dados.config.serie),
+      // Grava o CFOP EMITIDO, não o da config: é ele que diz depois se esta
+      // entrada foi compra (1102) ou consignação (1917) — e só a consignação
+      // pode ser devolvida. A config muda com o tempo; a nota emitida não.
+      montado.payload.items[0].cfop,
+    ]
+  );
+
+  try {
+    const retorno = await emitirNfe(ref, montado.payload);
+    return { nota: await salvarRetorno(ref, retorno) };
+  } catch (err) {
+    const { rows } = await query(
+      `update notas_fiscais set status='erro', mensagem=$2, raw=$3::jsonb where ref=$1 returning *`,
+      [ref, String(err.message), JSON.stringify(err.focus ?? {})]
+    );
+    return { nota: rows[0], error: err.message };
+  }
+}
+
+/**
+ * Consignações que ainda estão com a Vamaq — carro recebido do dono, nem
+ * vendido nem devolvido. É a lista de quem pode ser devolvido.
+ *
+ * Filtra pelo CFOP GRAVADO na nota (1917), não pela config: se o contador
+ * mudar o CFOP amanhã, as consignações de ontem continuam sendo consignações.
+ */
+export async function listConsignacoesAbertas() {
+  const cfop = "1917";
+  const { rows } = await query(
+    `select n.vehicle_id, n.ref, n.valor, n.destinatario, n.numero, n.created_at,
+            v.brand, v.model, v.year, v.placa
+       from notas_fiscais n
+       join vehicles v on v.id = n.vehicle_id
+      where n.operacao = 'entrada'
+        and n.status = 'autorizada'
+        and n.cfop = $1
+        and not exists (
+          select 1 from notas_fiscais d
+           where d.vehicle_id = n.vehicle_id
+             and d.operacao = 'devolucao'
+             and d.status in ('processando','autorizada')
+        )
+      order by n.created_at desc`,
+    [cfop]
+  );
+  return rows.map((r) => ({ ...r, valor: r.valor != null ? Number(r.valor) : 0 }));
+}
+
+/**
+ * Devolve ao dono um veículo recebido em consignação que não vendeu.
+ *
+ * O consignante e o valor NÃO são pedidos de novo: saem da própria nota de
+ * entrada, onde ficaram gravados. Redigitar oito campos de endereço para
+ * devolver um carro é como o endereço da volta sai diferente do da ida.
+ */
+export async function devolverConsignacaoVeiculo(vehicleId) {
+  if (!focusEnabled()) return { error: "Emissor fiscal não configurado." };
+
+  const dados = await getDadosEmissao(vehicleId);
+  if (!dados) return { error: "Veículo não encontrado." };
+  if (!dados.config) return { error: "Parâmetros fiscais não cadastrados. Peça ao contador." };
+
+  const { rows: entradas } = await query(
+    `select ref, valor, destinatario from notas_fiscais
+      where vehicle_id=$1 and operacao='entrada' and status='autorizada' and cfop='1917'
+      order by created_at desc limit 1`,
+    [vehicleId]
+  );
+  if (!entradas.length) {
+    return {
+      error:
+        "Este veículo não tem nota de entrada de consignação autorizada. A devolução só existe para carro que entrou em consignação.",
+    };
+  }
+
+  const { rows: jaDevolvido } = await query(
+    `select status from notas_fiscais
+      where vehicle_id=$1 and operacao='devolucao' and status in ('processando','autorizada')
+      limit 1`,
+    [vehicleId]
+  );
+  if (jaDevolvido.length) {
+    return {
+      error:
+        jaDevolvido[0].status === "processando"
+          ? "A devolução deste veículo já foi enviada e está sendo autorizada pela SEFAZ. Aguarde alguns segundos — não emita de novo."
+          : "Este veículo já foi devolvido ao dono.",
+    };
+  }
+
+  const consignante = entradas[0].destinatario || {};
+  const montado = montarPayloadDevolucaoConsignacao({
+    config: dados.config,
+    veiculo: dados.veiculo,
+    consignante,
+    valor: Number(entradas[0].valor) || 0,
+  });
+  if (montado.error) return { error: montado.error };
+
+  const ref = `vamaq-dev-${randomUUID()}`;
+  await query(
+    `insert into notas_fiscais (ref, vehicle_id, status, valor, destinatario, serie, operacao, cfop)
+     values ($1,$2,'processando',$3,$4::jsonb,$5,'devolucao',$6)`,
+    [
+      ref,
+      vehicleId,
+      Number(entradas[0].valor) || 0,
+      JSON.stringify(consignante),
+      String(dados.config.serie),
+      montado.payload.items[0].cfop,
     ]
   );
 

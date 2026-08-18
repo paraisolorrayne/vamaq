@@ -1,5 +1,5 @@
 import { requireRole } from "@/lib/auth/dal";
-import { listNotas, focusEnabled } from "@/lib/fiscal/notas";
+import { listNotas, focusEnabled, listConsignacoesAbertas } from "@/lib/fiscal/notas";
 import { readVehicles } from "@/lib/vehicleStore";
 import FiscalClient from "./FiscalClient";
 
@@ -11,6 +11,8 @@ export const metadata = {
 export default async function FiscalPage() {
   await requireRole(["financeiro", "secretaria"]);
   const notas = await listNotas();
+  // Carros em consignação que nem venderam nem voltaram — os devolvíveis.
+  const consignacoes = await listConsignacoesAbertas();
   const veiculos = await readVehicles();
   // A nota de saída nasce da venda: só veículo vendido pode ser emitido.
   const vendidos = veiculos.filter((v) => v.status === "vendido");
@@ -31,6 +33,7 @@ export default async function FiscalPage() {
       ativo={focusEnabled()}
       vendidos={vendidos}
       semEntrada={semEntrada}
+      consignacoes={consignacoes}
     />
   );
 }

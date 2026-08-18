@@ -3,7 +3,11 @@
 import { useState, useTransition, useEffect, useRef } from "react";
 import Link from "next/link";
 import styles from "../admin.module.css";
-import { atualizarStatusAction, cancelarNotaAction } from "./actions";
+import {
+  atualizarStatusAction,
+  cancelarNotaAction,
+  devolverConsignacaoAction,
+} from "./actions";
 import { formatValorBR } from "@/lib/money";
 
 function money(n) {
@@ -27,7 +31,13 @@ const STATUS_STYLE = {
   cancelada: { background: "#f3f4f6", color: "#6b7280" },
 };
 
-export default function FiscalClient({ notas, ativo, vendidos, semEntrada = [] }) {
+export default function FiscalClient({
+  notas,
+  ativo,
+  vendidos,
+  semEntrada = [],
+  consignacoes = [],
+}) {
   const [isPending, startTransition] = useTransition();
   const [err, setErr] = useState(null);
   const [pendingRef, setPendingRef] = useState(null);
@@ -71,6 +81,26 @@ export default function FiscalClient({ notas, ativo, vendidos, semEntrada = [] }
       cancelado = true;
     };
   }, [notas]);
+
+  function handleDevolver(c) {
+    const dono = c.destinatario?.nome || "o dono";
+    if (
+      !window.confirm(
+        `Emitir a nota de devolução do ${c.brand} ${c.model} para ${dono}?\n\n` +
+          "É a nota que registra o carro voltando para quem o deixou em consignação. " +
+          "Os dados saem da nota de entrada."
+      )
+    ) {
+      return;
+    }
+    setErr(null);
+    setPendingRef(c.ref);
+    startTransition(async () => {
+      const r = await devolverConsignacaoAction(c.vehicle_id);
+      if (r?.error) setErr(r.error);
+      setPendingRef(null);
+    });
+  }
 
   function handleAtualizar(ref) {
     setErr(null);
@@ -209,6 +239,53 @@ export default function FiscalClient({ notas, ativo, vendidos, semEntrada = [] }
         </div>
       )}
 
+      {/* Devolução de consignação (CFOP 5918) — o carro que não vendeu e volta
+          para o dono. Só aparece quando há consignação aberta: cartão vazio na
+          tela toda hora ensina a ignorar a tela. */}
+      {ativo && consignacoes.length > 0 && (
+        <div className={styles.card} style={{ marginBottom: 24 }}>
+          <h3 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: 4 }}>
+            Devolver carro consignado ao dono
+          </h3>
+          <p style={{ fontSize: "0.85rem", color: "#666", margin: "0 0 12px" }}>
+            Para o carro que entrou em consignação e não vendeu. Não precisa
+            preencher nada: o dono e o valor saem da nota de entrada.
+          </p>
+          <div className={styles.tableWrap}>
+            <table className={styles.table}>
+              <tbody>
+                {consignacoes.map((c) => (
+                  <tr key={c.ref}>
+                    <td>
+                      <strong>
+                        {c.brand} {c.model} {c.year}
+                      </strong>
+                      <br />
+                      <span style={{ fontSize: "0.8rem", color: "#6b7280" }}>
+                        {c.placa || "sem placa"} · de {c.destinatario?.nome || "—"}
+                        {c.numero ? ` · entrada NF ${c.numero}` : ""}
+                      </span>
+                    </td>
+                    <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
+                      <button
+                        onClick={() => handleDevolver(c)}
+                        className={`${styles.btnSecondary} ${styles.btnSmall}`}
+                        disabled={isPending && pendingRef === c.ref}
+                        style={{ minHeight: 48 }}
+                      >
+                        {isPending && pendingRef === c.ref
+                          ? "Emitindo…"
+                          : "Devolver ao dono"}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {!ativo && (
         <div
           className={styles.card}
@@ -263,6 +340,20 @@ export default function FiscalClient({ notas, ativo, vendidos, semEntrada = [] }
                       {/* Entrada e saída convivem na mesma lista e do mesmo
                           carro. Sem dizer qual é qual, "duas notas do Cayenne"
                           parece duplicidade — e é o contrário: é o par certo. */}
+                      {n.operacao === "devolucao" && (
+                        <div
+                          style={{
+                            fontSize: "0.72rem",
+                            fontWeight: 700,
+                            letterSpacing: "0.06em",
+                            textTransform: "uppercase",
+                            color: "#a8752e",
+                            marginTop: 2,
+                          }}
+                        >
+                          Devolução · consignação
+                        </div>
+                      )}
                       {n.operacao === "entrada" && (
                         <div
                           style={{

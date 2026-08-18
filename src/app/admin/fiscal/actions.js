@@ -8,6 +8,7 @@ import {
   cancelarNota,
   emitirNotaVeiculo,
   emitirNotaEntradaVeiculo,
+  devolverConsignacaoVeiculo,
 } from "@/lib/fiscal/notas";
 
 export async function atualizarStatusAction(ref) {
@@ -52,4 +53,19 @@ export async function emitirNotaEntradaAction(vehicleId, { remetente, valorAquis
   if (res.error) return { error: res.error };
   revalidatePath("/admin/fiscal");
   redirect("/admin/fiscal");
+}
+
+/**
+ * Devolve ao dono um carro recebido em consignação que não vendeu (CFOP 5918).
+ *
+ * Não recebe dados: o consignante e o valor saem da própria nota de entrada,
+ * onde já estão gravados. Pedir de novo é como o endereço da volta sai
+ * diferente do da ida.
+ */
+export async function devolverConsignacaoAction(vehicleId) {
+  await requireRole(["financeiro", "secretaria"]);
+  const res = await devolverConsignacaoVeiculo(vehicleId);
+  if (res.error) return { error: res.error };
+  revalidatePath("/admin/fiscal");
+  return { ok: true };
 }

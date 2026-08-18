@@ -16,7 +16,10 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { montarPayloadEntrada } from "../src/lib/fiscal/payload.js";
+import {
+  montarPayloadEntrada,
+  montarPayloadDevolucaoConsignacao,
+} from "../src/lib/fiscal/payload.js";
 
 // Os defaults que db/fiscal-entrada.sql grava — as notas autorizadas.
 const CONFIG = {
@@ -30,6 +33,9 @@ const CONFIG = {
   natureza_entrada_consignacao:
     "entrada de mercadoria recebida em consignacao mercantil ou industrial",
   cst_entrada: "041",
+  cfop_devolucao_consignacao: "5918",
+  natureza_devolucao_consignacao:
+    "devolucao de mercadoria recebida em consignacao mercantil ou industrial",
   modalidade_frete_entrada: "1",
 };
 
@@ -153,4 +159,75 @@ test("a descrição do item é a mesma da saída — o chassi liga as duas notas
   const { payload } = monta();
   assert.match(payload.items[0].descricao, /Porsche Cayenne 2016/);
   assert.match(payload.items[0].descricao, /Chassi WP1AA2923GKA14408/);
+});
+
+// ── Devolução de consignação (CFOP 5918) ───────────────────────────────────
+//
+// O outro lado da NF 14: o carro que entrou em consignação e não vendeu volta
+// para o dono. O CFOP 5918 é resposta do contador Rodrigo em 14/08/2026.
+//
+// Emitir a entrada sem poder devolver é meia funcionalidade: a Mayra recebe o
+// carro no sistema e fica sem como registrar a saída dele.
+
+function devolve(extra = {}) {
+  return montarPayloadDevolucaoConsignacao({
+    config: CONFIG,
+    veiculo: VEICULO,
+    consignante: PESSOA_FISICA,
+    valor: 160000,
+    ...extra,
+  });
+}
+
+test("a devolução sai como SAÍDA com CFOP 5918", () => {
+  const { payload, error } = devolve();
+  assert.equal(error, undefined, error);
+  // 1 = saída. É só isto que separa receber o carro de devolvê-lo.
+  assert.equal(payload.tipo_documento, 1);
+  assert.equal(payload.items[0].cfop, "5918");
+  assert.match(payload.natureza_operacao, /devolucao/i);
+});
+
+test("devolução também não destaca imposto — o carro nunca foi comprado", () => {
+  const item = devolve().payload.items[0];
+  assert.equal(item.icms_situacao_tributaria, "41");
+  for (const campo of ["icms_valor", "pis_valor", "cofins_valor", "icms_base_calculo"]) {
+    assert.equal(item[campo], 0, `${campo} deveria ser zero na devolução`);
+  }
+});
+
+test("entrada e devolução do mesmo carro diferem SÓ no sentido e no CFOP", () => {
+  const ida = montarPayloadEntrada({
+    config: CONFIG, veiculo: VEICULO, remetente: PESSOA_FISICA,
+    valorAquisicao: 160000, consignacao: true,
+  }).payload;
+  const volta = devolve().payload;
+
+  // O que TEM que mudar.
+  assert.notEqual(ida.tipo_documento, volta.tipo_documento);
+  assert.notEqual(ida.items[0].cfop, volta.items[0].cfop);
+
+  // O que NÃO pode mudar: é o mesmo carro e a mesma pessoa. Endereço que muda
+  // entre a ida e a volta é a SEFAZ vendo duas pessoas diferentes.
+  for (const campo of [
+    "nome_destinatario", "cpf_destinatario", "cep_destinatario",
+    "logradouro_destinatario", "numero_destinatario", "bairro_destinatario",
+    "municipio_destinatario", "uf_destinatario", "valor_total",
+  ]) {
+    assert.equal(volta[campo], ida[campo], `${campo} mudou entre a entrada e a devolução`);
+  }
+  assert.equal(volta.items[0].descricao, ida.items[0].descricao);
+});
+
+test("a mensagem de erro diz QUEM está faltando, não 'a outra parte'", () => {
+  // Generalizar o montador não pode custar clareza na tela: o operador não sabe
+  // o que é "a outra parte".
+  assert.match(devolve({ consignante: { ...PESSOA_FISICA, cep: "" } }).error, /dono do carro/i);
+  assert.match(
+    montarPayloadEntrada({
+      config: CONFIG, veiculo: VEICULO,
+      remetente: { ...PESSOA_FISICA, cep: "" }, valorAquisicao: 1,
+    }).error,
+    /vendeu o veículo/i
+  );
 });
