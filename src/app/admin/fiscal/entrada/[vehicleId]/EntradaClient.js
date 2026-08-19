@@ -115,7 +115,27 @@ export default function EntradaClient({ veiculo, ativo, notaExistente }) {
         </p>
         <p style={{ fontSize: "0.9rem", color: "#333", margin: "6px 0 0" }}>
           Esta nota é o que <strong>destrava a venda</strong>: o texto da nota de venda
-          precisa citar o número dela.
+          precisa citar o número dela — e ele vem preenchido sozinho depois que esta
+          for autorizada.
+        </p>
+      </div>
+
+      {/* O escritório emitiu entrada de vários carros antes de o sistema
+          existir, e essas notas não estão aqui. O sistema não tem como saber
+          disso — só quem operou sabe. Perguntar antes custa uma linha; uma
+          segunda nota de entrada do mesmo carro custa cancelamento e
+          explicação para a fiscalização. */}
+      <div className={styles.card} style={{ marginBottom: 24, borderLeft: "4px solid #e8b84b", background: "#fff7e8" }}>
+        <strong style={{ color: "#a8752e" }}>Confira antes: o Rodrigo já emitiu a deste carro?</strong>
+        <p style={{ fontSize: "0.9rem", color: "#333", margin: "6px 0 0" }}>
+          As notas que o escritório emitiu <strong>não aparecem aqui</strong> — elas saíram
+          por fora do sistema. Se este carro já tem nota de entrada emitida por ele,
+          <strong> não emita outra</strong>: seriam duas notas para a mesma compra, e desfazer
+          exige cancelamento.
+        </p>
+        <p style={{ fontSize: "0.9rem", color: "#333", margin: "6px 0 0" }}>
+          Na dúvida, pergunte a ele. Emita aqui os carros que <strong>ainda não têm nota
+          nenhuma</strong> — que são justamente os que estão parados.
         </p>
       </div>
 

@@ -56,9 +56,24 @@ export async function getDadosEmissao(vehicleId) {
     custoOrigem = "ausente";
   }
 
+  // SÓ SAÍDA. Sem este filtro, a nota de ENTRADA do carro apareceria como
+  // "este veículo já tem nota fiscal" na tela de venda — ou seja, emitir a
+  // entrada (que é o passo obrigatório) travaria a venda do mesmo carro. Um
+  // veículo tem as duas notas por definição.
   const { rows: notasAtivas } = await query(
     `select ref, status from notas_fiscais
-      where vehicle_id = $1 and status in ('processando','autorizada')
+      where vehicle_id = $1 and operacao = 'saida' and status in ('processando','autorizada')
+      order by created_at desc limit 1`,
+    [vehicleId]
+  );
+
+  // O número da nota de ENTRADA emitida pelo próprio sistema. O texto
+  // obrigatório da nota de venda cita esse número, e digitá-lo à mão é onde a
+  // ligação entre as duas notas se perde por um dígito trocado.
+  const { rows: entrada } = await query(
+    `select numero from notas_fiscais
+      where vehicle_id = $1 and operacao = 'entrada' and status = 'autorizada'
+        and numero is not null
       order by created_at desc limit 1`,
     [vehicleId]
   );
@@ -69,6 +84,7 @@ export async function getDadosEmissao(vehicleId) {
     custoAquisicao,
     custoOrigem,
     notaExistente: notasAtivas[0] || null,
+    numeroNotaEntrada: entrada[0]?.numero || "",
   };
 }
 

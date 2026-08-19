@@ -127,3 +127,65 @@ test("nota CANCELADA também não bloqueia", async () => {
   const res = await comNotaNoStatus("cancelada");
   assert.ok(!/já tem nota|já foi enviada/i.test(res.error || ""), res.error);
 });
+
+// ── Entrada e saída do mesmo carro convivem ────────────────────────────────
+//
+// BUG PEGO EM 18/08/2026, ANTES DE CHEGAR NA MAYRA: a consulta que descobre
+// "este veículo já tem nota" não filtrava por operação. Como a nota de ENTRADA
+// é obrigatória (o texto da venda cita o número dela), emitir a entrada
+// passaria a TRAVAR a venda do mesmo carro — bloqueando exatamente o fluxo que
+// a entrada existe para destravar.
+//
+// Todo carro tem as duas notas. É o caso normal, não a exceção.
+
+async function comEntradaAutorizada() {
+  await pool.query(`delete from notas_fiscais`);
+  await pool.query(
+    `insert into notas_fiscais (ref, vehicle_id, status, valor, serie, operacao, cfop, numero)
+     values ('vamaq-ent-1',$1,'autorizada',300000,'2','entrada','1102','7')`,
+    [vehicleId]
+  );
+}
+
+test("carro com nota de ENTRADA autorizada não fica bloqueado para venda", async () => {
+  await comEntradaAutorizada();
+  const { getDadosEmissao } = notas;
+  const dados = await getDadosEmissao(vehicleId);
+  assert.equal(
+    dados.notaExistente,
+    null,
+    "a entrada não pode aparecer como nota de saída existente"
+  );
+});
+
+test("o número da nota de entrada volta pronto para a tela de venda", async () => {
+  await comEntradaAutorizada();
+  const dados = await notas.getDadosEmissao(vehicleId);
+  // Digitar esse número à mão é onde a ligação entre as duas notas se perde
+  // por um dígito trocado.
+  assert.equal(dados.numeroNotaEntrada, "7");
+});
+
+test("entrada em processamento ainda não devolve número — não existe", async () => {
+  await pool.query(`delete from notas_fiscais`);
+  await pool.query(
+    `insert into notas_fiscais (ref, vehicle_id, status, valor, serie, operacao, cfop)
+     values ('vamaq-ent-2',$1,'processando',300000,'2','entrada','1102')`,
+    [vehicleId]
+  );
+  const dados = await notas.getDadosEmissao(vehicleId);
+  assert.equal(dados.numeroNotaEntrada, "");
+});
+
+test("a emissão de venda passa pela guarda mesmo com entrada autorizada", async () => {
+  await comEntradaAutorizada();
+  const res = await notas.emitirNotaVeiculo(vehicleId, {
+    destinatario: { nome: "Comprador" },
+    valorVenda: 330000,
+    custoAquisicao: 300000,
+  });
+  assert.ok(
+    !/já tem nota|já foi enviada/i.test(res.error || ""),
+    `a entrada bloqueou a venda: ${res.error}`
+  );
+});

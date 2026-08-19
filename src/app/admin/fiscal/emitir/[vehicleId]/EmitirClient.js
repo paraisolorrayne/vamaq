@@ -43,6 +43,7 @@ export default function EmitirClient({
   custoAquisicao,
   custoOrigem,
   notaExistente,
+  numeroNotaEntrada,
   clientes,
   ativo,
   vehicleId,
@@ -54,7 +55,10 @@ export default function EmitirClient({
   const [custo, setCusto] = useState(custoOrigem === "financeiro" ? custoAquisicao : "");
   const [dest, setDest] = useState(DEST_VAZIO);
   const [clienteIdSel, setClienteIdSel] = useState("");
-  const [notaEntrada, setNotaEntrada] = useState("");
+  // Já preenchido quando a entrada saiu pelo próprio sistema — ela confere em
+  // vez de digitar. Continua editável: entrada emitida pelo escritório não
+  // está aqui, e aí o número vem do papel.
+  const [notaEntrada, setNotaEntrada] = useState(numeroNotaEntrada || "");
   const [presencial, setPresencial] = useState(true);
 
   function setCampo(k, v) {
