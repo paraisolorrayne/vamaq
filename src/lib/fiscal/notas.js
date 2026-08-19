@@ -321,7 +321,7 @@ export async function emitirNotaEntradaVeiculo(
 
   const ref = `vamaq-ent-${randomUUID()}`;
   await query(
-    `insert into notas_fiscais (ref, vehicle_id, status, valor, destinatario, serie, operacao)
+    `insert into notas_fiscais (ref, vehicle_id, status, valor, destinatario, serie, operacao, cfop)
      values ($1,$2,'processando',$3,$4::jsonb,$5,'entrada',$6)`,
     [
       ref,

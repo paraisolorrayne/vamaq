@@ -85,8 +85,12 @@ export async function createFuncionario(data) {
   if (p.error) return { error: p.error };
   const v = p.values;
   const { rows } = await query(
+    // Os marcadores saem de CAMPOS, não escritos à mão: com a lista derivada de
+    // um lado e $1..$8 fixos do outro, acrescentar um campo em CAMPOS quebraria
+    // o insert em produção sem o build nem o lint reclamarem. Foi assim que a
+    // emissão de nota caiu em 19/08/2026.
     `insert into funcionarios (${CAMPOS.join(", ")})
-     values ($1,$2,$3,$4,$5,$6,$7,$8) returning *`,
+     values (${CAMPOS.map((_, i) => `$${i + 1}`).join(",")}) returning *`,
     CAMPOS.map((c) => v[c])
   );
   return { funcionario: rows[0] };
