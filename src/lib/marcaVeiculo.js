@@ -27,6 +27,7 @@ const CANONICAS = [
   "BYD",
   "Chevrolet",
   "Chery",
+  "Dodge",
   "Citroën",
   "Fiat",
   "Ford",
@@ -50,7 +51,29 @@ const CANONICAS = [
   "Volvo",
 ];
 
-const POR_CHAVE = new Map(CANONICAS.map((m) => [chave(m), m]));
+/**
+ * Como as pessoas escrevem × a grafia oficial.
+ *
+ * Só entra aqui o que é a MESMA marca escrita de outro jeito — apelido de uso
+ * corrente ("Mercedes") ou erro de digitação já visto no cadastro ("Cherry"
+ * por "Chery"). Nada de adivinhar: `BMW X1` não vira `BMW`, porque ali o
+ * modelo foi digitado no campo da marca e alguém precisa olhar o cadastro
+ * para saber o que fazer com o resto.
+ */
+const APELIDOS = {
+  mercedes: "Mercedes-Benz",
+  mercedesbenz: "Mercedes-Benz",
+  cherry: "Chery",
+  vw: "Volkswagen",
+  gm: "Chevrolet",
+  chevy: "Chevrolet",
+  landrover: "Land Rover",
+};
+
+const POR_CHAVE = new Map([
+  ...CANONICAS.map((m) => [chave(m), m]),
+  ...Object.entries(APELIDOS),
+]);
 
 /** Chave de comparação: minúsculas, sem espaços e sem hífen. */
 function chave(valor) {

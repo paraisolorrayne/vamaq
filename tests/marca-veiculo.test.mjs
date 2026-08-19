@@ -78,3 +78,19 @@ test("a lista canônica não tem duplicata escondida", () => {
   const chaves = marcasConhecidas().map((m) => normalizaMarca(m));
   assert.equal(new Set(chaves).size, chaves.length);
 });
+
+test("apelido de uso corrente e erro de digitação já visto viram a grafia oficial", () => {
+  assert.equal(normalizaMarca("Mercedes"), "Mercedes-Benz");
+  assert.equal(normalizaMarca("mercedes "), "Mercedes-Benz");
+  // "Cherry" estava no cadastro ao lado de "Chery" — é a mesma montadora.
+  assert.equal(normalizaMarca("Cherry"), "Chery");
+  assert.equal(normalizaMarca("VW"), "Volkswagen");
+});
+
+test("NÃO adivinha quando o modelo foi digitado no campo da marca", () => {
+  // `BMW X1` e `PORSCHE MACAN` estavam assim em produção. Reduzir para a
+  // marca apagaria a informação de que aquele cadastro está torto — e alguém
+  // precisa olhar o campo modelo antes de decidir.
+  assert.equal(normalizaMarca("BMW X1"), "BMW X1");
+  assert.equal(normalizaMarca("PORSCHE MACAN"), "PORSCHE MACAN");
+});
