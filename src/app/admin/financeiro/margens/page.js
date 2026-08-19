@@ -87,10 +87,10 @@ export default function MargensPage() {
             </table>
           </div>
           <p style={{ fontSize: "0.78rem", color: "#888", marginTop: 12 }}>
-            Impostos da venda de seminovo: base do ICMS = valor da venda com redução de 95,238%,
-            alíquota 5%; PIS 0,65% e COFINS 3% sobre a base do ICMS menos o ICMS — os mesmos
-            parâmetros das notas que a SEFAZ já autorizou. Resultado líquido = receita − custos −
-            impostos.
+            Impostos da venda de seminovo: a base do ICMS é a <strong>margem</strong> do carro
+            (venda − aquisição), com alíquota de 5%; PIS 0,65% e COFINS 3% sobre a base do ICMS
+            menos o ICMS — os mesmos parâmetros das notas que a SEFAZ já autorizou. Resultado
+            líquido = receita − custos − impostos.
           </p>
           </>
         )}
