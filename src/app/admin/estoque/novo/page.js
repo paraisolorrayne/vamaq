@@ -114,8 +114,6 @@ function NovoVeiculoForm() {
   const [form, setForm] = useState(EMPTY_VEHICLE);
   const [uploadCount, setUploadCount] = useState(0);
   const uploading = uploadCount > 0;
-  const [removeBgMain, setRemoveBgMain] = useState(true);
-  const [removeBgGallery, setRemoveBgGallery] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loadingEdit, setLoadingEdit] = useState(!!editId);
 
@@ -173,7 +171,6 @@ function NovoVeiculoForm() {
       const compressed = await compressForUpload(file);
       const fd = new FormData();
       fd.append("file", compressed);
-      fd.append("removeBg", isMain ? (removeBgMain ? "true" : "false") : (removeBgGallery ? "true" : "false"));
 
       const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
       const data = await res.json().catch(() => ({}));
@@ -310,16 +307,6 @@ function NovoVeiculoForm() {
           >
             FOTO PRINCIPAL
           </p>
-          <div className={styles.toggleRow} style={{ marginBottom: 12 }}>
-            <label className={styles.formCheckbox}>
-              <input
-                type="checkbox"
-                checked={removeBgMain}
-                onChange={(e) => setRemoveBgMain(e.target.checked)}
-              />
-              <span>Remover fundo da foto principal</span>
-            </label>
-          </div>
           <div
             className={`${styles.uploadZone} ${uploading ? styles.uploadZoneActive : ""}`}
             onDrop={(e) => handleMainDrop(e)}
@@ -378,16 +365,6 @@ function NovoVeiculoForm() {
           >
             GALERIA (OPCIONAL)
           </p>
-          <div className={styles.toggleRow} style={{ marginBottom: 12 }}>
-            <label className={styles.formCheckbox}>
-              <input
-                type="checkbox"
-                checked={removeBgGallery}
-                onChange={(e) => setRemoveBgGallery(e.target.checked)}
-              />
-              <span>Remover fundo das fotos da galeria</span>
-            </label>
-          </div>
           <div
             className={styles.uploadZone}
             onDrop={(e) => handleGalleryDrop(e)}
