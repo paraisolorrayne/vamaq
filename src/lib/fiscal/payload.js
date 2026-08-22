@@ -107,6 +107,68 @@ export function textoInformacoesComplementares({ config, custoAquisicao, numeroN
   return partes.join(" ");
 }
 
+
+/**
+ * Tamanho máximo de cada campo de texto da NF-e 4.00, com o nome que a
+ * operadora reconhece na tela.
+ *
+ * POR QUE ISTO EXISTE (22/08/2026): a Mayra emitiu uma consignação e a SEFAZ
+ * recusou com "natOp: The value has a length of '69'; this exceeds the allowed
+ * maximum length of '60'". O texto tinha 69 caracteres porque eu copiei a
+ * descrição oficial do CFOP para um campo que aceita 60.
+ *
+ * Um limite estourado é a coisa mais fácil de conferir ANTES de mandar, e a
+ * mais opaca de entender depois: a recusa vem em inglês, citando a tag do XML
+ * (`natOp`, `xNome`, `xLgr`), que ninguém que opera a loja sabe o que é. Aqui
+ * o erro sai nomeando o campo da tela e dizendo quanto sobra.
+ */
+const LIMITES = [
+  ["natureza_operacao", 60, "a natureza da operação"],
+  ["nome_destinatario", 60, "o nome"],
+  ["logradouro_destinatario", 60, "o logradouro"],
+  ["numero_destinatario", 60, "o número do endereço"],
+  ["bairro_destinatario", 60, "o bairro"],
+  ["municipio_destinatario", 60, "o município"],
+  ["informacoes_adicionais_contribuinte", 5000, "o texto de informações complementares"],
+];
+
+const LIMITES_ITEM = [
+  ["descricao", 120, "a descrição do veículo"],
+  ["codigo_produto", 60, "o código do produto"],
+];
+
+/**
+ * Confere os limites e devolve a primeira violação, em português.
+ *
+ * Uma por vez de propósito: listar cinco problemas de uma vez faz a operadora
+ * ler o primeiro e ignorar o resto. Corrigiu, roda de novo, vê o próximo.
+ */
+function validaLimites(payload) {
+  const checa = (valor, limite, rotulo) => {
+    const texto = String(valor ?? "");
+    if (texto.length <= limite) return null;
+    return {
+      error: `${rotulo.charAt(0).toUpperCase()}${rotulo.slice(1)} tem ${texto.length} caracteres e a nota fiscal aceita no máximo ${limite}. Encurte em ${texto.length - limite}.`,
+    };
+  };
+
+  for (const [campo, limite, rotulo] of LIMITES) {
+    const erro = checa(payload[campo], limite, rotulo);
+    if (erro) return erro;
+  }
+  for (const item of payload.items || []) {
+    for (const [campo, limite, rotulo] of LIMITES_ITEM) {
+      const erro = checa(item[campo], limite, rotulo);
+      if (erro) return erro;
+    }
+  }
+  for (const fp of payload.formas_pagamento || []) {
+    const erro = checa(fp.descricao_pagamento, 60, "a descrição da forma de pagamento");
+    if (erro) return erro;
+  }
+  return null;
+}
+
 /**
  * A descrição do item na nota. Igual na entrada e na saída de propósito: é o
  * mesmo carro, e a SEFAZ liga uma à outra pelo chassi.
@@ -313,6 +375,9 @@ export function montarPayloadNfe({
     ],
   };
 
+  const excedeu = validaLimites(payload);
+  if (excedeu) return excedeu;
+
   return { payload, impostos: imp };
 }
 
@@ -359,7 +424,7 @@ export function montarPayloadEntrada({
     natureza: consignacao
       ? String(
           config.natureza_entrada_consignacao ||
-            "entrada de mercadoria recebida em consignacao mercantil ou industrial"
+            "Entrada de mercadoria em consignacao mercantil"
         )
       : String(config.natureza_entrada || "Compra Dentro do Estado"),
   });
@@ -388,7 +453,7 @@ export function montarPayloadDevolucaoConsignacao({ config, veiculo, consignante
     cfop: String(config.cfop_devolucao_consignacao || "5918"),
     natureza: String(
       config.natureza_devolucao_consignacao ||
-        "devolucao de mercadoria recebida em consignacao mercantil ou industrial"
+        "Devolucao de mercadoria em consignacao mercantil"
     ),
   });
 }
@@ -446,8 +511,7 @@ function montarPayloadSemImposto({
 
   const descricao = descricaoVeiculo(veiculo);
 
-  return {
-    payload: {
+  const payload = {
       natureza_operacao: natureza,
       data_emissao: new Date().toISOString(),
       // 0 = entrada (a mercadoria entra no estabelecimento de quem emite),
@@ -518,6 +582,10 @@ function montarPayloadSemImposto({
           cofins_valor: 0,
         },
       ],
-    },
   };
+
+  const excedeu = validaLimites(payload);
+  if (excedeu) return excedeu;
+
+  return { payload };
 }

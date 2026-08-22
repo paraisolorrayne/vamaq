@@ -53,7 +53,8 @@ before(async () => {
   const u = new URL(ADMIN_URL);
   const url = `${u.protocol}//${u.username || "postgres"}@${u.hostname}:${u.port || 5432}/${TEST_DB}`;
   pool = new pg.Pool({ connectionString: url });
-  for (const f of ["schema.sql", "fiscal-schema.sql", "fiscal-entrada.sql", "fiscal-consignacao-devolucao.sql"]) {
+  for (const f of ["schema.sql", "fiscal-schema.sql", "fiscal-entrada.sql", "fiscal-consignacao-devolucao.sql",
+    "fiscal-natop-60.sql"]) {
     await pool.query(await readFile(path.join(ROOT, "db", f), "utf8"));
   }
 

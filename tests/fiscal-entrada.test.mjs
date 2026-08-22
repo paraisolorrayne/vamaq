@@ -30,12 +30,10 @@ const CONFIG = {
   cfop_entrada: "1102",
   natureza_entrada: "Compra Dentro do Estado",
   cfop_entrada_consignacao: "1917",
-  natureza_entrada_consignacao:
-    "entrada de mercadoria recebida em consignacao mercantil ou industrial",
+  natureza_entrada_consignacao: "Entrada de mercadoria em consignacao mercantil",
   cst_entrada: "041",
   cfop_devolucao_consignacao: "5918",
-  natureza_devolucao_consignacao:
-    "devolucao de mercadoria recebida em consignacao mercantil ou industrial",
+  natureza_devolucao_consignacao: "Devolucao de mercadoria em consignacao mercantil",
   modalidade_frete_entrada: "1",
 };
 
@@ -88,6 +86,7 @@ test("consignação recebida reproduz a NF 14", () => {
   assert.equal(payload.tipo_documento, 0);
   assert.equal(payload.items[0].cfop, "1917");
   assert.match(payload.natureza_operacao, /consignacao/i);
+  assert.ok(payload.natureza_operacao.length <= 60, "natOp da NF-e aceita 60 caracteres");
 });
 
 test("nada de imposto é destacado — quem vendeu é pessoa física", () => {
@@ -186,6 +185,7 @@ test("a devolução sai como SAÍDA com CFOP 5918", () => {
   assert.equal(payload.tipo_documento, 1);
   assert.equal(payload.items[0].cfop, "5918");
   assert.match(payload.natureza_operacao, /devolucao/i);
+  assert.ok(payload.natureza_operacao.length <= 60);
 });
 
 test("devolução também não destaca imposto — o carro nunca foi comprado", () => {
