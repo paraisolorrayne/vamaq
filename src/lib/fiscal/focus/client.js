@@ -85,9 +85,36 @@ export function consultarNfe(ref) {
   return focusFetch(`/nfe/${encodeURIComponent(ref)}?completa=1`);
 }
 
+/**
+ * Cancela uma NF-e autorizada.
+ *
+ * É `DELETE /nfe/{ref}` com a justificativa no corpo — NÃO
+ * `POST /nfe/{ref}/cancel`, que era o que estava aqui e devolvia "Endpoint não
+ * encontrado" (a Mayra tentou cancelar a NF 17 em 22/08/2026 e levou esse
+ * erro, sem saber que era defeito nosso e não regra da SEFAZ).
+ *
+ * Síncrono: a resposta já traz o resultado. Prazo de 24 horas após a emissão,
+ * podendo ser maior em alguns estados. Justificativa entre 15 e 255
+ * caracteres — limite da SEFAZ, conferido aqui para o erro sair em português.
+ */
 export function cancelarNfe(ref, justificativa) {
-  return focusFetch(`/nfe/${encodeURIComponent(ref)}/cancel`, {
-    method: "POST",
-    body: { justificativa },
+  const texto = String(justificativa ?? "").trim();
+  if (texto.length < 15) {
+    return Promise.reject(
+      new Error(
+        `A justificativa do cancelamento precisa de pelo menos 15 caracteres — tem ${texto.length}.`
+      )
+    );
+  }
+  if (texto.length > 255) {
+    return Promise.reject(
+      new Error(
+        `A justificativa do cancelamento aceita no máximo 255 caracteres — tem ${texto.length}.`
+      )
+    );
+  }
+  return focusFetch(`/nfe/${encodeURIComponent(ref)}`, {
+    method: "DELETE",
+    body: { justificativa: texto },
   });
 }

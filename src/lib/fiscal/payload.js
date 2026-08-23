@@ -257,7 +257,11 @@ export function montarPayloadNfe({
   const presenca = vendaPresencial ? String(config.presenca_comprador ?? "1") : "2";
 
   const payload = {
-    natureza_operacao: config.natureza_operacao || "Venda Dentro do Estado",
+    // A natureza acompanha o CFOP: nota com 6102 dizendo "Venda Dentro do
+    // Estado" se contradiz na própria cara da DANFE.
+    natureza_operacao: interestadual
+      ? String(config.natureza_interestadual || "Venda Fora do Estado")
+      : String(config.natureza_operacao || "Venda Dentro do Estado"),
     // Estruturais da NF-e de venda (não vêm do contador, são constantes do domínio):
     data_emissao: new Date().toISOString(),
     tipo_documento: 1, // 1 = saída
@@ -410,24 +414,46 @@ export function montarPayloadEntrada({
   valorAquisicao,
   consignacao = false,
 }) {
+  const fora = deOutroEstado(config, remetente);
   return montarPayloadSemImposto({
     config,
     veiculo,
     contraparte: remetente,
     valor: valorAquisicao,
     saida: false,
+    interestadual: fora,
     papel: "Quem vendeu o veículo",
     rotuloValor: "valor pago pelo veículo",
     cfop: consignacao
-      ? String(config.cfop_entrada_consignacao || "1917")
-      : String(config.cfop_entrada || "1102"),
+      ? fora
+        ? String(config.cfop_entrada_consignacao_interestadual || "2917")
+        : String(config.cfop_entrada_consignacao || "1917")
+      : fora
+        ? String(config.cfop_entrada_interestadual || "2102")
+        : String(config.cfop_entrada || "1102"),
     natureza: consignacao
       ? String(
           config.natureza_entrada_consignacao ||
             "Entrada de mercadoria em consignacao mercantil"
         )
-      : String(config.natureza_entrada || "Compra Dentro do Estado"),
+      : fora
+        ? String(config.natureza_entrada_interestadual || "Compra Fora do Estado")
+        : String(config.natureza_entrada || "Compra Dentro do Estado"),
   });
+}
+
+/**
+ * A outra parte está em outro estado?
+ *
+ * Na ENTRADA e na DEVOLUÇÃO isto basta — a mercadoria atravessou a divisa, e é
+ * a origem dela que define a operação. Diferente da VENDA, onde o contador
+ * ressalvou que comprador de outro estado que vem à loja e leva o carro fez
+ * operação interna (o fato gerador foi em MG).
+ */
+function deOutroEstado(config, contraparte) {
+  const emitente = String(config.uf || "MG").trim().toUpperCase();
+  const outra = String(contraparte?.uf ?? "").trim().toUpperCase();
+  return Boolean(outra) && outra !== emitente;
 }
 
 /**
@@ -448,9 +474,12 @@ export function montarPayloadDevolucaoConsignacao({ config, veiculo, consignante
     contraparte: consignante,
     valor,
     saida: true,
+    interestadual: deOutroEstado(config, consignante),
     papel: "O dono do carro",
     rotuloValor: "valor pelo qual o carro foi recebido",
-    cfop: String(config.cfop_devolucao_consignacao || "5918"),
+    cfop: deOutroEstado(config, consignante)
+      ? String(config.cfop_devolucao_consignacao_interestadual || "6918")
+      : String(config.cfop_devolucao_consignacao || "5918"),
     natureza: String(
       config.natureza_devolucao_consignacao ||
         "Devolucao de mercadoria em consignacao mercantil"
@@ -477,6 +506,7 @@ function montarPayloadSemImposto({
   natureza,
   papel,
   rotuloValor,
+  interestadual = false,
 }) {
   const total = Number(valor) || 0;
   // A mensagem nomeia o valor e a pessoa. Generalizar para "a outra parte" e
@@ -518,7 +548,8 @@ function montarPayloadSemImposto({
       // 1 = saída. É só isto que separa receber o carro de devolvê-lo.
       tipo_documento: saida ? 1 : 0,
       finalidade_emissao: 1,
-      local_destino: 1, // compra dentro do estado
+      // idDest: 1 = operação interna, 2 = interestadual. Acompanha o CFOP.
+      local_destino: interestadual ? 2 : 1,
       serie: String(config.serie),
       cnpj_emitente: so_digitos(config.cnpj),
 

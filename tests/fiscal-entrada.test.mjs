@@ -32,6 +32,11 @@ const CONFIG = {
   cfop_entrada_consignacao: "1917",
   natureza_entrada_consignacao: "Entrada de mercadoria em consignacao mercantil",
   cst_entrada: "041",
+  uf: "MG",
+  cfop_entrada_interestadual: "2102",
+  cfop_entrada_consignacao_interestadual: "2917",
+  cfop_devolucao_consignacao_interestadual: "6918",
+  natureza_entrada_interestadual: "Compra Fora do Estado",
   cfop_devolucao_consignacao: "5918",
   natureza_devolucao_consignacao: "Devolucao de mercadoria em consignacao mercantil",
   modalidade_frete_entrada: "1",
@@ -230,4 +235,73 @@ test("a mensagem de erro diz QUEM está faltando, não 'a outra parte'", () => {
     }).error,
     /vendeu o veículo/i
   );
+});
+
+// ── Operação com outro estado ──────────────────────────────────────────────
+//
+// O QUE ACONTECEU (22/08/2026): a NF 17 entrou um Audi Q5 recebido em
+// consignação de um cliente de Catalão/GO com CFOP 1917. O correto é 2917 — a
+// família 1xxx é operação dentro do estado, a 2xxx é interestadual. A nota foi
+// AUTORIZADA errada e precisou ser cancelada.
+//
+// A entrada nascia com um CFOP só e `local_destino` fixo em 1. Só a venda
+// tinha o par.
+
+const DE_GOIAS = { ...PESSOA_FISICA, municipio: "Catalão", uf: "GO" };
+
+test("consignação de outro estado usa 2917, não 1917 — o caso da NF 17", () => {
+  const { payload } = montarPayloadEntrada({
+    config: CONFIG, veiculo: VEICULO, remetente: DE_GOIAS,
+    valorAquisicao: 400000, consignacao: true,
+  });
+  assert.equal(payload.items[0].cfop, "2917");
+  // idDest tem que acompanhar o CFOP, senão a nota se contradiz.
+  assert.equal(payload.local_destino, 2);
+});
+
+test("consignação do mesmo estado continua 1917", () => {
+  const { payload } = montarPayloadEntrada({
+    config: CONFIG, veiculo: VEICULO, remetente: PESSOA_FISICA,
+    valorAquisicao: 400000, consignacao: true,
+  });
+  assert.equal(payload.items[0].cfop, "1917");
+  assert.equal(payload.local_destino, 1);
+});
+
+test("compra de outro estado usa 2102 e a natureza acompanha", () => {
+  const { payload } = montarPayloadEntrada({
+    config: CONFIG, veiculo: VEICULO, remetente: DE_GOIAS, valorAquisicao: 160000,
+  });
+  assert.equal(payload.items[0].cfop, "2102");
+  assert.equal(payload.local_destino, 2);
+  assert.match(payload.natureza_operacao, /Fora do Estado/i);
+});
+
+test("devolução para outro estado usa 6918", () => {
+  const { payload } = montarPayloadDevolucaoConsignacao({
+    config: CONFIG, veiculo: VEICULO, consignante: DE_GOIAS, valor: 400000,
+  });
+  assert.equal(payload.items[0].cfop, "6918");
+  assert.equal(payload.local_destino, 2);
+});
+
+test("UF vazia ou igual não vira interestadual por engano", () => {
+  for (const uf of ["", "  ", "mg", "MG"]) {
+    const { payload } = montarPayloadEntrada({
+      config: CONFIG, veiculo: VEICULO,
+      remetente: { ...PESSOA_FISICA, uf: uf || "MG" },
+      valorAquisicao: 1000, consignacao: true,
+    });
+    assert.equal(payload.items[0].cfop, "1917", `uf "${uf}" não deveria virar interestadual`);
+  }
+});
+
+test("a natureza da consignação serve aos dois estados e cabe em 60", () => {
+  for (const rem of [PESSOA_FISICA, DE_GOIAS]) {
+    const { payload } = montarPayloadEntrada({
+      config: CONFIG, veiculo: VEICULO, remetente: rem,
+      valorAquisicao: 1000, consignacao: true,
+    });
+    assert.ok(payload.natureza_operacao.length <= 60);
+  }
 });
