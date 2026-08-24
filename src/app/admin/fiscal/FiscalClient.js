@@ -36,6 +36,132 @@ const STATUS_STYLE = {
 
 
 
+
+/**
+ * Baixa de nota cancelada pela contabilidade, na própria linha.
+ *
+ * DOIS CAMINHOS À VISTA, não escondidos: quem tem o protocolo digita; quem só
+ * tem a confirmação marca a caixa e escreve o nome. Antes isto era uma
+ * corrente de três `window.prompt` — e prompt que recusa some, obrigando a
+ * recomeçar. A operadora tentou, foi recusada pelo formato do número, e parou.
+ */
+function FormularioBaixa({ baixa, setBaixa, salvar, salvando }) {
+  const semProtocolo = baixa.semProtocolo;
+  const campo = (k) => (e) => setBaixa({ ...baixa, [k]: e.target.value });
+
+  const pronto =
+    baixa.motivo.trim().length >= 15 &&
+    (semProtocolo ? baixa.confirmadoPor.trim().length >= 3 : baixa.protocolo.trim().length > 0);
+
+  return (
+    <div
+      style={{
+        marginTop: 8,
+        padding: 12,
+        background: "#f7f8fa",
+        border: "1px solid #d8dce5",
+        borderRadius: 6,
+        maxWidth: 420,
+      }}
+    >
+      <strong style={{ fontSize: "0.85rem" }}>Registrar o cancelamento</strong>
+      <p style={{ fontSize: "0.78rem", color: "#666", margin: "4px 0 10px", lineHeight: 1.4 }}>
+        Só registre se a contabilidade confirmou que a SEFAZ aceitou. Se a nota antiga
+        não estiver mesmo cancelada, o carro fica com duas notas válidas.
+      </p>
+
+      {!semProtocolo && (
+        <>
+          <label className={styles.formLabel}>Protocolo do cancelamento</label>
+          <input
+            className={styles.formInput}
+            value={baixa.protocolo}
+            onChange={campo("protocolo")}
+            placeholder="15 números"
+            inputMode="numeric"
+            style={{ minHeight: 44 }}
+          />
+          <p style={{ fontSize: "0.74rem", color: "#888", margin: "4px 0 0" }}>
+            É o número que a contabilidade recebe ao cancelar — diferente do protocolo
+            de autorização impresso na DANFE.
+          </p>
+        </>
+      )}
+
+      <label
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          minHeight: 44,
+          fontSize: "0.82rem",
+          cursor: "pointer",
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={Boolean(semProtocolo)}
+          onChange={(e) =>
+            setBaixa({ ...baixa, semProtocolo: e.target.checked, protocolo: "" })
+          }
+        />
+        <span>Não tenho o protocolo</span>
+      </label>
+
+      {semProtocolo && (
+        <>
+          <label className={styles.formLabel}>Quem da contabilidade confirmou?</label>
+          <input
+            className={styles.formInput}
+            value={baixa.confirmadoPor}
+            onChange={campo("confirmadoPor")}
+            placeholder="Nome de quem confirmou"
+            style={{ minHeight: 44 }}
+          />
+          <p style={{ fontSize: "0.74rem", color: "#888", margin: "4px 0 0" }}>
+            Fica registrado como a origem desta baixa.
+          </p>
+        </>
+      )}
+
+      <label className={styles.formLabel} style={{ marginTop: 10 }}>
+        Por que foi cancelada?
+      </label>
+      <input
+        className={styles.formInput}
+        value={baixa.motivo}
+        onChange={campo("motivo")}
+        placeholder="Ex.: CFOP incorreto para operação interestadual"
+        style={{ minHeight: 44 }}
+      />
+      <p style={{ fontSize: "0.74rem", color: "#888", margin: "4px 0 0" }}>
+        Mínimo 15 caracteres — faltam{" "}
+        {Math.max(0, 15 - baixa.motivo.trim().length)}.
+      </p>
+
+      <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+        <button
+          type="button"
+          onClick={salvar}
+          className={`${styles.btnPrimary} ${styles.btnSmall}`}
+          disabled={!pronto || salvando}
+          style={{ minHeight: 44 }}
+        >
+          {salvando ? "Registrando…" : "Registrar cancelamento"}
+        </button>
+        <button
+          type="button"
+          onClick={() => setBaixa(null)}
+          className={`${styles.btnSecondary} ${styles.btnSmall}`}
+          style={{ minHeight: 44 }}
+        >
+          Cancelar
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /**
  * O que fazer depois de uma nota cancelada.
  *
@@ -195,6 +321,8 @@ export default function FiscalClient({
   const [pendingRef, setPendingRef] = useState(null);
   const [veiculoSel, setVeiculoSel] = useState("");
   const [entradaSel, setEntradaSel] = useState("");
+  // Formulário de baixa de nota cancelada por fora, aberto na própria linha.
+  const [baixa, setBaixa] = useState(null);
 
   // Notas que este carregamento da tela já foi consultar. Sem isto, cada
   // revalidação devolve `notas` novo, o efeito roda de novo e a consulta vira
@@ -264,42 +392,26 @@ export default function FiscalClient({
     });
   }
 
-  function handleCancelamentoExterno(n) {
-    const protocolo = window.prompt(
-      "Protocolo do cancelamento (15 números)\n\n" +
-        "É o código que a contabilidade recebe da SEFAZ ao cancelar — diferente do " +
-        "protocolo de autorização que está na DANFE.\n\n" +
-        "NÃO TEM O NÚMERO? Deixe em branco e clique OK: a próxima pergunta é quem " +
-        "da contabilidade confirmou.\n\n" +
-        "Só registre depois de ter a confirmação de que a SEFAZ aceitou. Se a nota " +
-        "antiga não estiver mesmo cancelada, o carro fica com duas notas válidas."
-    );
-    if (protocolo == null) return;
-
-    // Sem protocolo, o registro guarda quem confirmou — a prova é mais fraca,
-    // e o sistema diz isso em vez de fingir que toda baixa teve protocolo.
-    let confirmadoPor = "";
-    if (!String(protocolo).trim()) {
-      confirmadoPor =
-        window.prompt(
-          "Quem da contabilidade confirmou que a SEFAZ aceitou o cancelamento?\n\n" +
-            "Escreva o nome. Fica registrado como a origem desta baixa."
-        ) || "";
-      if (!confirmadoPor.trim()) return;
-    }
-
-    const motivo = window.prompt("Por que a nota foi cancelada? (mínimo 15 caracteres)");
-    if (motivo == null) return;
-
+  // Abre o formulário na linha. NÃO usa window.prompt: uma corrente de três
+  // perguntas que some ao ser recusada obriga a operadora a recomeçar do zero,
+  // e a regra deste painel é tudo na tela, sem popup.
+  function abrirBaixa(n) {
+    setBaixa({ ref: n.ref, protocolo: "", confirmadoPor: "", motivo: "" });
     setErr(null);
-    setPendingRef(n.ref);
+  }
+
+  function salvarBaixa() {
+    const b = baixa;
+    setErr(null);
+    setPendingRef(b.ref);
     startTransition(async () => {
-      const r = await registrarCancelamentoExternoAction(n.ref, {
-        protocolo,
-        confirmadoPor,
-        justificativa: motivo,
+      const r = await registrarCancelamentoExternoAction(b.ref, {
+        protocolo: b.protocolo,
+        confirmadoPor: b.confirmadoPor,
+        justificativa: b.motivo,
       });
       if (r?.error) setErr(r.error);
+      else setBaixa(null);
       setPendingRef(null);
     });
   }
@@ -608,6 +720,14 @@ export default function FiscalClient({
                           em seguida. Na coluna do carro o bloco estourava a
                           largura e ficava longe da pergunta que ele responde. */}
                       {n.status === "cancelada" && <LiberadoParaReemitir nota={n} />}
+                      {baixa?.ref === n.ref && (
+                        <FormularioBaixa
+                          baixa={baixa}
+                          setBaixa={setBaixa}
+                          salvar={salvarBaixa}
+                          salvando={isPending && pendingRef === n.ref}
+                        />
+                      )}
                       {n.status === "erro" && n.mensagem && (
                         <OrientacaoDoErro mensagem={n.mensagem} />
                       )}
@@ -670,7 +790,7 @@ export default function FiscalClient({
                           a única saída era chamar suporte técnico. */}
                       {n.status === "autorizada" && (
                         <button
-                          onClick={() => handleCancelamentoExterno(n)}
+                          onClick={() => abrirBaixa(n)}
                           className={`${styles.btnSecondary} ${styles.btnSmall}`}
                           disabled={isPending && pendingRef === n.ref}
                           title="Use quando a contabilidade já cancelou esta nota pelo sistema dela"

@@ -267,15 +267,23 @@ test("registrar com protocolo cancela a nota e guarda a origem", async () => {
   assert.ok(rows[0].cancelada_em);
 });
 
-test("protocolo malformado é recusado — 15 números ou nada", async () => {
+test("protocolo malformado é recusado, e a nota não muda de estado", async () => {
   const ref = await nota();
-  for (const p of ["123", "abc", "1312678405290980000"]) {
+  for (const p of ["123", "1312678405290980000"]) {
     const res = await notas.registrarCancelamentoExterno(ref, {
       protocolo: p,
       justificativa: "Cancelada pela contabilidade por CFOP incorreto",
     });
-    assert.match(res.error, /15 números/i, `protocolo ${JSON.stringify(p)} deveria recusar`);
+    assert.match(res.error, /tem 15/i, `protocolo ${JSON.stringify(p)} deveria recusar`);
   }
+  // Texto sem número nenhum cai no caminho de quem não tem protocolo, e a
+  // mensagem oferece a saída em vez de só reclamar do formato.
+  const semDigito = await notas.registrarCancelamentoExterno(ref, {
+    protocolo: "abc",
+    justificativa: "Cancelada pela contabilidade por CFOP incorreto",
+  });
+  assert.match(semDigito.error, /confirmou/i);
+
   const { rows } = await pool.query(`select status from notas_fiscais where ref=$1`, [ref]);
   assert.equal(rows[0].status, "autorizada", "nenhuma tentativa pode ter mudado o estado");
 });
@@ -416,4 +424,39 @@ test("nota viva não é oferecida para refazer — seria duplicar, não refazer"
 
 test("referência inexistente devolve nulo, não estoura", async () => {
   assert.equal(await notas.dadosParaRefazer("nao-existe"), null);
+});
+
+test("a chave de acesso colada por engano é reconhecida, não recusada seco", async () => {
+  // 44 números é a chave impressa no topo da DANFE — a confusão mais provável.
+  // Dizer isso poupa a pessoa de conferir dígito por dígito o que colou.
+  const ref = await nota();
+  const res = await notas.registrarCancelamentoExterno(ref, {
+    protocolo: "31260845348469000154550020000000171277393403",
+    justificativa: "Cancelada pela contabilidade por CFOP incorreto",
+  });
+  assert.match(res.error, /chave de acesso/i);
+  assert.match(res.error, /deixe o campo em branco/i, "precisa mostrar a saída");
+});
+
+test("protocolo de tamanho errado diz QUANTOS números vieram", async () => {
+  const ref = await nota();
+  const res = await notas.registrarCancelamentoExterno(ref, {
+    protocolo: "12345",
+    justificativa: "Cancelada pela contabilidade por CFOP incorreto",
+  });
+  // Sem o número, a pessoa não sabe se digitou a mais ou a menos.
+  assert.match(res.error, /informou 5 números/i);
+  assert.match(res.error, /deixe o campo em branco/i);
+});
+
+test("toda recusa de protocolo aponta a saída sem protocolo", async () => {
+  // É o que impede a operadora de parar e ligar para o suporte.
+  const ref = await nota();
+  for (const p of ["1", "12345", "31260845348469000154550020000000171277393403"]) {
+    const res = await notas.registrarCancelamentoExterno(ref, {
+      protocolo: p,
+      justificativa: "Cancelada pela contabilidade por CFOP incorreto",
+    });
+    assert.match(res.error, /em branco|confirmou/i, `sem saída para "${p}"`);
+  }
 });

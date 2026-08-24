@@ -536,10 +536,18 @@ export async function registrarCancelamentoExterno(
 
   let evidencia;
   if (proto) {
-    if (!PROTOCOLO_VALIDO.test(proto)) {
+    // A chave de acesso tem 44 e é o número grande impresso no topo da DANFE —
+    // é a confusão mais provável, e dizer isso poupa a pessoa de conferir
+    // dígito por dígito o que ela colou.
+    if (proto.length === 44) {
       return {
         error:
-          "O protocolo do cancelamento tem 15 números. Confira o que a contabilidade passou — ele é diferente do protocolo de autorização que está na DANFE.",
+          "Isso é a chave de acesso da nota (44 números), não o protocolo do cancelamento. O protocolo tem 15 números e é o que a contabilidade recebe da SEFAZ ao cancelar. Se não tiver esse número, deixe o campo em branco e informe quem confirmou.",
+      };
+    }
+    if (!PROTOCOLO_VALIDO.test(proto)) {
+      return {
+        error: `Você informou ${proto.length} ${proto.length === 1 ? "número" : "números"} e o protocolo do cancelamento tem 15. Se não tiver esse número em mãos, deixe o campo em branco e informe quem da contabilidade confirmou — funciona igual.`,
       };
     }
     evidencia = "protocolo";
