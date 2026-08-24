@@ -118,3 +118,40 @@ export function cancelarNfe(ref, justificativa) {
     body: { justificativa: texto },
   });
 }
+
+/**
+ * Emite uma Carta de Correção Eletrônica para uma NF-e já autorizada.
+ *
+ * O QUE ELA RESOLVE: nota autorizada com erro em campo que NÃO determina
+ * imposto. É a saída quando o prazo de cancelamento de 24 horas venceu — o que
+ * acontece sempre que o erro aparece num fim de semana.
+ *
+ * O QUE ELA NÃO CORRIGE (regra da SEFAZ, não da Focus): as variáveis que
+ * determinam o valor do imposto (base de cálculo, alíquota), dados que mudem
+ * quem é o remetente ou o destinatário, e a data de emissão ou de saída. Para
+ * esses, o caminho é cancelar — ou, fora do prazo, emitir a contra-nota.
+ *
+ * A SEFAZ aceita até 20 correções na mesma nota, e vale sempre a última.
+ * Síncrono: a resposta já traz o resultado.
+ */
+export function cartaCorrecaoNfe(ref, correcao) {
+  const texto = String(correcao ?? "").trim();
+  if (texto.length < 15) {
+    return Promise.reject(
+      new Error(
+        `A carta de correção precisa de pelo menos 15 caracteres — tem ${texto.length}.`
+      )
+    );
+  }
+  if (texto.length > 1000) {
+    return Promise.reject(
+      new Error(
+        `A carta de correção aceita no máximo 1000 caracteres — tem ${texto.length}.`
+      )
+    );
+  }
+  return focusFetch(`/nfe/${encodeURIComponent(ref)}/carta_correcao`, {
+    method: "POST",
+    body: { correcao: texto },
+  });
+}

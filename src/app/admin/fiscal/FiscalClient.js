@@ -7,6 +7,7 @@ import {
   atualizarStatusAction,
   cancelarNotaAction,
   devolverConsignacaoAction,
+  cartaCorrecaoAction,
 } from "./actions";
 import { formatValorBR } from "@/lib/money";
 
@@ -107,6 +108,26 @@ export default function FiscalClient({
     setPendingRef(ref);
     startTransition(async () => {
       const r = await atualizarStatusAction(ref);
+      if (r?.error) setErr(r.error);
+      setPendingRef(null);
+    });
+  }
+
+  function handleCorrigir(n) {
+    const texto = window.prompt(
+      "O que está errado na nota? (mínimo 15 caracteres)\n\n" +
+        "A carta de correção NÃO corrige valor de imposto, quem é o cliente, nem a data. " +
+        "Para esses, o caminho é cancelar ou emitir contra-nota."
+    );
+    if (texto == null) return;
+    if (texto.trim().length < 15) {
+      setErr(`A carta de correção precisa de pelo menos 15 caracteres — tem ${texto.trim().length}.`);
+      return;
+    }
+    setErr(null);
+    setPendingRef(n.ref);
+    startTransition(async () => {
+      const r = await cartaCorrecaoAction(n.ref, texto);
       if (r?.error) setErr(r.error);
       setPendingRef(null);
     });
@@ -428,6 +449,16 @@ export default function FiscalClient({
                           disabled={isPending && pendingRef === n.ref}
                         >
                           {isPending && pendingRef === n.ref ? "Atualizando…" : "Atualizar"}
+                        </button>
+                      )}
+                      {n.status === "autorizada" && (
+                        <button
+                          onClick={() => handleCorrigir(n)}
+                          className={`${styles.btnSecondary} ${styles.btnSmall}`}
+                          disabled={isPending && pendingRef === n.ref}
+                          title="Corrige campo que não determina imposto — serve depois de vencido o prazo de cancelamento"
+                        >
+                          {n.carta_correcao_qtd > 0 ? "Corrigir de novo" : "Carta de correção"}
                         </button>
                       )}
                       {n.status === "autorizada" && (

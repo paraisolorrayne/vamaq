@@ -9,6 +9,7 @@ import {
   emitirNotaVeiculo,
   emitirNotaEntradaVeiculo,
   devolverConsignacaoVeiculo,
+  emitirCartaCorrecao,
 } from "@/lib/fiscal/notas";
 
 export async function atualizarStatusAction(ref) {
@@ -65,6 +66,18 @@ export async function emitirNotaEntradaAction(vehicleId, { remetente, valorAquis
 export async function devolverConsignacaoAction(vehicleId) {
   await requireRole(["financeiro", "secretaria"]);
   const res = await devolverConsignacaoVeiculo(vehicleId);
+  if (res.error) return { error: res.error };
+  revalidatePath("/admin/fiscal");
+  return { ok: true };
+}
+
+/**
+ * Carta de correção — a saída para nota autorizada com erro em campo que não
+ * determina imposto, especialmente depois de vencido o prazo de cancelamento.
+ */
+export async function cartaCorrecaoAction(ref, correcao) {
+  await requireRole(["financeiro", "secretaria"]);
+  const res = await emitirCartaCorrecao(ref, correcao);
   if (res.error) return { error: res.error };
   revalidatePath("/admin/fiscal");
   return { ok: true };

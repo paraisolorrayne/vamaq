@@ -9,7 +9,7 @@ import {
   montarPayloadEntrada,
   montarPayloadDevolucaoConsignacao,
 } from "@/lib/fiscal/payload";
-import { focusEnabled, emitirNfe, consultarNfe, cancelarNfe, focusFileUrl } from "@/lib/fiscal/focus/client";
+import { focusEnabled, emitirNfe, consultarNfe, cancelarNfe, cartaCorrecaoNfe, focusFileUrl } from "@/lib/fiscal/focus/client";
 import { getVehicleMargins } from "@/lib/fin/repositories/finance";
 import { ligarVeiculo } from "@/lib/clientes/repo";
 
@@ -451,5 +451,47 @@ export async function devolverConsignacaoVeiculo(vehicleId) {
       [ref, String(err.message), JSON.stringify(err.focus ?? {})]
     );
     return { nota: rows[0], error: err.message };
+  }
+}
+
+/**
+ * Envia uma carta de correção para uma nota autorizada.
+ *
+ * Só faz sentido em nota AUTORIZADA: em nota com erro a saída é reemitir, e em
+ * cancelada não há o que corrigir. Recusar aqui evita uma ida à SEFAZ que
+ * voltaria com mensagem que ninguém na loja entende.
+ */
+export async function emitirCartaCorrecao(ref, correcao) {
+  if (!focusEnabled()) return { error: "Emissor fiscal não configurado." };
+
+  const { rows } = await query(
+    `select ref, status, numero from notas_fiscais where ref = $1`,
+    [ref]
+  );
+  if (!rows.length) return { error: "Nota não encontrada." };
+  if (rows[0].status !== "autorizada") {
+    return {
+      error:
+        rows[0].status === "cancelada"
+          ? "Esta nota foi cancelada — não há o que corrigir."
+          : "A carta de correção só vale para nota autorizada. Esta ainda não foi.",
+    };
+  }
+
+  try {
+    const retorno = await cartaCorrecaoNfe(ref, correcao);
+    const { rows: atualizada } = await query(
+      `update notas_fiscais
+          set carta_correcao = $2,
+              carta_correcao_em = now(),
+              carta_correcao_qtd = carta_correcao_qtd + 1,
+              raw = $3::jsonb
+        where ref = $1
+        returning *`,
+      [ref, String(correcao).trim(), JSON.stringify(retorno ?? {})]
+    );
+    return { nota: atualizada[0] };
+  } catch (err) {
+    return { error: err.message };
   }
 }

@@ -15,7 +15,7 @@
  */
 import { test, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { cancelarNfe } from "../src/lib/fiscal/focus/client.js";
+import { cancelarNfe, cartaCorrecaoNfe } from "../src/lib/fiscal/focus/client.js";
 
 const fetchReal = globalThis.fetch;
 let chamadas = [];
@@ -81,4 +81,31 @@ test("espaço nas pontas não conta para o mínimo", async () => {
 test("a referência é escapada na URL", async () => {
   await cancelarNfe("vamaq/abc 1", "Nota emitida com CFOP incorreto para o estado");
   assert.match(chamadas[0].url, /vamaq%2Fabc%201$/);
+});
+
+// ── Carta de correção ──────────────────────────────────────────────────────
+//
+// A saída quando o prazo de 24 horas para cancelar venceu — o que acontece
+// sempre que o erro aparece num fim de semana, como na NF 17 (23/08/2026).
+
+test("a carta de correção vai em POST /nfe/{ref}/carta_correcao", async () => {
+  await cartaCorrecaoNfe("vamaq-abc", "CFOP correto para operacao interestadual: 2917");
+  assert.equal(chamadas[0].method, "POST");
+  assert.match(chamadas[0].url, /\/v2\/nfe\/vamaq-abc\/carta_correcao$/);
+});
+
+test("o texto vai no campo `correcao`", async () => {
+  const texto = "CFOP correto para operacao interestadual: 2917";
+  await cartaCorrecaoNfe("vamaq-abc", texto);
+  assert.deepEqual(JSON.parse(chamadas[0].body), { correcao: texto });
+});
+
+test("limites da carta: 15 a 1000 caracteres, conferidos antes de mandar", async () => {
+  await assert.rejects(() => cartaCorrecaoNfe("r", "curto"), /pelo menos 15/);
+  await assert.rejects(() => cartaCorrecaoNfe("r", "A".repeat(1001)), /máximo 1000/);
+  assert.equal(chamadas.length, 0, "nenhuma das duas pode chegar a chamar a API");
+
+  // O limite é maior que o do cancelamento (255) — são campos diferentes.
+  await cartaCorrecaoNfe("r", "A".repeat(1000));
+  assert.equal(chamadas.length, 1);
 });
