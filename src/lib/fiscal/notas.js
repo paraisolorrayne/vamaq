@@ -352,11 +352,17 @@ export async function emitirNotaEntradaVeiculo(
  * Consignações que ainda estão com a Vamaq — carro recebido do dono, nem
  * vendido nem devolvido. É a lista de quem pode ser devolvido.
  *
- * Filtra pelo CFOP GRAVADO na nota (1917), não pela config: se o contador
- * mudar o CFOP amanhã, as consignações de ontem continuam sendo consignações.
+ * Filtra pelos CFOP GRAVADOS na nota, não pela config: se o contador mudar o
+ * parâmetro amanhã, as consignações de ontem continuam sendo consignações.
+ *
+ * OS DOIS CFOP, não um: 1917 é consignação recebida de dentro do estado, 2917
+ * de fora. Filtrar só por 1917 fazia o carro vindo de outro estado — como o
+ * Audi Q5 de Catalão/GO — nunca aparecer para devolver, e ninguém descobriria
+ * até precisar devolvê-lo.
  */
+export const CFOP_CONSIGNACAO_RECEBIDA = ["1917", "2917"];
+
 export async function listConsignacoesAbertas() {
-  const cfop = "1917";
   const { rows } = await query(
     `select n.vehicle_id, n.ref, n.valor, n.destinatario, n.numero, n.created_at,
             v.brand, v.model, v.year, v.placa
@@ -364,7 +370,7 @@ export async function listConsignacoesAbertas() {
        join vehicles v on v.id = n.vehicle_id
       where n.operacao = 'entrada'
         and n.status = 'autorizada'
-        and n.cfop = $1
+        and n.cfop = any($1)
         and not exists (
           select 1 from notas_fiscais d
            where d.vehicle_id = n.vehicle_id
@@ -372,7 +378,7 @@ export async function listConsignacoesAbertas() {
              and d.status in ('processando','autorizada')
         )
       order by n.created_at desc`,
-    [cfop]
+    [CFOP_CONSIGNACAO_RECEBIDA]
   );
   return rows.map((r) => ({ ...r, valor: r.valor != null ? Number(r.valor) : 0 }));
 }
@@ -393,9 +399,10 @@ export async function devolverConsignacaoVeiculo(vehicleId) {
 
   const { rows: entradas } = await query(
     `select ref, valor, destinatario from notas_fiscais
-      where vehicle_id=$1 and operacao='entrada' and status='autorizada' and cfop='1917'
+      where vehicle_id=$1 and operacao='entrada' and status='autorizada'
+        and cfop = any($2)
       order by created_at desc limit 1`,
-    [vehicleId]
+    [vehicleId, CFOP_CONSIGNACAO_RECEBIDA]
   );
   if (!entradas.length) {
     return {

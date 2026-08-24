@@ -1,0 +1,23 @@
+{
+  "_comentario": [
+    "Endpoints de NF-e que a Focus documenta, extraídos da especificação OpenAPI",
+    "publicada por eles em https://doc.focusnfe.com.br/llms.txt.",
+    "",
+    "POR QUE ESTE ARQUIVO EXISTE: em 22/08/2026 a Mayra tentou cancelar uma nota",
+    "e recebeu 'Endpoint não encontrado'. O código chamava POST /nfe/{ref}/cancel,",
+    "que nunca existiu — endereço inventado passa por build, lint e deploy sem",
+    "ninguém notar, e só quebra quando alguém precisa daquela função.",
+    "",
+    "Atualizar com: node scripts/conferir-endpoints-focus.mjs --atualizar"
+  ],
+  "conferido_em": "2026-08-23",
+  "endpoints": [
+    "POST /nfe",
+    "POST /nfe/danfe",
+    "DELETE /nfe/{referencia}",
+    "GET /nfe/{referencia}",
+    "POST /nfe/{referencia}/carta_correcao",
+    "POST /nfe/{referencia}/email",
+    "POST /nfe/{referencia}/evento"
+  ]
+}
