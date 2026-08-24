@@ -558,3 +558,37 @@ export async function registrarCancelamentoExterno(ref, { protocolo, justificati
   );
   return { nota: rows[0] };
 }
+
+/**
+ * Os dados de uma nota cancelada, para reemitir sem digitar tudo de novo.
+ *
+ * PORQUE NÃO É "DO ZERO": a nota guarda quem era a outra parte, o valor e o
+ * CFOP emitido. Depois de um cancelamento — que quase sempre acontece por um
+ * detalhe errado, não porque o negócio mudou —, pedir que a operadora
+ * redigite oito campos de endereço é convidar a um erro novo, diferente do
+ * primeiro.
+ *
+ * Só devolve para nota CANCELADA: reaproveitar de uma nota viva seria
+ * duplicar, não refazer.
+ */
+export async function dadosParaRefazer(ref) {
+  const { rows } = await query(
+    `select ref, vehicle_id, status, operacao, cfop, valor, destinatario, numero
+       from notas_fiscais where ref = $1`,
+    [ref]
+  );
+  if (!rows.length) return null;
+  const n = rows[0];
+  if (n.status !== "cancelada") return null;
+
+  return {
+    ref: n.ref,
+    numeroAnterior: n.numero,
+    vehicleId: n.vehicle_id,
+    operacao: n.operacao,
+    // O CFOP gravado é o que diz se aquela entrada foi compra ou consignação.
+    consignacao: CFOP_CONSIGNACAO_RECEBIDA.includes(String(n.cfop)),
+    valor: n.valor != null ? Number(n.valor) : 0,
+    contraparte: n.destinatario || {},
+  };
+}

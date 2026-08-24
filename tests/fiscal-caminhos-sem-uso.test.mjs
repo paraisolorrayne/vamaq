@@ -333,3 +333,47 @@ test("depois de registrado, o veículo volta a aceitar emissão", async () => {
   });
   assert.ok(!/já tem nota de entrada/i.test(res.error || ""), `continuou bloqueado: ${res.error}`);
 });
+
+// ── dadosParaRefazer ───────────────────────────────────────────────────────
+//
+// "Cancelada" responde o que aconteceu e deixa a pergunta seguinte no ar: e
+// agora, preciso preencher tudo outra vez? A nota guarda a outra parte, o
+// valor e o CFOP — refazer não precisa ser do zero.
+
+test("nota cancelada devolve os dados para reemitir", async () => {
+  const ref = await nota("autorizada", { operacao: "entrada", cfop: "2917" });
+  await notas.registrarCancelamentoExterno(ref, {
+    protocolo: "131267840529098",
+    justificativa: "Cancelada pela contabilidade por CFOP incorreto",
+  });
+
+  const d = await notas.dadosParaRefazer(ref);
+  assert.equal(d.vehicleId, vehicleId);
+  assert.equal(d.operacao, "entrada");
+  assert.equal(d.consignacao, true, "2917 é consignação, e o formulário precisa vir marcado");
+  assert.equal(d.valor, 400000);
+  assert.equal(d.contraparte.nome, "Henrique Andrade");
+  assert.equal(d.contraparte.cep, "75.707-090", "o endereço inteiro volta, para não redigitar");
+  assert.equal(d.numeroAnterior, "17");
+});
+
+test("compra cancelada volta SEM a marca de consignação", async () => {
+  const ref = await nota("autorizada", { operacao: "entrada", cfop: "1102" });
+  await notas.registrarCancelamentoExterno(ref, {
+    protocolo: "131267840529098", justificativa: "Cancelada pela contabilidade",
+  });
+  assert.equal((await notas.dadosParaRefazer(ref)).consignacao, false);
+});
+
+test("nota viva não é oferecida para refazer — seria duplicar, não refazer", async () => {
+  const ref = await nota("autorizada");
+  assert.equal(await notas.dadosParaRefazer(ref), null);
+
+  await pool.query(`delete from notas_fiscais`);
+  const r2 = await nota("erro");
+  assert.equal(await notas.dadosParaRefazer(r2), null);
+});
+
+test("referência inexistente devolve nulo, não estoura", async () => {
+  assert.equal(await notas.dadosParaRefazer("nao-existe"), null);
+});

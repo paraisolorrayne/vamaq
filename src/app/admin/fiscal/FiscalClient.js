@@ -35,6 +35,62 @@ const STATUS_STYLE = {
 };
 
 
+
+/**
+ * O que fazer depois de uma nota cancelada.
+ *
+ * "Cancelada" responde o que aconteceu e deixa a pergunta seguinte no ar: e
+ * agora, posso emitir de novo? Preciso preencher tudo outra vez? Sem resposta
+ * na tela, essa pergunta vira mensagem para quem construiu o sistema.
+ */
+function LiberadoParaReemitir({ nota }) {
+  const entrada = nota.operacao === "entrada";
+  const destino = entrada
+    ? `/admin/fiscal/entrada/${nota.vehicle_id}?refazer=${encodeURIComponent(nota.ref)}`
+    : `/admin/fiscal/emitir/${nota.vehicle_id}`;
+
+  return (
+    <div
+      style={{
+        marginTop: 6,
+        padding: "8px 10px",
+        background: "#eef6f0",
+        borderLeft: "3px solid #7cb08e",
+        borderRadius: 4,
+        maxWidth: 560,
+      }}
+    >
+      <div
+        style={{
+          fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+          fontSize: "0.62rem",
+          letterSpacing: "0.08em",
+          textTransform: "uppercase",
+          color: "#2e7d4f",
+          fontWeight: 700,
+        }}
+      >
+        Liberado para emitir de novo
+      </div>
+      <p style={{ fontSize: "0.82rem", color: "#374151", margin: "4px 0 0", lineHeight: 1.45 }}>
+        {entrada
+          ? "Não precisa começar do zero: o formulário abre preenchido com os dados desta nota. Confira o que estava errado, corrija e emita."
+          : "O veículo voltou a aceitar nota de venda. Preencha a emissão normalmente."}
+        {" "}A nota nova recebe um número próprio, e esta continua no histórico.
+      </p>
+      <p style={{ margin: "8px 0 0" }}>
+        <Link
+          href={destino}
+          className={`${styles.btnPrimary} ${styles.btnSmall}`}
+          style={{ display: "inline-flex", alignItems: "center", minHeight: 40 }}
+        >
+          {entrada ? "Emitir de novo com os mesmos dados" : "Emitir nota de venda"}
+        </Link>
+      </p>
+    </div>
+  );
+}
+
 /** Cores por dono do problema. Verde não entra: nada aqui é boa notícia. */
 const COR_DONO = {
   [DONO.OPERACAO]: { fundo: "#fff7e8", borda: "#e8b84b", texto: "#a8752e" },
@@ -484,6 +540,12 @@ export default function FiscalClient({
                         <div style={{ fontSize: "0.72rem", color: "#6b7280", marginTop: 2 }}>
                           cancelada pela contabilidade · protocolo {n.cancelamento_protocolo}
                         </div>
+                      )}
+                      {/* Sem isto, a única pista de que o veículo voltou a
+                          aceitar nota era ele reaparecer num seletor lá em
+                          cima — e ninguém repara nisso. */}
+                      {n.status === "cancelada" && (
+                        <LiberadoParaReemitir nota={n} />
                       )}
                       {n.operacao === "devolucao" && (
                         <div

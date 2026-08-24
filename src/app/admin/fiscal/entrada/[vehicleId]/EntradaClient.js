@@ -28,10 +28,15 @@ const VAZIO = {
   uf: "MG",
 };
 
-export default function EntradaClient({ veiculo, ativo, notaExistente }) {
-  const [remetente, setRemetente] = useState(VAZIO);
-  const [valor, setValor] = useState("");
-  const [consignacao, setConsignacao] = useState(false);
+export default function EntradaClient({ veiculo, ativo, notaExistente, anterior }) {
+  // Vindo de um cancelamento, o formulário nasce preenchido com o que já
+  // estava na nota anterior — o cancelamento quase sempre é por um detalhe,
+  // não porque o negócio mudou.
+  const [remetente, setRemetente] = useState(anterior?.contraparte?.nome ? { ...VAZIO, ...anterior.contraparte } : VAZIO);
+  const [valor, setValor] = useState(
+    anterior?.valor ? anterior.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 }) : ""
+  );
+  const [consignacao, setConsignacao] = useState(Boolean(anterior?.consignacao));
   const [erro, setErro] = useState(null);
   const [isPending, startTransition] = useTransition();
 
@@ -138,6 +143,22 @@ export default function EntradaClient({ veiculo, ativo, notaExistente }) {
           nenhuma</strong> — que são justamente os que estão parados.
         </p>
       </div>
+
+      {anterior && (
+        <div className={styles.card} style={{ marginBottom: 24, borderLeft: "4px solid #7cb08e", background: "#eef6f0" }}>
+          <strong style={{ color: "#2e7d4f" }}>
+            Refazendo a nota {anterior.numeroAnterior ? `nº ${anterior.numeroAnterior}` : "cancelada"}
+          </strong>
+          <p style={{ fontSize: "0.9rem", color: "#333", margin: "6px 0 0" }}>
+            Os campos abaixo vieram da nota anterior, que foi cancelada. Confira o que
+            precisa mudar e emita — <strong>não precisa preencher tudo de novo</strong>.
+          </p>
+          <p style={{ fontSize: "0.9rem", color: "#333", margin: "6px 0 0" }}>
+            A nota nova recebe um número próprio. A cancelada continua no histórico, como
+            deve.
+          </p>
+        </div>
+      )}
 
       {erro && (
         <div className={styles.card} style={{ marginBottom: 24, borderLeft: "4px solid #b91c1c" }}>

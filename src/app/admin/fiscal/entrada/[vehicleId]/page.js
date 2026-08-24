@@ -1,5 +1,5 @@
 import { requireRole } from "@/lib/auth/dal";
-import { getDadosEmissao, focusEnabled } from "@/lib/fiscal/notas";
+import { getDadosEmissao, focusEnabled, dadosParaRefazer } from "@/lib/fiscal/notas";
 import { query } from "@/lib/db";
 import EntradaClient from "./EntradaClient";
 
@@ -8,9 +8,10 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function EntradaPage({ params }) {
+export default async function EntradaPage({ params, searchParams }) {
   await requireRole(["financeiro", "secretaria"]);
   const { vehicleId } = await params;
+  const { refazer } = (await searchParams) || {};
 
   const dados = await getDadosEmissao(vehicleId);
   if (!dados) {
@@ -26,9 +27,14 @@ export default async function EntradaPage({ params }) {
     [vehicleId]
   );
 
+  // Reemissão depois de um cancelamento: os dados vêm da nota antiga, para
+  // não redigitar oito campos de endereço e errar de um jeito novo.
+  const anterior = refazer ? await dadosParaRefazer(String(refazer)) : null;
+
   return (
     <EntradaClient
       veiculo={dados.veiculo}
+      anterior={anterior && anterior.vehicleId === vehicleId ? anterior : null}
       ativo={focusEnabled()}
       notaExistente={rows[0] || null}
     />
