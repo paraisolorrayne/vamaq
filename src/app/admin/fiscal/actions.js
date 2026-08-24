@@ -10,6 +10,7 @@ import {
   emitirNotaEntradaVeiculo,
   devolverConsignacaoVeiculo,
   emitirCartaCorrecao,
+  registrarCancelamentoExterno,
 } from "@/lib/fiscal/notas";
 
 export async function atualizarStatusAction(ref) {
@@ -78,6 +79,24 @@ export async function devolverConsignacaoAction(vehicleId) {
 export async function cartaCorrecaoAction(ref, correcao) {
   await requireRole(["financeiro", "secretaria"]);
   const res = await emitirCartaCorrecao(ref, correcao);
+  if (res.error) return { error: res.error };
+  revalidatePath("/admin/fiscal");
+  return { ok: true };
+}
+
+/**
+ * Registra cancelamento feito pela contabilidade, fora do sistema.
+ *
+ * Sem isto a loja depende de suporte técnico para destravar a reemissão de um
+ * veículo — que é tarefa de operação, não de quem escreveu o código.
+ */
+export async function registrarCancelamentoExternoAction(ref, { protocolo, justificativa }) {
+  const usuario = await requireRole(["financeiro", "secretaria"]);
+  const res = await registrarCancelamentoExterno(ref, {
+    protocolo,
+    justificativa,
+    usuarioId: usuario?.id,
+  });
   if (res.error) return { error: res.error };
   revalidatePath("/admin/fiscal");
   return { ok: true };

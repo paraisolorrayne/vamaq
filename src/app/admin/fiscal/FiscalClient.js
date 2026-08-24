@@ -3,11 +3,13 @@
 import { useState, useTransition, useEffect, useRef } from "react";
 import Link from "next/link";
 import styles from "../admin.module.css";
+import { orientacaoDoErro, DONO } from "@/lib/fiscal/orientacao";
 import {
   atualizarStatusAction,
   cancelarNotaAction,
   devolverConsignacaoAction,
   cartaCorrecaoAction,
+  registrarCancelamentoExternoAction,
 } from "./actions";
 import { formatValorBR } from "@/lib/money";
 
@@ -31,6 +33,99 @@ const STATUS_STYLE = {
   erro: { background: "#fee2e2", color: "#b91c1c" },
   cancelada: { background: "#f3f4f6", color: "#6b7280" },
 };
+
+
+/** Cores por dono do problema. Verde não entra: nada aqui é boa notícia. */
+const COR_DONO = {
+  [DONO.OPERACAO]: { fundo: "#fff7e8", borda: "#e8b84b", texto: "#a8752e" },
+  [DONO.CONTABILIDADE]: { fundo: "#eef2fb", borda: "#7f9ad6", texto: "#2f4d8f" },
+  [DONO.SUPORTE]: { fundo: "#fdf0ee", borda: "#d9776c", texto: "#b3392c" },
+  [DONO.ESPERAR]: { fundo: "#f3f4f6", borda: "#c9cbd1", texto: "#4b5563" },
+};
+
+/**
+ * O erro da SEFAZ traduzido em próximo passo.
+ *
+ * A mensagem crua continua embaixo, recolhida: é dela que a contabilidade
+ * precisa, e é ela que se copia num WhatsApp. Mas quem lê primeiro é quem
+ * opera a loja — e essa pessoa precisa saber o que fazer, não decifrar uma
+ * rejeição em linguagem fiscal.
+ */
+function OrientacaoDoErro({ mensagem }) {
+  const o = orientacaoDoErro(mensagem);
+  const cor = COR_DONO[o.dono] || COR_DONO[DONO.CONTABILIDADE];
+
+  async function copiar() {
+    try {
+      await navigator.clipboard.writeText(o.mensagemOriginal);
+    } catch {
+      // navegador sem permissão de área de transferência — o texto está à vista
+    }
+  }
+
+  return (
+    <div
+      style={{
+        marginTop: 6,
+        padding: "8px 10px",
+        background: cor.fundo,
+        borderLeft: `3px solid ${cor.borda}`,
+        borderRadius: 4,
+        maxWidth: 560,
+      }}
+    >
+      <div
+        style={{
+          fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+          fontSize: "0.62rem",
+          letterSpacing: "0.08em",
+          textTransform: "uppercase",
+          color: cor.texto,
+          fontWeight: 700,
+        }}
+      >
+        {o.rotuloDono}
+      </div>
+      <p style={{ fontSize: "0.84rem", color: "#1f2937", margin: "4px 0 0", fontWeight: 600 }}>
+        {o.resumo}
+      </p>
+      <p style={{ fontSize: "0.82rem", color: "#374151", margin: "4px 0 0", lineHeight: 1.45 }}>
+        {o.oQueFazer}
+      </p>
+      <details style={{ marginTop: 6 }}>
+        <summary style={{ fontSize: "0.75rem", color: "#6b7280", cursor: "pointer" }}>
+          Ver o texto da SEFAZ (para enviar à contabilidade)
+        </summary>
+        <p
+          style={{
+            fontSize: "0.75rem",
+            color: "#6b7280",
+            margin: "6px 0 0",
+            wordBreak: "break-word",
+          }}
+        >
+          {o.mensagemOriginal}
+        </p>
+        <button
+          type="button"
+          onClick={copiar}
+          style={{
+            marginTop: 6,
+            minHeight: 36,
+            padding: "0 10px",
+            fontSize: "0.75rem",
+            background: "none",
+            border: "1px solid #c9cbd1",
+            borderRadius: 4,
+            cursor: "pointer",
+          }}
+        >
+          Copiar texto
+        </button>
+      </details>
+    </div>
+  );
+}
 
 export default function FiscalClient({
   notas,
@@ -108,6 +203,30 @@ export default function FiscalClient({
     setPendingRef(ref);
     startTransition(async () => {
       const r = await atualizarStatusAction(ref);
+      if (r?.error) setErr(r.error);
+      setPendingRef(null);
+    });
+  }
+
+  function handleCancelamentoExterno(n) {
+    const protocolo = window.prompt(
+      "Protocolo do cancelamento (15 números)\n\n" +
+        "É o código que a contabilidade recebe da SEFAZ ao cancelar — diferente do " +
+        "protocolo de autorização que está na DANFE.\n\n" +
+        "Só registre depois de confirmar que a SEFAZ aceitou o cancelamento. " +
+        "Se a nota antiga não estiver mesmo cancelada, o carro fica com duas notas válidas."
+    );
+    if (protocolo == null) return;
+    const motivo = window.prompt("Por que a nota foi cancelada? (mínimo 15 caracteres)");
+    if (motivo == null) return;
+
+    setErr(null);
+    setPendingRef(n.ref);
+    startTransition(async () => {
+      const r = await registrarCancelamentoExternoAction(n.ref, {
+        protocolo,
+        justificativa: motivo,
+      });
       if (r?.error) setErr(r.error);
       setPendingRef(null);
     });
@@ -361,6 +480,11 @@ export default function FiscalClient({
                       {/* Entrada e saída convivem na mesma lista e do mesmo
                           carro. Sem dizer qual é qual, "duas notas do Cayenne"
                           parece duplicidade — e é o contrário: é o par certo. */}
+                      {n.cancelamento_externo && (
+                        <div style={{ fontSize: "0.72rem", color: "#6b7280", marginTop: 2 }}>
+                          cancelada pela contabilidade · protocolo {n.cancelamento_protocolo}
+                        </div>
+                      )}
                       {n.operacao === "devolucao" && (
                         <div
                           style={{
@@ -405,9 +529,7 @@ export default function FiscalClient({
                         </span>
                       )}
                       {n.status === "erro" && n.mensagem && (
-                        <p style={{ fontSize: "0.78rem", color: "#b91c1c", margin: "4px 0 0" }}>
-                          {n.mensagem}
-                        </p>
+                        <OrientacaoDoErro mensagem={n.mensagem} />
                       )}
                     </td>
                     <td style={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
@@ -459,6 +581,21 @@ export default function FiscalClient({
                           title="Corrige campo que não determina imposto — serve depois de vencido o prazo de cancelamento"
                         >
                           {n.carta_correcao_qtd > 0 ? "Corrigir de novo" : "Carta de correção"}
+                        </button>
+                      )}
+                      {/* Quando a contabilidade cancela pelo sistema dela — o
+                          que inclui o cancelamento fora do prazo, que a loja
+                          não consegue fazer sozinha —, é aqui que a loja
+                          registra e destrava a reemissão do veículo. Sem isto,
+                          a única saída era chamar suporte técnico. */}
+                      {n.status === "autorizada" && (
+                        <button
+                          onClick={() => handleCancelamentoExterno(n)}
+                          className={`${styles.btnSecondary} ${styles.btnSmall}`}
+                          disabled={isPending && pendingRef === n.ref}
+                          title="Use quando a contabilidade já cancelou esta nota pelo sistema dela"
+                        >
+                          Já cancelada por fora
                         </button>
                       )}
                       {n.status === "autorizada" && (

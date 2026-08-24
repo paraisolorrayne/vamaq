@@ -502,3 +502,59 @@ export async function emitirCartaCorrecao(ref, correcao) {
     return { error: err.message };
   }
 }
+
+/** Protocolo da SEFAZ: 15 dígitos. Formato é o que dá para conferir daqui. */
+const PROTOCOLO_VALIDO = /^\d{15}$/;
+
+/**
+ * Registra que uma nota foi cancelada FORA do sistema.
+ *
+ * Acontece quando a contabilidade cancela pelo sistema dela — inclusive o
+ * cancelamento fora do prazo, que a loja não consegue fazer sozinha. Sem isto,
+ * o nosso registro fica em "autorizada" para sempre e a guarda bloqueia a
+ * reemissão do veículo, obrigando a loja a chamar suporte técnico para uma
+ * tarefa que é de operação.
+ *
+ * EXIGE O PROTOCOLO, e não é burocracia: é a única prova de que a SEFAZ
+ * registrou o cancelamento. Sem ele, marcar como cancelada é palpite — e o
+ * preço do palpite errado é duas notas válidas para o mesmo carro.
+ */
+export async function registrarCancelamentoExterno(ref, { protocolo, justificativa, usuarioId }) {
+  const proto = String(protocolo ?? "").replace(/\D/g, "");
+  if (!PROTOCOLO_VALIDO.test(proto)) {
+    return {
+      error:
+        "Informe o protocolo do cancelamento — são 15 números, e a contabilidade recebe esse código da SEFAZ ao cancelar. Ele é diferente do protocolo de autorização que está na DANFE.",
+    };
+  }
+  const motivo = String(justificativa ?? "").trim();
+  if (motivo.length < 15) {
+    return { error: "Escreva em poucas palavras por que a nota foi cancelada (mínimo 15 caracteres)." };
+  }
+
+  const { rows: atual } = await query(
+    `select status from notas_fiscais where ref = $1`,
+    [ref]
+  );
+  if (!atual.length) return { error: "Nota não encontrada." };
+  if (atual[0].status === "cancelada") {
+    return { error: "Esta nota já consta como cancelada." };
+  }
+  if (atual[0].status !== "autorizada") {
+    return { error: "Só nota autorizada pode ser marcada como cancelada." };
+  }
+
+  const { rows } = await query(
+    `update notas_fiscais
+        set status = 'cancelada',
+            cancelada_em = now(),
+            cancelamento_externo = true,
+            cancelamento_protocolo = $2,
+            justificativa_cancelamento = $3,
+            cancelamento_informado_por = $4
+      where ref = $1
+      returning *`,
+    [ref, proto, motivo, usuarioId || null]
+  );
+  return { nota: rows[0] };
+}

@@ -54,12 +54,14 @@ before(async () => {
   pool = new pg.Pool({ connectionString: url });
   for (const f of [
     "schema.sql",
+    "auth-schema.sql",
     "fiscal-schema.sql",
     "fiscal-entrada.sql",
     "fiscal-consignacao-devolucao.sql",
     "fiscal-natop-60.sql",
     "fiscal-cfop-interestadual.sql",
     "fiscal-carta-correcao.sql",
+    "fiscal-cancelamento-externo.sql",
   ]) {
     await pool.query(await readFile(path.join(ROOT, "db", f), "utf8"));
   }
@@ -70,6 +72,10 @@ before(async () => {
      returning id`
   );
   vehicleId = v.rows[0].id;
+  await pool.query(
+    `insert into users (name, email, password_hash, role)
+     values ('Operadora','op@vamaqmotors.com.br','x','secretaria')`
+  );
   await pool.query(
     `insert into fiscal_config (cnpj, cfop, cst, ncm, serie)
      values ('45348469000154','5102','020','87032100','2')`
@@ -236,4 +242,94 @@ test("devolver funciona para consignação de outro estado, e sai com 6918", asy
   );
   assert.equal(rows.length, 1, "a devolução tinha que ter sido gravada");
   assert.equal(rows[0].cfop, "6918", "consignante de outro estado devolve com 6918");
+});
+
+// ── registrarCancelamentoExterno ───────────────────────────────────────────
+//
+// A contabilidade cancelou a NF 17 pelo sistema dela — inclusive fora do
+// prazo, que a loja não consegue fazer sozinha. Sem registrar aqui, o nosso
+// registro fica "autorizada" para sempre e a guarda bloqueia a reemissão do
+// veículo, obrigando a loja a chamar suporte técnico para tarefa de operação.
+
+test("registrar com protocolo cancela a nota e guarda a origem", async () => {
+  const ref = await nota("autorizada", { operacao: "entrada", cfop: "1917" });
+  const res = await notas.registrarCancelamentoExterno(ref, {
+    protocolo: "131267840529098",
+    justificativa: "Cancelada pela contabilidade por CFOP incorreto",
+  });
+  assert.equal(res.error, undefined, res.error);
+
+  const { rows } = await pool.query(`select * from notas_fiscais where ref=$1`, [ref]);
+  assert.equal(rows[0].status, "cancelada");
+  assert.equal(rows[0].cancelamento_externo, true);
+  assert.equal(rows[0].cancelamento_protocolo, "131267840529098");
+  assert.ok(rows[0].cancelada_em);
+});
+
+test("sem protocolo válido não cancela — é a única prova que temos", async () => {
+  const ref = await nota();
+  for (const p of ["", "123", "abc", "1312678405290980000", null]) {
+    const res = await notas.registrarCancelamentoExterno(ref, {
+      protocolo: p,
+      justificativa: "Cancelada pela contabilidade por CFOP incorreto",
+    });
+    assert.match(res.error, /protocolo/i, `protocolo ${JSON.stringify(p)} deveria recusar`);
+  }
+  const { rows } = await pool.query(`select status from notas_fiscais where ref=$1`, [ref]);
+  assert.equal(rows[0].status, "autorizada", "nenhuma tentativa pode ter mudado o estado");
+});
+
+test("protocolo com pontuação é aceito — a pessoa copia da tela do contador", async () => {
+  const ref = await nota();
+  const res = await notas.registrarCancelamentoExterno(ref, {
+    protocolo: "131.267.840.529.098",
+    justificativa: "Cancelada pela contabilidade por CFOP incorreto",
+  });
+  assert.equal(res.error, undefined, res.error);
+  const { rows } = await pool.query(`select cancelamento_protocolo from notas_fiscais where ref=$1`, [ref]);
+  assert.equal(rows[0].cancelamento_protocolo, "131267840529098");
+});
+
+test("só nota autorizada pode ser marcada, e não duas vezes", async () => {
+  const ref = await nota("erro");
+  assert.match(
+    (await notas.registrarCancelamentoExterno(ref, {
+      protocolo: "131267840529098", justificativa: "Cancelada pela contabilidade",
+    })).error,
+    /só nota autorizada/i
+  );
+
+  await pool.query(`delete from notas_fiscais`);
+  const r2 = await nota("autorizada");
+  await notas.registrarCancelamentoExterno(r2, {
+    protocolo: "131267840529098", justificativa: "Cancelada pela contabilidade",
+  });
+  assert.match(
+    (await notas.registrarCancelamentoExterno(r2, {
+      protocolo: "131267840529098", justificativa: "Cancelada pela contabilidade",
+    })).error,
+    /já consta como cancelada/i
+  );
+});
+
+test("depois de registrado, o veículo volta a aceitar emissão", async () => {
+  // É este o ponto: destravar sem depender de suporte técnico.
+  const ref = await nota("autorizada", { operacao: "entrada", cfop: "1917" });
+  let res = await notas.emitirNotaEntradaVeiculo(vehicleId, {
+    remetente: { nome: "X", doc: "529.982.247-25", cep: "1", logradouro: "R", numero: "1", bairro: "B", municipio: "M", uf: "MG" },
+    valorAquisicao: 1000,
+  });
+  assert.match(res.error, /já tem nota de entrada autorizada/i, "antes precisa bloquear");
+
+  await notas.registrarCancelamentoExterno(ref, {
+    protocolo: "131267840529098",
+    justificativa: "Cancelada pela contabilidade por CFOP incorreto",
+  });
+
+  respostaFocus = { ok: false, corpo: { mensagem: "Focus indisponivel no teste" } };
+  res = await notas.emitirNotaEntradaVeiculo(vehicleId, {
+    remetente: { nome: "X", doc: "529.982.247-25", cep: "1", logradouro: "R", numero: "1", bairro: "B", municipio: "M", uf: "MG" },
+    valorAquisicao: 1000,
+  });
+  assert.ok(!/já tem nota de entrada/i.test(res.error || ""), `continuou bloqueado: ${res.error}`);
 });
