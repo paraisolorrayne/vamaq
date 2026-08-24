@@ -57,7 +57,7 @@ function LiberadoParaReemitir({ nota }) {
         background: "#eef6f0",
         borderLeft: "3px solid #7cb08e",
         borderRadius: 4,
-        maxWidth: 560,
+        maxWidth: 420,
       }}
     >
       <div
@@ -127,7 +127,7 @@ function OrientacaoDoErro({ mensagem }) {
         background: cor.fundo,
         borderLeft: `3px solid ${cor.borda}`,
         borderRadius: 4,
-        maxWidth: 560,
+        maxWidth: 420,
       }}
     >
       <div
@@ -536,17 +536,6 @@ export default function FiscalClient({
                       {/* Entrada e saída convivem na mesma lista e do mesmo
                           carro. Sem dizer qual é qual, "duas notas do Cayenne"
                           parece duplicidade — e é o contrário: é o par certo. */}
-                      {n.cancelamento_externo && (
-                        <div style={{ fontSize: "0.72rem", color: "#6b7280", marginTop: 2 }}>
-                          cancelada pela contabilidade · protocolo {n.cancelamento_protocolo}
-                        </div>
-                      )}
-                      {/* Sem isto, a única pista de que o veículo voltou a
-                          aceitar nota era ele reaparecer num seletor lá em
-                          cima — e ninguém repara nisso. */}
-                      {n.status === "cancelada" && (
-                        <LiberadoParaReemitir nota={n} />
-                      )}
                       {n.operacao === "devolucao" && (
                         <div
                           style={{
@@ -590,6 +579,16 @@ export default function FiscalClient({
                           {STATUS_LABEL[n.status] || n.status}
                         </span>
                       )}
+                      {n.cancelamento_externo && (
+                        <div style={{ fontSize: "0.72rem", color: "#6b7280", marginTop: 4 }}>
+                          pela contabilidade · protocolo {n.cancelamento_protocolo}
+                        </div>
+                      )}
+                      {/* Aqui e não na coluna do veículo: é nesta coluna que a
+                          pessoa olha para saber o estado da nota e o que fazer
+                          em seguida. Na coluna do carro o bloco estourava a
+                          largura e ficava longe da pergunta que ele responde. */}
+                      {n.status === "cancelada" && <LiberadoParaReemitir nota={n} />}
                       {n.status === "erro" && n.mensagem && (
                         <OrientacaoDoErro mensagem={n.mensagem} />
                       )}
