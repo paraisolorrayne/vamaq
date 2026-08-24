@@ -269,10 +269,25 @@ export default function FiscalClient({
       "Protocolo do cancelamento (15 números)\n\n" +
         "É o código que a contabilidade recebe da SEFAZ ao cancelar — diferente do " +
         "protocolo de autorização que está na DANFE.\n\n" +
-        "Só registre depois de confirmar que a SEFAZ aceitou o cancelamento. " +
-        "Se a nota antiga não estiver mesmo cancelada, o carro fica com duas notas válidas."
+        "NÃO TEM O NÚMERO? Deixe em branco e clique OK: a próxima pergunta é quem " +
+        "da contabilidade confirmou.\n\n" +
+        "Só registre depois de ter a confirmação de que a SEFAZ aceitou. Se a nota " +
+        "antiga não estiver mesmo cancelada, o carro fica com duas notas válidas."
     );
     if (protocolo == null) return;
+
+    // Sem protocolo, o registro guarda quem confirmou — a prova é mais fraca,
+    // e o sistema diz isso em vez de fingir que toda baixa teve protocolo.
+    let confirmadoPor = "";
+    if (!String(protocolo).trim()) {
+      confirmadoPor =
+        window.prompt(
+          "Quem da contabilidade confirmou que a SEFAZ aceitou o cancelamento?\n\n" +
+            "Escreva o nome. Fica registrado como a origem desta baixa."
+        ) || "";
+      if (!confirmadoPor.trim()) return;
+    }
+
     const motivo = window.prompt("Por que a nota foi cancelada? (mínimo 15 caracteres)");
     if (motivo == null) return;
 
@@ -281,6 +296,7 @@ export default function FiscalClient({
     startTransition(async () => {
       const r = await registrarCancelamentoExternoAction(n.ref, {
         protocolo,
+        confirmadoPor,
         justificativa: motivo,
       });
       if (r?.error) setErr(r.error);
@@ -581,7 +597,10 @@ export default function FiscalClient({
                       )}
                       {n.cancelamento_externo && (
                         <div style={{ fontSize: "0.72rem", color: "#6b7280", marginTop: 4 }}>
-                          pela contabilidade · protocolo {n.cancelamento_protocolo}
+                          pela contabilidade ·{" "}
+                          {n.cancelamento_protocolo
+                            ? `protocolo ${n.cancelamento_protocolo}`
+                            : `confirmado por ${n.cancelamento_confirmado_por || "—"}, sem protocolo`}
                         </div>
                       )}
                       {/* Aqui e não na coluna do veículo: é nesta coluna que a

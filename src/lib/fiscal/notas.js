@@ -519,14 +519,39 @@ const PROTOCOLO_VALIDO = /^\d{15}$/;
  * registrou o cancelamento. Sem ele, marcar como cancelada é palpite — e o
  * preço do palpite errado é duas notas válidas para o mesmo carro.
  */
-export async function registrarCancelamentoExterno(ref, { protocolo, justificativa, usuarioId }) {
+export async function registrarCancelamentoExterno(
+  ref,
+  { protocolo, confirmadoPor, justificativa, usuarioId }
+) {
+  // DOIS CAMINHOS, DE PROPÓSITO. O protocolo é a prova melhor, mas exigir só
+  // ele travava quem tinha a confirmação da contabilidade por telefone e não
+  // tinha o número — e operadora travada liga para o suporte, que é o que
+  // este caminho existe para evitar.
+  //
+  // Sendo honesto: o protocolo não verifica nada, porque ninguém confere
+  // contra a SEFAZ. Ele registra, e obriga a buscar algo concreto antes de
+  // clicar. Vale — mas não vale bloquear.
   const proto = String(protocolo ?? "").replace(/\D/g, "");
-  if (!PROTOCOLO_VALIDO.test(proto)) {
+  const quem = String(confirmadoPor ?? "").trim();
+
+  let evidencia;
+  if (proto) {
+    if (!PROTOCOLO_VALIDO.test(proto)) {
+      return {
+        error:
+          "O protocolo do cancelamento tem 15 números. Confira o que a contabilidade passou — ele é diferente do protocolo de autorização que está na DANFE.",
+      };
+    }
+    evidencia = "protocolo";
+  } else if (quem.length >= 3) {
+    evidencia = "confirmacao";
+  } else {
     return {
       error:
-        "Informe o protocolo do cancelamento — são 15 números, e a contabilidade recebe esse código da SEFAZ ao cancelar. Ele é diferente do protocolo de autorização que está na DANFE.",
+        "Informe o protocolo do cancelamento (15 números) ou, se não tiver, quem da contabilidade confirmou que a SEFAZ aceitou.",
     };
   }
+
   const motivo = String(justificativa ?? "").trim();
   if (motivo.length < 15) {
     return { error: "Escreva em poucas palavras por que a nota foi cancelada (mínimo 15 caracteres)." };
@@ -551,10 +576,12 @@ export async function registrarCancelamentoExterno(ref, { protocolo, justificati
             cancelamento_externo = true,
             cancelamento_protocolo = $2,
             justificativa_cancelamento = $3,
-            cancelamento_informado_por = $4
+            cancelamento_informado_por = $4,
+            cancelamento_evidencia = $5,
+            cancelamento_confirmado_por = $6
       where ref = $1
       returning *`,
-    [ref, proto, motivo, usuarioId || null]
+    [ref, proto || null, motivo, usuarioId || null, evidencia, quem || null]
   );
   return { nota: rows[0] };
 }

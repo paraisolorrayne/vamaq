@@ -90,10 +90,11 @@ export async function cartaCorrecaoAction(ref, correcao) {
  * Sem isto a loja depende de suporte técnico para destravar a reemissão de um
  * veículo — que é tarefa de operação, não de quem escreveu o código.
  */
-export async function registrarCancelamentoExternoAction(ref, { protocolo, justificativa }) {
+export async function registrarCancelamentoExternoAction(ref, { protocolo, confirmadoPor, justificativa }) {
   const usuario = await requireRole(["financeiro", "secretaria"]);
   const res = await registrarCancelamentoExterno(ref, {
     protocolo,
+    confirmadoPor,
     justificativa,
     usuarioId: usuario?.id,
   });

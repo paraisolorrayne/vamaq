@@ -62,6 +62,7 @@ before(async () => {
     "fiscal-cfop-interestadual.sql",
     "fiscal-carta-correcao.sql",
     "fiscal-cancelamento-externo.sql",
+    "fiscal-cancelamento-evidencia.sql",
   ]) {
     await pool.query(await readFile(path.join(ROOT, "db", f), "utf8"));
   }
@@ -266,17 +267,56 @@ test("registrar com protocolo cancela a nota e guarda a origem", async () => {
   assert.ok(rows[0].cancelada_em);
 });
 
-test("sem protocolo válido não cancela — é a única prova que temos", async () => {
+test("protocolo malformado é recusado — 15 números ou nada", async () => {
   const ref = await nota();
-  for (const p of ["", "123", "abc", "1312678405290980000", null]) {
+  for (const p of ["123", "abc", "1312678405290980000"]) {
     const res = await notas.registrarCancelamentoExterno(ref, {
       protocolo: p,
       justificativa: "Cancelada pela contabilidade por CFOP incorreto",
     });
-    assert.match(res.error, /protocolo/i, `protocolo ${JSON.stringify(p)} deveria recusar`);
+    assert.match(res.error, /15 números/i, `protocolo ${JSON.stringify(p)} deveria recusar`);
   }
   const { rows } = await pool.query(`select status from notas_fiscais where ref=$1`, [ref]);
   assert.equal(rows[0].status, "autorizada", "nenhuma tentativa pode ter mudado o estado");
+});
+
+test("sem protocolo E sem quem confirmou, não cancela", async () => {
+  const ref = await nota();
+  const res = await notas.registrarCancelamentoExterno(ref, {
+    protocolo: "",
+    confirmadoPor: "",
+    justificativa: "Cancelada pela contabilidade por CFOP incorreto",
+  });
+  assert.match(res.error, /protocolo.*ou.*confirmou/is);
+});
+
+test("sem protocolo, mas com quem confirmou, o registro passa e diz a prova", async () => {
+  // Contabilidade confirma por telefone e não manda o número. Travar aqui
+  // fazia a operadora parar e ligar para o suporte — que é o que este caminho
+  // existe para evitar. O registro guarda que a prova foi mais fraca.
+  const ref = await nota();
+  const res = await notas.registrarCancelamentoExterno(ref, {
+    protocolo: "",
+    confirmadoPor: "Rodrigo, da contabilidade",
+    justificativa: "Cancelada pela contabilidade por CFOP incorreto",
+  });
+  assert.equal(res.error, undefined, res.error);
+
+  const { rows } = await pool.query(`select * from notas_fiscais where ref=$1`, [ref]);
+  assert.equal(rows[0].status, "cancelada");
+  assert.equal(rows[0].cancelamento_evidencia, "confirmacao");
+  assert.equal(rows[0].cancelamento_protocolo, null, "não pode inventar protocolo");
+  assert.match(rows[0].cancelamento_confirmado_por, /Rodrigo/);
+});
+
+test("com protocolo, a prova registrada é a forte", async () => {
+  const ref = await nota();
+  await notas.registrarCancelamentoExterno(ref, {
+    protocolo: "131267840529098",
+    justificativa: "Cancelada pela contabilidade por CFOP incorreto",
+  });
+  const { rows } = await pool.query(`select * from notas_fiscais where ref=$1`, [ref]);
+  assert.equal(rows[0].cancelamento_evidencia, "protocolo");
 });
 
 test("protocolo com pontuação é aceito — a pessoa copia da tela do contador", async () => {
