@@ -238,6 +238,19 @@ function EstoqueConteudo({ podeEmitirNota }) {
                       <strong>
                         {v.brand} {v.model}
                       </strong>
+                      {/* A placa embaixo do nome: com dois carros do mesmo
+                          modelo na lista, é o único jeito de saber qual é qual
+                          (mesma solução da tela de entradas e saídas). */}
+                      <span
+                        style={{
+                          display: "block",
+                          fontSize: "0.75rem",
+                          color: "#888",
+                          letterSpacing: "0.04em",
+                        }}
+                      >
+                        {v.placa || "sem placa"}
+                      </span>
                     </td>
                     <td>{anoVeiculo(v)}</td>
                     <td>{v.quilometragem?.toLocaleString("pt-BR")} km</td>
@@ -313,7 +326,8 @@ function EstoqueConteudo({ podeEmitirNota }) {
                       {v.brand} {v.model}
                     </strong>
                     <span className={styles.vehicleCardMeta}>
-                      {anoVeiculo(v)} · {v.quilometragem?.toLocaleString("pt-BR")} km
+                      {v.placa || "sem placa"} · {anoVeiculo(v)} ·{" "}
+                      {v.quilometragem?.toLocaleString("pt-BR")} km
                       {v.color ? ` · ${v.color}` : ""}
                     </span>
                     <span>
