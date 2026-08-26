@@ -8,6 +8,7 @@ import { clienteDoDocumento } from "@/lib/documentosCliente";
 import { generateContractPdf, buildContractDoc } from "@/lib/contractPdf";
 import { camposDoTemplate, prefixoDoTemplate } from "@/lib/clientes/prefill";
 import { formataDoc } from "@/lib/clientes/doc";
+import { camposDoVeiculo } from "@/lib/estoque/prefillVeiculo";
 import { anoVeiculo } from "@/lib/anoVeiculo";
 
 // Agrupa os campos por seção preservando a ordem de declaração do modelo.
@@ -218,17 +219,9 @@ export default function DocumentosPage() {
     if (prefix === "veiculo") setVehicleIdSel(vehicleId || "");
     const v = vehicles.find((veh) => veh.id === vehicleId);
     if (!v) return;
-    setValues((prev) => ({
-      ...prev,
-      [`${prefix}_marca`]: v.brand || prev[`${prefix}_marca`],
-      [`${prefix}_modelo`]: v.model || prev[`${prefix}_modelo`],
-      [`${prefix}_ano`]: anoVeiculo(v) || prev[`${prefix}_ano`],
-      [`${prefix}_cor`]: v.color || prev[`${prefix}_cor`],
-      [`${prefix}_combustivel`]: v.fuel || prev[`${prefix}_combustivel`],
-      [`${prefix}_km`]: v.quilometragem
-        ? v.quilometragem.toLocaleString("pt-BR")
-        : prev[`${prefix}_km`],
-    }));
+    // camposDoVeiculo devolve só o que está preenchido no cadastro — o que
+    // ficou em branco lá não sobrescreve o que já foi digitado aqui.
+    setValues((prev) => ({ ...prev, ...camposDoVeiculo(v, prefix) }));
   }
 
   async function handleGenerate() {
@@ -643,7 +636,8 @@ export default function DocumentosPage() {
                 <option value="">Selecione um veículo do estoque...</option>
                 {vehicles.map((v) => (
                   <option key={v.id} value={v.id}>
-                    {v.brand} {v.model} {anoVeiculo(v)} — {v.color}
+                    {v.brand} {v.model} {anoVeiculo(v)} — {v.color} —{" "}
+                    {v.placa || "sem placa"}
                   </option>
                 ))}
               </select>
@@ -662,7 +656,8 @@ export default function DocumentosPage() {
                   </option>
                   {vehicles.map((v) => (
                     <option key={v.id} value={v.id}>
-                      {v.brand} {v.model} {anoVeiculo(v)} — {v.color}
+                      {v.brand} {v.model} {anoVeiculo(v)} — {v.color} —{" "}
+                      {v.placa || "sem placa"}
                     </option>
                   ))}
                 </select>
