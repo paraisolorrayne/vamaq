@@ -10,6 +10,7 @@ export default function AdminDashboard() {
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [aprovar, setAprovar] = useState(null);
+  const [pedidosSenha, setPedidosSenha] = useState(0);
 
   useEffect(() => {
     fetch("/api/admin/vehicles")
@@ -38,6 +39,21 @@ export default function AdminDashboard() {
             valor: pendentes.reduce((s, b) => s + Number(b.value || 0), 0),
           });
         }
+      })
+      .catch(() => {});
+    return () => { ativo = false; };
+  }, []);
+
+  // Quem pediu senha nova está parado do lado de fora. O pedido também aparece
+  // em /admin/usuarios, mas essa é uma tela que se abre uma vez por mês —
+  // mesmo raciocínio do aviso de contas a aprovar. Quem não é admin recebe 403
+  // e o aviso não aparece.
+  useEffect(() => {
+    let ativo = true;
+    fetch("/api/admin/usuarios/pedidos-senha")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (ativo && d?.pedidos) setPedidosSenha(d.pedidos);
       })
       .catch(() => {});
     return () => { ativo = false; };
@@ -77,6 +93,28 @@ export default function AdminDashboard() {
           <p style={{ margin: "14px 0 0" }}>
             <Link href="/admin/financeiro/contas-pagar" className={styles.btnPrimary} prefetch={false}>
               Ver contas a aprovar
+            </Link>
+          </p>
+        </div>
+      )}
+
+      {pedidosSenha > 0 && (
+        <div
+          className={styles.card}
+          style={{ marginBottom: 24, borderLeft: "4px solid #b42318", background: "#fef3f2" }}
+        >
+          <strong style={{ color: "#b42318" }}>
+            {pedidosSenha === 1
+              ? "1 pessoa pediu senha nova"
+              : `${pedidosSenha} pessoas pediram senha nova`}
+          </strong>
+          <p style={{ fontSize: "0.9rem", color: "#666", margin: "6px 0 0" }}>
+            {pedidosSenha === 1 ? "Ela está" : "Elas estão"} sem conseguir entrar no
+            painel até alguém redefinir a senha e mandar a provisória.
+          </p>
+          <p style={{ margin: "14px 0 0" }}>
+            <Link href="/admin/usuarios" className={styles.btnPrimary} prefetch={false}>
+              Redefinir senha
             </Link>
           </p>
         </div>

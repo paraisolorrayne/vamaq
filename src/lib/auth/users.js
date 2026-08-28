@@ -26,7 +26,7 @@ function validRole(role) {
 export async function listUsers() {
   const { rows } = await query(
     `select u.id, u.name, u.email, u.role, u.active, u.must_change_password,
-            u.approval_limit, u.created_at, u.funcionario_id
+            u.approval_limit, u.created_at, u.funcionario_id, u.reset_requested_at
        from users u
       order by u.created_at asc`
   );
@@ -69,7 +69,8 @@ export async function resetPassword(id) {
   const tempPassword = generateTempPassword();
   const password_hash = await hashPassword(tempPassword);
   const { rows } = await query(
-    `update users set password_hash = $2, must_change_password = true, active = true
+    `update users set password_hash = $2, must_change_password = true, active = true,
+            reset_requested_at = null
       where id = $1 returning id, name, email, role`,
     [id, password_hash]
   );

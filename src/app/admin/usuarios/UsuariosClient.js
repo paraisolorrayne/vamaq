@@ -248,6 +248,12 @@ export default function UsuariosClient({ users, roles, meId, funcionarios }) {
                       <span className={styles.badgeWarning} style={{ background: "#f3f4f6", color: "#6b7280" }}>
                         Inativo
                       </span>
+                    ) : u.reset_requested_at ? (
+                      /* Vem antes do "aguardando 1º acesso": quem pediu senha
+                         nova está parado do lado de fora esperando alguém agir. */
+                      <span className={styles.badgeWarning} style={{ background: "#fee2e2", color: "#b42318" }}>
+                        Pediu senha nova
+                      </span>
                     ) : u.must_change_password ? (
                       <span className={styles.badgeWarning} style={{ background: "#fef9c3", color: "#a16207" }}>
                         Aguardando 1º acesso
@@ -260,8 +266,15 @@ export default function UsuariosClient({ users, roles, meId, funcionarios }) {
                     <div className={styles.tableActions}>
                       <button
                         onClick={() => handleReset(u)}
-                        className={`${styles.btnSecondary} ${styles.btnSmall}`}
+                        className={`${
+                          u.reset_requested_at ? styles.btnPrimary : styles.btnSecondary
+                        } ${styles.btnSmall}`}
                         disabled={isPending}
+                        title={
+                          u.reset_requested_at
+                            ? "Esta pessoa pediu uma senha nova na tela de login"
+                            : undefined
+                        }
                       >
                         Redefinir senha
                       </button>

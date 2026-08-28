@@ -94,3 +94,30 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* Usadas também pela tela de esqueci-senha, que compartilha este arquivo —
+   as duas são a mesma porta de entrada e têm que parecer a mesma coisa. */
+.success {
+  margin: 0;
+  padding: 0.7rem 0.85rem;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: #05603a;
+  background: #ecfdf3;
+  border: 1px solid #abefc6;
+  border-radius: 8px;
+}
+
+.link {
+  display: inline-block;
+  margin-top: 1.25rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-accent, #ff6a00);
+  text-decoration: none;
+}
+
+.link:hover,
+.link:focus-visible {
+  text-decoration: underline;
+}
