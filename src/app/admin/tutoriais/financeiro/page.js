@@ -322,6 +322,15 @@ export default function TutorialFinanceiroPage() {
             Fechar o mês é um marco gerencial: dá para fechar mesmo com pendências,
             e lançamento retroativo continua permitido.
           </p>
+          <p>
+            <strong>Onde ver depois:</strong> na mesma tela, abaixo do botão, fica{" "}
+            <span className={t.uiField}>Meses fechados</span> — a lista de todos
+            os meses já fechados, com a data do fechamento e o resultado{" "}
+            <strong>daquele dia</strong>. Os números da lista são o retrato
+            guardado no fechamento: se entrar lançamento retroativo depois, o
+            número de hoje muda e o do retrato não. É assim que você enxerga que
+            algo entrou fora de hora.
+          </p>
         </div>
       </div>
 

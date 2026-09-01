@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireApiRole } from "@/lib/auth/api";
-import { getFechamentoMes, fecharMes, reabrirMes } from "@/lib/fin/repositories/finance";
+import { getFechamentoMes, fecharMes, reabrirMes, listFechamentos } from "@/lib/fin/repositories/finance";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +15,10 @@ export async function GET(request) {
   const auth = await requireApiRole(["financeiro", "secretaria"]);
   if (auth.error) return auth.error;
   const { ano, mes } = parseYm(new URL(request.url).searchParams);
-  return NextResponse.json(await getFechamentoMes(ano, mes));
+  // O mês pedido E a lista do que já foi fechado: a tela mostra os dois, para
+  // que "fechei o mês, e agora onde eu vejo?" tenha resposta na própria tela.
+  const [atual, fechados] = await Promise.all([getFechamentoMes(ano, mes), listFechamentos()]);
+  return NextResponse.json({ ...atual, fechados });
 }
 
 export async function POST(request) {
@@ -23,6 +26,7 @@ export async function POST(request) {
   if (auth.error) return auth.error;
   const { ano, mes, action } = await request.json();
   if (!ano || !mes) return NextResponse.json({ error: "ano/mes obrigatórios" }, { status: 400 });
-  if (action === "reabrir") return NextResponse.json(await reabrirMes(ano, mes));
-  return NextResponse.json(await fecharMes(ano, mes, auth.user.id));
+  const resultado =
+    action === "reabrir" ? await reabrirMes(ano, mes) : await fecharMes(ano, mes, auth.user.id);
+  return NextResponse.json({ ...resultado, fechados: await listFechamentos() });
 }

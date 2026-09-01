@@ -126,8 +126,82 @@ export default function FechamentoPage() {
               )}
             </div>
           </div>
+
+          <MesesFechados fechados={data?.fechados} onAbrir={(f) => { setAno(f.ano); setMes(f.mes); }} />
         </>
       )}
     </>
+  );
+}
+
+/**
+ * O histórico do que já foi fechado.
+ *
+ * POR QUE EXISTE: fechar o mês gravava o retrato do resultado e não mostrava
+ * esse retrato em lugar nenhum depois — a pergunta "fechei, e onde eu vejo?"
+ * não tinha resposta na tela (a Mayra perguntou isso em 01/09/2026, no
+ * primeiro fechamento de mês cheio).
+ *
+ * Os números aqui são os do SNAPSHOT, o retrato do dia em que se fechou — não
+ * são recalculados. É essa a graça de fechar: se entrar lançamento retroativo
+ * depois, dá para ver que o número de hoje não é mais o que foi fechado.
+ */
+function MesesFechados({ fechados, onAbrir }) {
+  if (!fechados?.length) {
+    return (
+      <div className={styles.card} style={{ marginTop: 24 }}>
+        <h3 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: 8 }}>Meses fechados</h3>
+        <p style={{ fontSize: "0.9rem", color: "#666", margin: 0 }}>
+          Nenhum mês fechado ainda. Depois de fechar, cada mês fica listado aqui
+          com o resultado do dia em que foi fechado.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.card} style={{ marginTop: 24 }}>
+      <h3 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: 4 }}>Meses fechados</h3>
+      <p style={{ fontSize: "0.85rem", color: "#666", margin: "0 0 12px" }}>
+        O resultado guardado no dia do fechamento. Clique no mês para abrir o
+        retrato completo.
+      </p>
+      <div className={styles.tableWrap}>
+        <table className={styles.table}>
+          <thead>
+            <tr>
+              <th>Mês</th>
+              <th>Fechado em</th>
+              <th>Receita</th>
+              <th>Lucro líquido</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {fechados.map((f) => (
+              <tr key={`${f.ano}-${f.mes}`}>
+                <td style={{ whiteSpace: "nowrap" }}>{MESES[f.mes - 1]}/{f.ano}</td>
+                <td style={{ whiteSpace: "nowrap" }}>{new Date(f.closed_at).toLocaleDateString("pt-BR")}</td>
+                <td style={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{money(f.snapshot?.receita)}</td>
+                <td
+                  style={{
+                    whiteSpace: "nowrap",
+                    fontVariantNumeric: "tabular-nums",
+                    color: (f.snapshot?.lucroLiquido || 0) >= 0 ? "#15803d" : "#b91c1c",
+                  }}
+                >
+                  {money(f.snapshot?.lucroLiquido)}
+                </td>
+                <td>
+                  <button className={`${styles.btnSecondary} ${styles.btnSmall}`} onClick={() => onAbrir(f)}>
+                    Abrir
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
