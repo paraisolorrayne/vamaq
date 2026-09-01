@@ -200,6 +200,43 @@ export default function TutorialFiscalPage() {
           </div>
         </div>
       </div>
+
+      <div className={t.step}>
+        <div className={t.stepNumber}>6</div>
+        <div className={t.stepBody}>
+          <h3 className={t.stepTitle}>Mandar os XMLs do mês para a contabilidade</h3>
+          <p>
+            No começo do mês, o contador pede os XMLs de tudo que entrou e saiu
+            no mês anterior. Em{" "}
+            <Link href="/admin/fiscal">Notas Fiscais</Link>, no cartão{" "}
+            <span className={t.uiField}>XMLs do mês para a contabilidade</span>,
+            escolha o mês e clique em{" "}
+            <span className={t.uiButton}>Baixar XMLs do mês</span>. Vem um
+            arquivo <strong>.zip</strong> só, com as notas separadas em pastas{" "}
+            <span className={t.uiField}>entrada</span> (compras) e{" "}
+            <span className={t.uiField}>saida</span> (vendas) — é esse arquivo
+            que você anexa no e-mail ou no WhatsApp dele. Não precisa baixar
+            uma por uma.
+          </p>
+          <p>
+            Para uma nota só, o botão <span className={t.uiField}>XML</span> na
+            linha dela <strong>salva o arquivo</strong> no computador.
+          </p>
+          <div className={t.warning}>
+            <span className={t.boxLabel}>O que entra no pacote</span>
+            <p>
+              Entram as notas <strong>emitidas por aqui</strong> — as da{" "}
+              <strong>série 2</strong> —, inclusive as{" "}
+              <strong>canceladas</strong> (é a cancelada que explica o pulo na
+              numeração). Nota que o <strong>escritório</strong> emitiu na série
+              1 não passa pelo sistema: essa ele já tem. Se alguma nota não
+              conseguir ser baixada do emissor, o pacote vem assim mesmo, com um
+              arquivo <span className={t.uiField}>_faltando.txt</span> dentro
+              dizendo qual faltou e por quê.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

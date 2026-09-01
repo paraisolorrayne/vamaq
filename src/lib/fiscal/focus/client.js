@@ -38,6 +38,33 @@ export function focusFileUrl(caminho) {
   return `${origem}${caminho.startsWith("/") ? "" : "/"}${caminho}`;
 }
 
+/**
+ * Baixa um arquivo já emitido (XML ou DANFE) pela URL que a Focus devolveu.
+ *
+ * Não passa por `focusFetch`: aqui a URL é absoluta (fora do /v2) e a resposta
+ * é o arquivo, não JSON. O timeout é curto de propósito — no pacote mensal são
+ * dezenas de arquivos, e um servidor pendurado não pode segurar o download
+ * inteiro. Quem chama trata a exceção e registra a nota como faltante.
+ */
+export async function baixarArquivo(url, { timeoutMs = 20000 } = {}) {
+  // SEM credencial primeiro: esse endereço serve arquivo estático — é o mesmo
+  // que a operadora abre no navegador, deslogada. Mandar Basic para um caminho
+  // que não pede pode voltar 401, e aí o pacote mensal inteiro viraria uma
+  // lista de faltantes por causa de um header que ninguém pediu.
+  let res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
+
+  // Se o servidor pedir credencial, aí sim: uma tentativa com o token.
+  if ((res.status === 401 || res.status === 403) && focusEnabled()) {
+    res = await fetch(url, {
+      headers: authHeader(),
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+  }
+
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return Buffer.from(await res.arrayBuffer());
+}
+
 async function focusFetch(path, { method = "GET", body } = {}) {
   if (!focusEnabled()) throw new Error("Focus NFe não configurada (FOCUS_NFE_TOKEN ausente).");
   const res = await fetch(`${baseUrl()}${path}`, {

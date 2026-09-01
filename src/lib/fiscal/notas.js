@@ -9,7 +9,9 @@ import {
   montarPayloadEntrada,
   montarPayloadDevolucaoConsignacao,
 } from "@/lib/fiscal/payload";
-import { focusEnabled, emitirNfe, consultarNfe, cancelarNfe, cartaCorrecaoNfe, focusFileUrl } from "@/lib/fiscal/focus/client";
+import { focusEnabled, emitirNfe, consultarNfe, cancelarNfe, cartaCorrecaoNfe, focusFileUrl, baixarArquivo } from "@/lib/fiscal/focus/client";
+import { criarZip } from "@/lib/fiscal/zip";
+import { SQL_NOTAS_DO_MES, nomeDoArquivo, nomeDoZip, relatorioDeFaltando } from "@/lib/fiscal/pacote";
 import { getVehicleMargins } from "@/lib/fin/repositories/finance";
 import { ligarVeiculo } from "@/lib/clientes/repo";
 
@@ -272,6 +274,67 @@ export async function listNotas() {
       order by n.created_at desc`
   );
   return rows.map((r) => ({ ...r, valor: r.valor != null ? Number(r.valor) : 0 }));
+}
+
+/** Uma nota pelo identificador de emissão — o suficiente para servir o XML. */
+export async function getNotaPorRef(ref) {
+  const { rows } = await query(
+    `select ref, numero, serie, chave, status, operacao, xml_url, danfe_url
+       from notas_fiscais where ref = $1`,
+    [ref]
+  );
+  return rows[0] || null;
+}
+
+/**
+ * Monta o pacote de XMLs de um mês — o que a loja manda para a contabilidade.
+ *
+ * POR QUE EXISTE: o contador pede todos os XMLs de entrada e saída do mês. Um
+ * a um, no navegador, são dezenas de cliques — e o botão de XML nem salvava o
+ * arquivo, abria o código na tela.
+ *
+ * Uma nota que não baixa NÃO derruba o pacote: ela vira linha no `_faltando.txt`
+ * lá dentro. Pacote incompleto e silencioso é pior que pacote com bilhete.
+ */
+export async function montarPacoteXmlDoMes(ano, mes) {
+  const { rows: notas } = await query(SQL_NOTAS_DO_MES, [ano, mes]);
+  if (!notas.length) return { vazio: true };
+
+  const arquivos = [];
+  const faltando = [];
+
+  // Em blocos: sequencial demora demais num mês cheio, e tudo de uma vez é
+  // enxurrada de conexão na Focus por causa de um clique.
+  const LOTE = 5;
+  for (let i = 0; i < notas.length; i += LOTE) {
+    const bloco = notas.slice(i, i + LOTE);
+    await Promise.all(
+      bloco.map(async (nota) => {
+        try {
+          const conteudo = await baixarArquivo(nota.xml_url);
+          arquivos.push({ nome: nomeDoArquivo(nota), conteudo });
+        } catch (err) {
+          // TimeoutError vem sem mensagem útil ("The operation was aborted");
+          // o contador precisa ler "tempo esgotado" e entender.
+          const motivo =
+            err.name === "TimeoutError" ? "tempo esgotado" : String(err.message);
+          console.error(`Pacote de XMLs: falha ao baixar a nota ${nota.ref}:`, err);
+          faltando.push({ numero: nota.numero, operacao: nota.operacao, motivo });
+        }
+      })
+    );
+  }
+
+  const relatorio = relatorioDeFaltando(faltando);
+  if (relatorio) arquivos.push({ nome: "_faltando.txt", conteudo: relatorio });
+
+  return {
+    zip: criarZip(arquivos),
+    nome: nomeDoZip(ano, mes),
+    total: notas.length,
+    baixadas: notas.length - faltando.length,
+    faltando: faltando.length,
+  };
 }
 
 /**

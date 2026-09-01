@@ -37,6 +37,122 @@ const STATUS_STYLE = {
 
 
 
+const MESES = [
+  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+];
+
+/**
+ * O pacote de XMLs do mês, num arquivo só, para mandar à contabilidade.
+ *
+ * POR QUE COMEÇA NO MÊS PASSADO: quem abre esta tela para mandar XML está
+ * fechando o mês que acabou — dia 1º, o mês corrente tem zero nota. Deixar o
+ * seletor no mês atual entregava um "nenhuma nota neste mês" logo no primeiro
+ * clique de quem fez tudo certo.
+ */
+function PacoteXmls() {
+  const agora = new Date();
+  const anterior = new Date(agora.getFullYear(), agora.getMonth() - 1, 1);
+  const [ano, setAno] = useState(anterior.getFullYear());
+  const [mes, setMes] = useState(anterior.getMonth() + 1);
+  const [baixando, setBaixando] = useState(false);
+  const [aviso, setAviso] = useState(null);
+  const [erro, setErro] = useState(null);
+
+  async function baixar() {
+    setBaixando(true);
+    setErro(null);
+    setAviso(null);
+    try {
+      const res = await fetch(`/api/admin/fiscal/xmls?ano=${ano}&mes=${mes}`);
+      if (!res.ok) {
+        const dados = await res.json().catch(() => ({}));
+        setErro(dados.error || "Não foi possível montar o pacote.");
+        return;
+      }
+      const total = Number(res.headers.get("X-Notas-Total")) || 0;
+      const faltando = Number(res.headers.get("X-Notas-Faltando")) || 0;
+      const blob = await res.blob();
+
+      // O download nasce de um clique num link temporário: é o caminho que
+      // funciona igual em todo navegador, inclusive no celular.
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `xmls-vamaq-${ano}-${String(mes).padStart(2, "0")}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+
+      setAviso(
+        faltando > 0
+          ? `Pacote baixado com ${total - faltando} de ${total} nota(s). As ${faltando} que faltaram estão listadas no arquivo _faltando.txt, dentro do zip.`
+          : `Pacote baixado com ${total} nota(s) — entrada e saída.`
+      );
+    } catch {
+      setErro("A conexão caiu no meio do download. Tente de novo.");
+    } finally {
+      setBaixando(false);
+    }
+  }
+
+  return (
+    <div className={styles.card} style={{ marginBottom: 24 }}>
+      <h3 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: 4 }}>
+        XMLs do mês para a contabilidade
+      </h3>
+      <p style={{ fontSize: "0.85rem", color: "#666", margin: "0 0 12px" }}>
+        Baixa num arquivo só (.zip) todos os XMLs do mês — <strong>compra e
+        venda</strong>, separados em pastas, canceladas incluídas. É esse arquivo
+        que vai para o contador.
+      </p>
+      <div className={styles.toolbar} style={{ gap: 10, flexWrap: "wrap" }}>
+        <select
+          className={styles.formSelect}
+          value={mes}
+          onChange={(e) => setMes(Number(e.target.value))}
+          style={{ width: "auto" }}
+          aria-label="Mês do pacote"
+        >
+          {MESES.map((m, i) => (
+            <option key={m} value={i + 1}>{m}</option>
+          ))}
+        </select>
+        <select
+          className={styles.formSelect}
+          value={ano}
+          onChange={(e) => setAno(Number(e.target.value))}
+          style={{ width: "auto" }}
+          aria-label="Ano do pacote"
+        >
+          {[agora.getFullYear(), agora.getFullYear() - 1, agora.getFullYear() - 2].map((a) => (
+            <option key={a} value={a}>{a}</option>
+          ))}
+        </select>
+        <button className={styles.btnPrimary} onClick={baixar} disabled={baixando}>
+          {baixando ? "Montando o pacote…" : "Baixar XMLs do mês"}
+        </button>
+      </div>
+      {baixando && (
+        <p style={{ fontSize: "0.8rem", color: "#888", margin: "10px 0 0" }}>
+          Buscando cada nota no emissor — em mês cheio isso leva alguns segundos.
+        </p>
+      )}
+      {aviso && (
+        <p style={{ fontSize: "0.85rem", color: "#15803d", margin: "10px 0 0" }}>{aviso}</p>
+      )}
+      {erro && (
+        <p style={{ fontSize: "0.85rem", color: "#b91c1c", margin: "10px 0 0" }}>{erro}</p>
+      )}
+      <p style={{ fontSize: "0.8rem", color: "#888", margin: "10px 0 0" }}>
+        Só entram as notas emitidas <strong>por aqui</strong> (série 2). O que o
+        escritório emitiu na série 1 já está com ele.
+      </p>
+    </div>
+  );
+}
+
 /**
  * Baixa de nota cancelada pela contabilidade, na própria linha.
  *
@@ -626,6 +742,8 @@ export default function FiscalClient({
         </div>
       )}
 
+      {ativo && <PacoteXmls />}
+
       {err && (
         <div
           className={styles.card}
@@ -748,11 +866,14 @@ export default function FiscalClient({
                             DANFE
                           </a>
                         )}
+                        {/* Pela NOSSA rota, não pela URL do emissor: a Focus
+                            serve o arquivo sem Content-Disposition, e o
+                            navegador mostrava a árvore de código sem oferecer
+                            onde salvar. Aqui o arquivo desce com nome. */}
                         {n.xml_url && (
                           <a
-                            href={n.xml_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                            href={`/api/admin/fiscal/notas/${encodeURIComponent(n.ref)}/xml`}
+                            download
                             className={`${styles.btnSecondary} ${styles.btnSmall}`}
                           >
                             XML
