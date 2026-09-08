@@ -120,6 +120,74 @@ function moedaAuto(raw) {
   return extenso ? `R$ ${fmt} (${extenso})` : `R$ ${fmt}`;
 }
 
+// --- Forma de pagamento da parcela em dinheiro (contrato de venda) ----------
+//
+// Forma de pagamento é dimensão SEPARADA da troca: a troca decide de que o
+// preço é feito; a forma decide como a parte em DINHEIRO entra. Tratá-las
+// juntas daria um texto para cada combinação — e é por isso que aqui só se
+// descreve o dinheiro, deixando a troca com a lógica que ela já tinha.
+//
+// Onde não entra dinheiro (troca quitando o preço inteiro, ou volta que a
+// Vamaq paga ao comprador) a forma não se aplica e nem é consultada.
+const FORMA_A_VISTA = "À vista / PIX";
+const FORMA_FINANCIAMENTO = "Financiamento bancário";
+const FORMA_PERSONALIZADO = "Personalizado";
+const FORMAS_PAGAMENTO = [FORMA_A_VISTA, FORMA_FINANCIAMENTO, FORMA_PERSONALIZADO];
+
+// À vista é o padrão de fato: é o que a tela seleciona sozinha (options[0]) e
+// o que vale para todo contrato gerado antes deste campo existir.
+function formaDePagamento(values) {
+  const escolha = (values.venda_forma_pagamento || "").trim();
+  return FORMAS_PAGAMENTO.includes(escolha) ? escolha : FORMA_A_VISTA;
+}
+
+/**
+ * Como a parcela em dinheiro é paga, e sob que condição o preço se quita.
+ *
+ * Devolve `null` no caso à vista — o texto dele é literal nos dois pontos onde
+ * aparece, e mexer nele mudaria o contrato mais comum da loja.
+ *
+ *   comoPaga     — continua a frase "pago pelo COMPRADOR ..." (já com o ponto)
+ *   quitacaoComo — completa "a quitação do preço dar-se-á com ..."
+ */
+function pagamentoEmDinheiro(values) {
+  const forma = formaDePagamento(values);
+
+  if (forma === FORMA_FINANCIAMENTO) {
+    const instituicao = filled(values, "venda_instituicao_financeira")
+      ? values.venda_instituicao_financeira.trim().toUpperCase()
+      : "{{venda_instituicao_financeira}}";
+    const financiado = filled(values, "venda_valor_financiado")
+      ? moedaAuto(values.venda_valor_financiado)
+      : "R$ {{venda_valor_financiado}}";
+    // Venda financiada sem entrada existe (banco cobre 100%): sem valor
+    // digitado, o contrato não inventa uma entrada nem a cita na quitação.
+    const temEntrada = filled(values, "venda_entrada");
+
+    return {
+      comoPaga: temEntrada
+        ? `com entrada de ${moedaAuto(values.venda_entrada)}, paga na data de assinatura deste instrumento por transferência bancária ou PIX em favor da VENDEDORA, e financiamento de ${financiado} contratado pelo COMPRADOR junto a ${instituicao}, cujo valor será liberado diretamente à VENDEDORA.`
+        : `por meio de financiamento de ${financiado} contratado pelo COMPRADOR junto a ${instituicao}, cujo valor será liberado diretamente à VENDEDORA.`,
+      quitacaoComo: temEntrada
+        ? "a efetiva compensação da entrada e a liberação do valor financiado em favor da VENDEDORA"
+        : "a efetiva liberação do valor financiado em favor da VENDEDORA",
+    };
+  }
+
+  if (forma === FORMA_PERSONALIZADO) {
+    // O texto é da operadora: sai como ela escreveu, sem pontuação acrescentada.
+    const descricao = filled(values, "venda_pagamento_descricao")
+      ? values.venda_pagamento_descricao.trim()
+      : "{{venda_pagamento_descricao}}";
+    return {
+      comoPaga: `na forma abaixo ajustada entre as partes:\n\n${descricao}`,
+      quitacaoComo: "o efetivo pagamento na forma acima ajustada",
+    };
+  }
+
+  return null;
+}
+
 // Aceita "60", "60 dias", "60 dias corridos" — usa o primeiro número digitado;
 // sem número nenhum, mantém o texto como veio.
 function prazoEmDias(raw) {
@@ -568,13 +636,27 @@ function buildVenda(values) {
     .filter(Boolean)
     .join("\n");
 
+  // Só há forma de pagamento a escolher quando entra dinheiro na loja: na
+  // troca que quita o preço inteiro, e na volta que a Vamaq paga, não há.
+  const dinheiro = pagamentoEmDinheiro(values);
+
   let pagamentoCorpo;
   if (!temTroca) {
-    pagamentoCorpo = `O preço total e certo ajustado para a venda do veículo é de ${valor}, pago pelo COMPRADOR à vista, em parcela única, na data de assinatura deste instrumento, mediante transferência bancária ou PIX em favor da VENDEDORA, valendo o respectivo comprovante como recibo de pagamento e plena, geral e irrevogável quitação.`;
+    pagamentoCorpo = dinheiro
+      ? `O preço total e certo ajustado para a venda do veículo é de ${valor}, pago pelo COMPRADOR ${dinheiro.comoPaga}\n\nA quitação do preço dar-se-á com ${dinheiro.quitacaoComo}.`
+      : `O preço total e certo ajustado para a venda do veículo é de ${valor}, pago pelo COMPRADOR à vista, em parcela única, na data de assinatura deste instrumento, mediante transferência bancária ou PIX em favor da VENDEDORA, valendo o respectivo comprovante como recibo de pagamento e plena, geral e irrevogável quitação.`;
   } else if (!temDiferenca) {
     pagamentoCorpo = `O preço total e certo ajustado para a venda do veículo é de ${valor}, integralmente pago pelo COMPRADOR mediante a entrega à VENDEDORA, em dação em pagamento (troca), ${entregaTroca}, cuja soma corresponde à totalidade do preço:\n\n${listaTroca}\n\nCom a entrega ${pluralTroca ? "dos veículos dados" : "do veículo dado"} na troca, as partes dão-se mutuamente plena, geral e irrevogável quitação quanto ao preço.`;
   } else if (compradorPagaSaldo) {
-    pagamentoCorpo = `O preço total e certo ajustado para a venda do veículo é de ${valor}, pago pelo COMPRADOR da seguinte forma:\n\na) Mediante a entrega à VENDEDORA, a título de parte do pagamento (dação em pagamento / troca), ${entregaTroca}:\n\n${listaTroca}\n\nb) Mediante o pagamento do saldo em dinheiro, no valor de ${diferencaValor}, à vista, em parcela única, na data de assinatura deste instrumento, mediante transferência bancária ou PIX em favor da VENDEDORA, valendo o respectivo comprovante como recibo de pagamento.\n\nCumpridas as obrigações das alíneas "a" e "b", a VENDEDORA dá ao COMPRADOR plena, geral e irrevogável quitação do preço.`;
+    // O saldo já vem nomeado na alínea "b"; a forma de pagamento que não é à
+    // vista traz o próprio valor, então não se repete o "no valor de".
+    const saldo = dinheiro
+      ? `b) Mediante o pagamento do saldo em dinheiro ${dinheiro.comoPaga}`
+      : `b) Mediante o pagamento do saldo em dinheiro, no valor de ${diferencaValor}, à vista, em parcela única, na data de assinatura deste instrumento, mediante transferência bancária ou PIX em favor da VENDEDORA, valendo o respectivo comprovante como recibo de pagamento.`;
+    const quitacaoSaldo = dinheiro
+      ? `A quitação do preço dar-se-á com a entrega ${pluralTroca ? "dos veículos dados" : "do veículo dado"} na troca e com ${dinheiro.quitacaoComo}.`
+      : `Cumpridas as obrigações das alíneas "a" e "b", a VENDEDORA dá ao COMPRADOR plena, geral e irrevogável quitação do preço.`;
+    pagamentoCorpo = `O preço total e certo ajustado para a venda do veículo é de ${valor}, pago pelo COMPRADOR da seguinte forma:\n\na) Mediante a entrega à VENDEDORA, a título de parte do pagamento (dação em pagamento / troca), ${entregaTroca}:\n\n${listaTroca}\n\n${saldo}\n\n${quitacaoSaldo}`;
   } else {
     const destinoVolta = temFavorecidoVolta
       ? `, por expressa orientação e autorização do COMPRADOR, em favor de ${(values.volta_favorecido_nome || "").trim().toUpperCase()}, conforme dados abaixo, valendo o respectivo comprovante como recibo:\n\n${blocoFavorecidoVolta}`
@@ -1186,6 +1268,44 @@ export const DEFAULT_TEMPLATES = [
         hint: "Ex.: 230.000,00 — havendo troca, deve fechar com a soma dos veículos recebidos menos a volta (ou mais o saldo). O extenso é gerado automaticamente se o campo abaixo ficar vazio.",
       },
       { key: "valor_extenso", label: "Preço por Extenso (opcional)", type: "text", section: "Preço" },
+      {
+        key: "venda_forma_pagamento",
+        label: "Forma de Pagamento",
+        type: "select",
+        // À vista é a primeira porque a tela seleciona options[0] sozinha: o
+        // padrão do formulário tem que ser o contrato mais comum da loja.
+        options: FORMAS_PAGAMENTO,
+        section: "Preço",
+        hint: "Sai escrito na CLÁUSULA SEGUNDA. Financiado ou parcelado NÃO deve ficar só nas Cláusulas Personalizadas: a cláusula do preço passaria a dizer que a venda foi à vista.",
+      },
+      {
+        key: "venda_entrada",
+        label: "Entrada paga pelo Comprador (R$)",
+        type: "text",
+        section: "Preço",
+        hint: "Só no financiamento. Ex.: 27.000,00 — em branco, o contrato sai como financiamento sem entrada. O valor por extenso é gerado automaticamente.",
+      },
+      {
+        key: "venda_valor_financiado",
+        label: "Valor Financiado (R$)",
+        type: "text",
+        section: "Preço",
+        hint: "Só no financiamento. Ex.: 80.000,00 — o valor que a instituição libera direto para a Vamaq.",
+      },
+      {
+        key: "venda_instituicao_financeira",
+        label: "Instituição Financeira",
+        type: "text",
+        section: "Preço",
+        hint: "Só no financiamento. Ex.: Banco Bradesco Financiamentos S.A. — sai em maiúsculas na cláusula.",
+      },
+      {
+        key: "venda_pagamento_descricao",
+        label: "Forma de Pagamento Personalizada",
+        type: "textarea",
+        section: "Preço",
+        hint: 'Só quando a forma acima for "Personalizado". Descreva o combinado — parcelas, vencimentos, valores. Entra dentro da CLÁUSULA SEGUNDA, não no fim do contrato.',
+      },
       { key: "data_contrato", label: "Data do Contrato", type: "date", section: "Contrato" },
       {
         key: "clausulas_personalizadas",
