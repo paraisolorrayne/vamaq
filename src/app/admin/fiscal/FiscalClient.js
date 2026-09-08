@@ -43,6 +43,63 @@ const MESES = [
 ];
 
 /**
+ * Os totais do mês na divisão que o contador usa: venda, compra, consignação.
+ *
+ * SÓ NOTA AUTORIZADA SOMA — cancelada e em processamento viram o aviso de
+ * baixo. Quem confere precisa saber que o número não inclui as duas, senão vai
+ * procurar a diferença contra a própria listagem por horas.
+ *
+ * As quatro linhas aparecem sempre, mesmo zeradas: "compra: 0 notas" responde
+ * a pergunta; linha ausente deixa a dúvida se foi zero ou se ninguém olhou.
+ */
+function ResumoDoMes({ resumo, erro }) {
+  if (erro) {
+    return (
+      <p style={{ fontSize: "0.85rem", color: "#b91c1c", margin: "14px 0 0" }}>{erro}</p>
+    );
+  }
+  if (!resumo) {
+    return (
+      <p style={{ fontSize: "0.85rem", color: "#888", margin: "14px 0 0" }}>
+        Somando as notas do mês…
+      </p>
+    );
+  }
+
+  const pendencias = [
+    resumo.canceladas && `${resumo.canceladas} cancelada(s)`,
+    resumo.processando && `${resumo.processando} em processamento`,
+    resumo.comErro && `${resumo.comErro} com erro`,
+  ].filter(Boolean);
+
+  return (
+    <div style={{ marginTop: 14 }}>
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}>
+        <tbody>
+          {resumo.linhas.map((linha) => (
+            <tr key={linha.chave} style={{ borderTop: "1px solid #eee" }}>
+              <td style={{ padding: "7px 0", color: "#444" }}>{linha.rotulo}</td>
+              <td style={{ padding: "7px 12px", textAlign: "right", color: "#666", whiteSpace: "nowrap" }}>
+                {linha.quantidade} {linha.quantidade === 1 ? "nota" : "notas"}
+              </td>
+              <td style={{ padding: "7px 0", textAlign: "right", fontVariantNumeric: "tabular-nums", fontWeight: 600, whiteSpace: "nowrap" }}>
+                {money(linha.valor)}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {pendencias.length > 0 && (
+        <p style={{ fontSize: "0.8rem", color: "#a16207", margin: "10px 0 0" }}>
+          Fora do total: {pendencias.join(", ")} — nota cancelada e nota em
+          processamento não valem para a SEFAZ.
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
  * O pacote de XMLs do mês, num arquivo só, para mandar à contabilidade.
  *
  * POR QUE COMEÇA NO MÊS PASSADO: quem abre esta tela para mandar XML está
@@ -58,6 +115,28 @@ function PacoteXmls() {
   const [baixando, setBaixando] = useState(false);
   const [aviso, setAviso] = useState(null);
   const [erro, setErro] = useState(null);
+  const [resumo, setResumo] = useState(null);
+  const [erroResumo, setErroResumo] = useState(null);
+
+  // O resumo acompanha o seletor: trocar o mês já responde a pergunta do
+  // contador, sem exigir um segundo clique de quem só quer conferir o número.
+  useEffect(() => {
+    let valeu = true;
+    setResumo(null);
+    setErroResumo(null);
+    fetch(`/api/admin/fiscal/totais?ano=${ano}&mes=${mes}`)
+      .then(async (res) => {
+        if (!res.ok) throw new Error("falhou");
+        return res.json();
+      })
+      .then((dados) => valeu && setResumo(dados))
+      // Totais que não carregam não podem derrubar o download do zip: são duas
+      // perguntas independentes na mesma tela.
+      .catch(() => valeu && setErroResumo("Não foi possível calcular os totais deste mês."));
+    return () => {
+      valeu = false;
+    };
+  }, [ano, mes]);
 
   async function baixar() {
     setBaixando(true);
@@ -100,12 +179,12 @@ function PacoteXmls() {
   return (
     <div className={styles.card} style={{ marginBottom: 24 }}>
       <h3 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: 4 }}>
-        XMLs do mês para a contabilidade
+        Fechamento do mês para a contabilidade
       </h3>
       <p style={{ fontSize: "0.85rem", color: "#666", margin: "0 0 12px" }}>
-        Baixa num arquivo só (.zip) todos os XMLs do mês — <strong>compra e
-        venda</strong>, separados em pastas, canceladas incluídas. É esse arquivo
-        que vai para o contador.
+        Escolha o mês para ver <strong>quantas notas e quanto</strong> foi emitido
+        de venda, compra e consignação — e para baixar num arquivo só (.zip) todos
+        os XMLs do mês, separados em pastas. É o que vai para o contador.
       </p>
       <div className={styles.toolbar} style={{ gap: 10, flexWrap: "wrap" }}>
         <select
@@ -130,6 +209,9 @@ function PacoteXmls() {
             <option key={a} value={a}>{a}</option>
           ))}
         </select>
+      </div>
+      <ResumoDoMes resumo={resumo} erro={erroResumo} />
+      <div className={styles.toolbar} style={{ gap: 10, flexWrap: "wrap", marginTop: 14 }}>
         <button className={styles.btnPrimary} onClick={baixar} disabled={baixando}>
           {baixando ? "Montando o pacote…" : "Baixar XMLs do mês"}
         </button>

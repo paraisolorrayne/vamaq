@@ -12,6 +12,7 @@ import {
 import { focusEnabled, emitirNfe, consultarNfe, cancelarNfe, cartaCorrecaoNfe, focusFileUrl, baixarArquivo } from "@/lib/fiscal/focus/client";
 import { criarZip } from "@/lib/fiscal/zip";
 import { SQL_NOTAS_DO_MES, nomeDoArquivo, nomeDoZip, relatorioDeFaltando } from "@/lib/fiscal/pacote";
+import { SQL_TOTAIS_DO_MES, resumirNotas, CFOP_CONSIGNACAO_RECEBIDA } from "@/lib/fiscal/fechamento";
 import { getVehicleMargins } from "@/lib/fin/repositories/finance";
 import { ligarVeiculo } from "@/lib/clientes/repo";
 
@@ -338,6 +339,21 @@ export async function montarPacoteXmlDoMes(ano, mes) {
 }
 
 /**
+ * O fechamento fiscal de um mês: quantas notas e quanto, por tipo.
+ *
+ * POR QUE EXISTE: é a pergunta que o contador faz todo mês ("total emitido de
+ * venda, de compra, de consignação") e que só era respondida abrindo nota por
+ * nota na tela e somando à mão.
+ *
+ * Anda junto do pacote de XMLs de propósito: mesmo mês, mesma janela de datas.
+ * O contador confere um contra o outro.
+ */
+export async function totaisDoMes(ano, mes) {
+  const { rows } = await query(SQL_TOTAIS_DO_MES, [ano, mes]);
+  return resumirNotas(rows);
+}
+
+/**
  * Emite a NF-e de ENTRADA de um veículo comprado de pessoa física.
  *
  * É o passo que hoje trava a operação: o texto obrigatório da nota de VENDA
@@ -423,7 +439,10 @@ export async function emitirNotaEntradaVeiculo(
  * Audi Q5 de Catalão/GO — nunca aparecer para devolver, e ninguém descobriria
  * até precisar devolvê-lo.
  */
-export const CFOP_CONSIGNACAO_RECEBIDA = ["1917", "2917"];
+// Definida em fiscal/fechamento.js — módulo puro, onde a regra que separa
+// compra de consignação fica ao alcance de teste sem banco. Reexportada aqui
+// porque este é o endereço por onde o resto do sistema já a conhecia.
+export { CFOP_CONSIGNACAO_RECEBIDA };
 
 export async function listConsignacoesAbertas() {
   const { rows } = await query(
