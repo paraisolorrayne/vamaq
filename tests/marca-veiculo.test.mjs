@@ -8,7 +8,7 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { normalizaMarca, marcasConhecidas } from "../src/lib/marcaVeiculo.js";
+import { normalizaMarca, normalizaModelo, marcasConhecidas } from "../src/lib/marcaVeiculo.js";
 
 test("apara espaço das pontas — a causa de `Audi` e `Audi ` coexistirem", () => {
   assert.equal(normalizaMarca("Audi "), "Audi");
@@ -93,4 +93,42 @@ test("NÃO adivinha quando o modelo foi digitado no campo da marca", () => {
   // precisa olhar o campo modelo antes de decidir.
   assert.equal(normalizaMarca("BMW X1"), "BMW X1");
   assert.equal(normalizaMarca("PORSCHE MACAN"), "PORSCHE MACAN");
+});
+
+// --- Modelo -----------------------------------------------------------------
+//
+// O MESMO DEFEITO, NO CAMPO VIZINHO (visto em 11/09/2026 no acervo ao vivo):
+// `model` era gravado cru (`body.model || ''`), e os slugs denunciam —
+// `audi--a3`, `volkswagen--t-cross--`, `mercedes-benz-glc-220d--`. O hífen
+// dobrado é espaço dobrado que virou URL.
+//
+// Isto passa a importar agora porque o acervo vai ganhar FILTRO DE MODELO:
+// sem aparar, "Jetta GLI" e "Jetta GLI " seriam duas opções na lista, que é
+// exatamente a doença que a marca já teve.
+
+test("modelo: apara as pontas — é o que sujava o slug", () => {
+  assert.equal(normalizaModelo(" A3"), "A3");
+  assert.equal(normalizaModelo("T-Cross  "), "T-Cross");
+  assert.equal(normalizaModelo("  GLC 220d  "), "GLC 220d");
+});
+
+test("modelo: espaço repetido do meio vira um só", () => {
+  assert.equal(normalizaModelo("X1  M  SPORT"), "X1 M SPORT");
+  assert.equal(normalizaModelo("Range Rover   Sport"), "Range Rover Sport");
+});
+
+test("modelo: NÃO mexe na caixa nem na grafia", () => {
+  // Modelo não tem lista canônica possível — são milhares, e "320I M SPORT",
+  // "Hilux SR" e "MACAN" são todos como a loja escreve. Uniformizar caixa aqui
+  // seria inventar, e inventar é o que estragou a marca.
+  assert.equal(normalizaModelo("320I M SPORT"), "320I M SPORT");
+  assert.equal(normalizaModelo("Hilux SR"), "Hilux SR");
+  assert.equal(normalizaModelo("Q5 SB 2.0 TFSI"), "Q5 SB 2.0 TFSI");
+});
+
+test("modelo: vazio, nulo e indefinido viram string vazia", () => {
+  assert.equal(normalizaModelo(""), "");
+  assert.equal(normalizaModelo(null), "");
+  assert.equal(normalizaModelo(undefined), "");
+  assert.equal(normalizaModelo("   "), "");
 });

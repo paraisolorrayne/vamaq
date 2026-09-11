@@ -97,6 +97,27 @@ export function normalizaMarca(valor) {
   return POR_CHAVE.get(chave(limpo)) || limpo;
 }
 
+/**
+ * O modelo como deve ser gravado.
+ *
+ * O MESMO DEFEITO DA MARCA, NO CAMPO VIZINHO (11/09/2026): `model` era gravado
+ * cru e os slugs denunciavam — `audi--a3`, `volkswagen--t-cross--`,
+ * `mercedes-benz-glc-220d--`. Hífen dobrado é espaço dobrado que virou URL.
+ *
+ * SÓ ESPAÇO, DE PROPÓSITO. Não há lista canônica possível para modelo: são
+ * milhares, e `320I M SPORT`, `Hilux SR` e `MACAN` são todos como a loja
+ * escreve. Uniformizar caixa aqui seria inventar grafia — e inventar é
+ * justamente o que estragou o campo da marca.
+ *
+ * Vive neste módulo porque é a mesma decisão: uma grafia por veículo, para
+ * que a lista de filtros do acervo não mostre a mesma coisa duas vezes.
+ */
+export function normalizaModelo(valor) {
+  return String(valor ?? "")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
 /** As marcas conhecidas, para quem quiser oferecer sugestão na tela. */
 export function marcasConhecidas() {
   return [...CANONICAS];

@@ -7,7 +7,7 @@
  * (bodyType camelCase + jsonb opcionais/blindagem/images/specs).
  */
 import { getPool } from '@/lib/db';
-import { normalizaMarca } from '@/lib/marcaVeiculo';
+import { normalizaMarca, normalizaModelo } from '@/lib/marcaVeiculo';
 
 const SELECT_COLS = `
   id, slug, brand, model, year, ano_modelo, price, quilometragem,
@@ -45,7 +45,10 @@ function normalize(body) {
     // Grafia única: sem isto, `AUDI`, `Audi` e `Audi ` viram três marcas
     // diferentes na lista de filtros do acervo. Ver src/lib/marcaVeiculo.js.
     brand: normalizaMarca(body.brand),
-    model: body.model || '',
+    // Mesma razão da marca, um campo ao lado: espaço dobrado no modelo virava
+    // hífen dobrado no slug (`volkswagen--t-cross--`) e, com o filtro de
+    // modelo no acervo, viraria a mesma opção listada duas vezes.
+    model: normalizaModelo(body.model),
     year: Math.round(Number(body.year)) || new Date().getFullYear(),
     // Opcional: vazio, zero ou lixo viram null — a coluna é nullable e o
     // veículo sem ano de modelo tem que continuar se comportando como antes.
