@@ -1,18 +1,18 @@
 /**
  * /acervo — Server Component.
  *
- * Busca a lista completa de veículos publicados + opções de filtro no
- * servidor (via repository) e passa tudo como props para o componente
- * cliente interativo (`AcervoClient`), que cuida de filtragem, ordenação
- * e paginação client-side.
+ * Busca a lista completa de veículos publicados e entrega ao componente
+ * cliente, que filtra, ordena e pagina no navegador.
+ *
+ * UMA leitura da tabela, não quatro. Esta página pedia getAllVehicles(),
+ * getBrands(), getBodyTypes() E getFuelTypes() num Promise.all — e cada uma
+ * das três últimas chamava getAllVehicles() por dentro. Eram quatro varreduras
+ * completas por carregamento para montar três listas de opções que saem da
+ * mesma lista. Agora as opções são derivadas no cliente, de graça, a partir
+ * dos veículos que já vieram.
  */
 
-import {
-  getAllVehicles,
-  getBrands,
-  getBodyTypes,
-  getFuelTypes,
-} from "@/lib/repositories/vehicles";
+import { getAllVehicles } from "@/lib/repositories/vehicles";
 import AcervoClient from "./AcervoClient";
 
 // Render dinâmico: a lista lê o estoque direto do Postgres (não via fetch),
@@ -27,19 +27,7 @@ export const metadata = {
 };
 
 export default async function AcervoPage() {
-  const [initialVehicles, brands, bodyTypes, fuelTypes] = await Promise.all([
-    getAllVehicles(),
-    getBrands(),
-    getBodyTypes(),
-    getFuelTypes(),
-  ]);
+  const veiculos = await getAllVehicles();
 
-  return (
-    <AcervoClient
-      initialVehicles={initialVehicles}
-      brands={brands}
-      bodyTypes={bodyTypes}
-      fuelTypes={fuelTypes}
-    />
-  );
+  return <AcervoClient veiculos={veiculos} />;
 }

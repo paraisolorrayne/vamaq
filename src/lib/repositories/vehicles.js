@@ -11,9 +11,18 @@ import { query } from '@/lib/db';
 const SELECT = `
   select id, slug, brand, model, year, ano_modelo, price, quilometragem,
          fuel, transmission, power, color, body_type, featured, badge,
+         blindagem, created_at,
          images, specs, description
   from vehicles
 `;
+// blindagem e created_at entraram em 11/09/2026, pelos filtros do acervo:
+//   - o filtro de blindado comparava `badge === 'Blindado'`, e badge é rótulo
+//     de vitrine que alguém digita — carro blindado marcado como "Destaque"
+//     ficava invisível para quem procurava blindado;
+//   - "Mais recentes" ordenava por `year`, então um 2026 cadastrado há meses
+//     vinha antes de um 2019 que entrou ontem.
+// A PLACA continua fora deste SELECT de propósito: é dado de pátio e não tem
+// por que sair no payload público.
 
 function rowToVehicle(row) {
   if (!row) return null;
@@ -33,6 +42,10 @@ function rowToVehicle(row) {
     price: row.price !== null && row.price !== undefined ? Number(row.price) : null,
     mileage: row.quilometragem,
     badge: row.badge,
+    // Sempre um objeto: o filtro do acervo lê `blindagem.blindado` e um null
+    // aqui obrigaria todo chamador a se defender.
+    blindagem: row.blindagem || { blindado: false, tipo: '' },
+    created_at: row.created_at,
     featured: row.featured,
     fuel: row.fuel,
     transmission: row.transmission,

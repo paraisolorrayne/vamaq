@@ -445,3 +445,177 @@
     grid-template-columns: repeat(3, 1fr);
   }
 }
+
+/* ============================================
+   Filtros novos (11/09/2026)
+   Mesma paleta: branco, tinta e o laranja da marca.
+   ============================================ */
+
+/* Busca livre na barra de ferramentas. Cresce para ocupar o meio, entre o
+   botão Filtrar e a ordenação. */
+.busca {
+  flex: 1 1 220px;
+  min-width: 0;
+  height: 48px;
+  padding: 0 16px;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-full);
+  transition: border-color var(--ease-fast);
+}
+
+.busca::placeholder {
+  color: var(--text-tertiary);
+}
+
+.busca:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+/* Faixas prontas de preço e de km. São botões e não checkbox porque são
+   atalhos excludentes: escolher "até 200 mil" substitui a faixa anterior. */
+.chipChoices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.choice {
+  min-height: 40px;
+  padding: 0 14px;
+  font-size: var(--text-xs);
+  font-weight: var(--fw-medium);
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all var(--ease-fast);
+}
+
+/* O :not() existe por um defeito visto na tela: `.choice:hover` tem
+   especificidade maior que `.choiceOn`, então o cursor parado sobre a faixa
+   recém-escolhida repintava o texto de escuro SOBRE o fundo escuro e o rótulo
+   desaparecia. Hover só vale para a faixa que não está ativa. */
+.choice:not(.choiceOn):hover {
+  border-color: var(--color-ink);
+  color: var(--text-primary);
+}
+
+.choiceOn {
+  color: #fff;
+  background: var(--color-ink);
+  border-color: var(--color-ink);
+}
+
+.choiceOn:hover {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.choice:focus-visible,
+.chip:focus-visible,
+.chipLimpar:focus-visible,
+.busca:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Chips do que está ativo, acima dos resultados. */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: var(--space-md);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 14px;
+  font-size: var(--text-xs);
+  font-weight: var(--fw-medium);
+  color: var(--text-primary);
+  background: var(--color-accent-light);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: background-color var(--ease-fast);
+}
+
+.chip:hover {
+  background: var(--color-accent);
+  color: #fff;
+}
+
+.chipLimpar {
+  min-height: 36px;
+  padding: 0 12px;
+  font-size: var(--text-xs);
+  font-weight: var(--fw-medium);
+  color: var(--text-secondary);
+  background: none;
+  border: none;
+  border-bottom: 1px solid currentColor;
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.chipLimpar:hover {
+  color: var(--color-accent);
+}
+
+/* Quantos filtros estão ativos, no botão que abre o painel — no mobile o
+   painel está fechado e sem isto não há como saber que há filtro valendo. */
+.contaFiltro {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  margin-left: 6px;
+  padding: 0 6px;
+  font-size: 0.6875rem;
+  font-weight: var(--fw-bold);
+  color: #fff;
+  background: var(--color-accent);
+  border-radius: var(--radius-full);
+}
+
+/* Alvo de toque de 48px nos controles do painel: é onde o dedo trabalha no
+   celular, e caixinha de 16px com rótulo pequeno erra muito. */
+@media (max-width: 1023px) {
+  .checkItem,
+  .radioItem {
+    min-height: 48px;
+    align-items: center;
+  }
+
+  .checkItem input,
+  .radioItem input {
+    width: 20px;
+    height: 20px;
+  }
+
+  .input {
+    min-height: 48px;
+  }
+
+  /* A barra vira duas linhas: busca inteira em cima, filtrar e ordenar
+     embaixo — no celular a busca é o controle mais usado dos três. */
+  .toolbar {
+    flex-wrap: wrap;
+  }
+
+  .busca {
+    flex: 1 1 100%;
+    order: -1;
+  }
+}

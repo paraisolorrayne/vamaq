@@ -1,144 +1,157 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState, Suspense } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
 import VehicleCard from "@/components/VehicleCard";
+import {
+  FAIXAS_KM,
+  FAIXAS_PRECO,
+  FILTROS_VAZIOS,
+  ORDENS,
+  chipsDe,
+  filtraVeiculos,
+  filtrosDaQuery,
+  filtrosParaQuery,
+  modelosDisponiveis,
+  opcoesDe,
+  ordenaVeiculos,
+  temFiltroAtivo,
+} from "@/lib/acervo/filtros";
 import styles from "./acervo.module.css";
 
+const POR_PAGINA = 9;
+
 /**
- * Pure client-side filter — recebe a lista completa já carregada do
- * servidor e aplica filtros/ordenação localmente (não há DB no client).
+ * O acervo — a tela onde o cliente decide.
+ *
+ * O ESTADO DOS FILTROS VIVE NA URL, não em useState. Três coisas saem de graça
+ * disso: o vendedor manda a busca pronta no WhatsApp, quem abre um carro e
+ * volta não perde o que filtrou, e o botão voltar do navegador funciona como
+ * a pessoa espera. A regra de filtro em si está em lib/acervo/filtros.js, pura
+ * e com teste — aqui só se liga a tela nela.
  */
-function filterVehicles(list, filters) {
-  let out = [...list];
-  if (filters.brand?.length) {
-    const set = new Set(filters.brand);
-    out = out.filter((v) => set.has(v.brand));
-  }
-  if (filters.bodyType?.length) {
-    const set = new Set(filters.bodyType);
-    out = out.filter((v) => set.has(v.bodyType));
-  }
-  if (filters.fuel?.length) {
-    const set = new Set(filters.fuel);
-    out = out.filter((v) => set.has(v.fuel));
-  }
-  if (filters.maxYear) out = out.filter((v) => v.year <= filters.maxYear);
-  if (filters.maxMileage) out = out.filter((v) => v.mileage <= filters.maxMileage);
-  if (filters.search) {
-    const q = filters.search.toLowerCase();
-    out = out.filter((v) =>
-      `${v.brand} ${v.model} ${v.color}`.toLowerCase().includes(q)
-    );
-  }
-  return out;
+export default function AcervoClient({ veiculos = [] }) {
+  return (
+    <Suspense fallback={<p className={styles.page}>Carregando acervo…</p>}>
+      <Acervo veiculos={veiculos} />
+    </Suspense>
+  );
 }
 
-const PAGE_SIZE = 9;
+function Acervo({ veiculos }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
-const SORT_OPTIONS = [
-  { value: "recent", label: "Mais recentes" },
-  { value: "brand", label: "Marca (A-Z)" },
-  { value: "brandDesc", label: "Marca (Z-A)" },
-  { value: "mileage", label: "Menor quilometragem" },
-  { value: "mileageDesc", label: "Maior quilometragem" },
-  { value: "yearAsc", label: "Ano (mais antigo)" },
-  { value: "yearDesc", label: "Ano (mais novo)" },
-];
+  const filtros = useMemo(() => filtrosDaQuery(searchParams), [searchParams]);
+  const pagina = Math.max(1, Number(searchParams.get("pagina")) || 1);
 
-export default function AcervoClient({
-  initialVehicles = [],
-  brands = [],
-  bodyTypes = [],
-  fuelTypes = [],
-}) {
-  const [selectedBrands, setSelectedBrands] = useState([]);
-  const [selectedTypes, setSelectedTypes] = useState([]);
-  const [selectedFuels, setSelectedFuels] = useState([]);
-  const [maxYear, setMaxYear] = useState("");
-  const [maxMileage, setMaxMileage] = useState("");
-  const [armored, setArmored] = useState("todos");
-  const [sortBy, setSortBy] = useState("recent");
-  const [page, setPage] = useState(1);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [drawerAberto, setDrawerAberto] = useState(false);
 
-  const filteredVehicles = useMemo(() => {
-    const filters = {};
-    if (selectedBrands.length) filters.brand = selectedBrands;
-    if (selectedTypes.length) filters.bodyType = selectedTypes;
-    if (selectedFuels.length) filters.fuel = selectedFuels;
-    if (maxYear) filters.maxYear = Number(maxYear);
-    if (maxMileage) filters.maxMileage = Number(maxMileage);
-
-    let result = filterVehicles(initialVehicles, filters);
-
-    if (armored === "sim") {
-      result = result.filter((v) => v.badge === "Blindado");
-    } else if (armored === "nao") {
-      result = result.filter((v) => v.badge !== "Blindado");
-    }
-
-    const sortKey = sortBy.replace("Desc", "");
-    const desc = sortBy.endsWith("Desc");
-    let sorted;
-    if (sortBy === "yearAsc") {
-      sorted = [...result].sort((a, b) => a.year - b.year);
-    } else if (sortBy === "yearDesc" || sortBy === "recent") {
-      sorted = [...result].sort((a, b) => b.year - a.year);
-    } else if (sortKey === "mileage") {
-      sorted = [...result].sort((a, b) => (desc ? b.mileage - a.mileage : a.mileage - b.mileage));
-    } else if (sortKey === "brand") {
-      sorted = [...result].sort((a, b) =>
-        desc ? b.brand.localeCompare(a.brand) : a.brand.localeCompare(b.brand)
-      );
-    } else {
-      sorted = result;
-    }
-
-    return sorted;
-  }, [
-    initialVehicles,
-    selectedBrands,
-    selectedTypes,
-    selectedFuels,
-    maxYear,
-    maxMileage,
-    armored,
-    sortBy,
-  ]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredVehicles.length / PAGE_SIZE));
-  const currentPage = Math.min(page, totalPages);
-  const pageSlice = filteredVehicles.slice(
-    (currentPage - 1) * PAGE_SIZE,
-    currentPage * PAGE_SIZE
+  /**
+   * Escreve os filtros na URL. `replace` e não `push`: cada clique num
+   * checkbox não deve virar uma entrada no histórico — sair da página
+   * exigiria vinte toques no voltar. `scroll: false` mantém a pessoa onde
+   * ela está em vez de jogá-la para o topo a cada ajuste.
+   */
+  const aplicar = useCallback(
+    (novos, novaPagina = 1) => {
+      const q = filtrosParaQuery(novos);
+      const sp = new URLSearchParams(q);
+      // Página 1 não vai para a URL: é o padrão, e poluir o link que vai para
+      // o cliente com "pagina=1" não ajuda ninguém.
+      if (novaPagina > 1) sp.set("pagina", String(novaPagina));
+      const str = sp.toString();
+      router.replace(str ? `/acervo?${str}` : "/acervo", { scroll: false });
+    },
+    [router]
   );
 
-  const toggleFilter = (value, list, setter) => {
-    setPage(1);
-    setter(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
+  const irParaPagina = useCallback(
+    (n) => {
+      aplicar(filtros, n);
+      // Trocar de página é a única navegação daqui em que a pessoa espera
+      // voltar ao começo da lista.
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    },
+    [aplicar, filtros]
+  );
+
+  // --- Busca com debounce --------------------------------------------------
+  // O campo tem estado local porque escrever na URL a cada tecla trava a
+  // digitação. A URL recebe 300 ms depois da última tecla.
+  //
+  // NÃO HÁ SINCRONIA DE VOLTA (URL → campo): exigiria setState síncrono num
+  // effect, que dispara render em cascata. Consequência conhecida e aceita:
+  // ao usar o voltar do navegador, a LISTA fica correta (quem filtra é a URL)
+  // e só o texto no campo pode ficar defasado.
+  const [buscaLocal, setBuscaLocal] = useState(filtros.busca);
+
+  useEffect(() => {
+    if (buscaLocal === filtros.busca) return;
+    const t = setTimeout(() => aplicar({ ...filtros, busca: buscaLocal }), 300);
+    return () => clearTimeout(t);
+  }, [buscaLocal, filtros, aplicar]);
+
+  // --- Opções, derivadas da própria lista ----------------------------------
+  // De graça: a lista já está aqui. Era isto que o servidor buscava em três
+  // varreduras extras da tabela.
+  const marcas = useMemo(() => opcoesDe(veiculos, "brand"), [veiculos]);
+  const carrocerias = useMemo(() => opcoesDe(veiculos, "bodyType"), [veiculos]);
+  const combustiveis = useMemo(() => opcoesDe(veiculos, "fuel"), [veiculos]);
+  const cambios = useMemo(() => opcoesDe(veiculos, "transmission"), [veiculos]);
+  const modelos = useMemo(
+    () => modelosDisponiveis(veiculos, filtros.marcas),
+    [veiculos, filtros.marcas]
+  );
+
+  const resultado = useMemo(
+    () => ordenaVeiculos(filtraVeiculos(veiculos, filtros), filtros.ordem),
+    [veiculos, filtros]
+  );
+
+  const chips = useMemo(() => chipsDe(filtros), [filtros]);
+  const temFiltro = temFiltroAtivo(filtros);
+
+  const totalPaginas = Math.max(1, Math.ceil(resultado.length / POR_PAGINA));
+  const paginaAtual = Math.min(pagina, totalPaginas);
+  const daPagina = resultado.slice(
+    (paginaAtual - 1) * POR_PAGINA,
+    paginaAtual * POR_PAGINA
+  );
+
+  const alternar = (campo, valor) => {
+    const atuais = filtros[campo] || [];
+    const novos = atuais.includes(valor)
+      ? atuais.filter((v) => v !== valor)
+      : [...atuais, valor];
+    aplicar({ ...filtros, [campo]: novos });
   };
 
-  const clearFilters = () => {
-    setSelectedBrands([]);
-    setSelectedTypes([]);
-    setSelectedFuels([]);
-    setMaxYear("");
-    setMaxMileage("");
-    setArmored("todos");
-    setPage(1);
+  const limpar = () => {
+    setBuscaLocal("");
+    aplicar(FILTROS_VAZIOS);
+    setDrawerAberto(false);
   };
 
-  const sidebar = (
+  const numero = (campo) => (e) => {
+    const v = e.target.value;
+    aplicar({ ...filtros, [campo]: v === "" ? null : Number(v) });
+  };
+
+  const faixaPrecoAtiva = (faixa) =>
+    filtros.precoMin === faixa.min && filtros.precoMax === faixa.max;
+
+  const painel = (
     <div className={styles.sidebarInner}>
       <div className={styles.sidebarHeader}>
         <h2 className={styles.sidebarTitle}>Filtros</h2>
         <button
           className={styles.sidebarClose}
-          onClick={() => setSidebarOpen(false)}
+          onClick={() => setDrawerAberto(false)}
           aria-label="Fechar filtros"
           type="button"
         >
@@ -146,121 +159,213 @@ export default function AcervoClient({
         </button>
       </div>
 
-      <FilterGroup label="Marca">
+      <Grupo label="Marca">
         <div className={styles.checkList}>
-          {brands.map((brand) => (
-            <label key={brand} className={styles.checkItem}>
+          {marcas.map((m) => (
+            <label key={m} className={styles.checkItem}>
               <input
                 type="checkbox"
-                checked={selectedBrands.includes(brand)}
-                onChange={() => toggleFilter(brand, selectedBrands, setSelectedBrands)}
+                checked={filtros.marcas.includes(m)}
+                onChange={() => alternar("marcas", m)}
               />
-              <span>{brand}</span>
+              <span>{m}</span>
             </label>
           ))}
         </div>
-      </FilterGroup>
+      </Grupo>
 
-      <FilterGroup label="Tipo de veículo">
-        <div className={styles.checkList}>
-          {bodyTypes.map((type) => (
-            <label key={type} className={styles.checkItem}>
-              <input
-                type="checkbox"
-                checked={selectedTypes.includes(type)}
-                onChange={() => toggleFilter(type, selectedTypes, setSelectedTypes)}
-              />
-              <span>{type}</span>
-            </label>
+      {/* Modelo acompanha a marca: "Macan" numa lista com BMW selecionado é
+          uma opção que só pode dar resultado vazio. */}
+      {modelos.length > 1 && (
+        <Grupo label={filtros.marcas.length ? "Modelo" : "Modelo (todas as marcas)"}>
+          <div className={styles.checkList}>
+            {modelos.map((m) => (
+              <label key={m} className={styles.checkItem}>
+                <input
+                  type="checkbox"
+                  checked={filtros.modelos.includes(m)}
+                  onChange={() => alternar("modelos", m)}
+                />
+                <span>{m}</span>
+              </label>
+            ))}
+          </div>
+        </Grupo>
+      )}
+
+      <Grupo label="Preço">
+        <div className={styles.chipChoices}>
+          {FAIXAS_PRECO.map((faixa) => (
+            <button
+              key={faixa.rotulo}
+              type="button"
+              className={`${styles.choice} ${faixaPrecoAtiva(faixa) ? styles.choiceOn : ""}`}
+              aria-pressed={faixaPrecoAtiva(faixa)}
+              onClick={() =>
+                aplicar({
+                  ...filtros,
+                  precoMin: faixaPrecoAtiva(faixa) ? null : faixa.min,
+                  precoMax: faixaPrecoAtiva(faixa) ? null : faixa.max,
+                })
+              }
+            >
+              {faixa.rotulo}
+            </button>
           ))}
         </div>
-      </FilterGroup>
-
-      <FilterGroup label="Ano">
         <div className={styles.inputRow}>
-          <span className={styles.inputPrefix}>Até</span>
           <input
             type="number"
             inputMode="numeric"
-            placeholder="2025"
-            min="2000"
-            max="2030"
-            value={maxYear}
-            onChange={(e) => {
-              setMaxYear(e.target.value);
-              setPage(1);
-            }}
-            className={styles.input}
-          />
-        </div>
-      </FilterGroup>
-
-      <FilterGroup label="Quilometragem">
-        <div className={styles.inputRow}>
-          <span className={styles.inputPrefix}>Até</span>
-          <input
-            type="number"
-            inputMode="numeric"
-            placeholder="50.000"
+            placeholder="mínimo"
             min="0"
-            step="1000"
-            value={maxMileage}
-            onChange={(e) => {
-              setMaxMileage(e.target.value);
-              setPage(1);
-            }}
+            step="10000"
+            value={filtros.precoMin ?? ""}
+            onChange={numero("precoMin")}
             className={styles.input}
+            aria-label="Preço mínimo"
           />
-          <span className={styles.inputSuffix}>km</span>
+          <span className={styles.inputPrefix}>a</span>
+          <input
+            type="number"
+            inputMode="numeric"
+            placeholder="máximo"
+            min="0"
+            step="10000"
+            value={filtros.precoMax ?? ""}
+            onChange={numero("precoMax")}
+            className={styles.input}
+            aria-label="Preço máximo"
+          />
         </div>
-      </FilterGroup>
+      </Grupo>
 
-      <FilterGroup label="Combustível">
+      {/* Ano com as DUAS pontas — antes só existia "até", então não havia
+          como pedir "de 2022 pra cima", que é como se procura carro novo. */}
+      <Grupo label="Ano">
+        <div className={styles.inputRow}>
+          <input
+            type="number"
+            inputMode="numeric"
+            placeholder="de"
+            min="1950"
+            max="2100"
+            value={filtros.anoMin ?? ""}
+            onChange={numero("anoMin")}
+            className={styles.input}
+            aria-label="Ano mínimo"
+          />
+          <span className={styles.inputPrefix}>a</span>
+          <input
+            type="number"
+            inputMode="numeric"
+            placeholder="até"
+            min="1950"
+            max="2100"
+            value={filtros.anoMax ?? ""}
+            onChange={numero("anoMax")}
+            className={styles.input}
+            aria-label="Ano máximo"
+          />
+        </div>
+      </Grupo>
+
+      <Grupo label="Quilometragem">
+        <div className={styles.chipChoices}>
+          {FAIXAS_KM.map((faixa) => (
+            <button
+              key={faixa.rotulo}
+              type="button"
+              className={`${styles.choice} ${filtros.kmMax === faixa.max ? styles.choiceOn : ""}`}
+              aria-pressed={filtros.kmMax === faixa.max}
+              onClick={() =>
+                aplicar({
+                  ...filtros,
+                  kmMax: filtros.kmMax === faixa.max ? null : faixa.max,
+                })
+              }
+            >
+              {faixa.rotulo}
+            </button>
+          ))}
+        </div>
+      </Grupo>
+
+      <Grupo label="Tipo de veículo">
         <div className={styles.checkList}>
-          {fuelTypes.map((fuel) => (
-            <label key={fuel} className={styles.checkItem}>
+          {carrocerias.map((t) => (
+            <label key={t} className={styles.checkItem}>
               <input
                 type="checkbox"
-                checked={selectedFuels.includes(fuel)}
-                onChange={() => toggleFilter(fuel, selectedFuels, setSelectedFuels)}
+                checked={filtros.carrocerias.includes(t)}
+                onChange={() => alternar("carrocerias", t)}
               />
-              <span>{fuel}</span>
+              <span>{t}</span>
             </label>
           ))}
         </div>
-      </FilterGroup>
+      </Grupo>
 
-      <FilterGroup label="Blindagem">
+      <Grupo label="Combustível">
+        <div className={styles.checkList}>
+          {combustiveis.map((c) => (
+            <label key={c} className={styles.checkItem}>
+              <input
+                type="checkbox"
+                checked={filtros.combustiveis.includes(c)}
+                onChange={() => alternar("combustiveis", c)}
+              />
+              <span>{c}</span>
+            </label>
+          ))}
+        </div>
+      </Grupo>
+
+      {/* Câmbio só aparece se houver mais de uma opção no estoque — um filtro
+          com uma escolha só não filtra nada e ocupa espaço. */}
+      {cambios.length > 1 && (
+        <Grupo label="Câmbio">
+          <div className={styles.checkList}>
+            {cambios.map((c) => (
+              <label key={c} className={styles.checkItem}>
+                <input
+                  type="checkbox"
+                  checked={filtros.cambios.includes(c)}
+                  onChange={() => alternar("cambios", c)}
+                />
+                <span>{c}</span>
+              </label>
+            ))}
+          </div>
+        </Grupo>
+      )}
+
+      <Grupo label="Blindagem">
         <div className={styles.radioRow}>
           {[
-            { value: "todos", label: "Todos" },
-            { value: "sim", label: "Sim" },
-            { value: "nao", label: "Não" },
+            { valor: "todos", rotulo: "Todos" },
+            { valor: "sim", rotulo: "Blindado" },
+            { valor: "nao", rotulo: "Não blindado" },
           ].map((opt) => (
-            <label key={opt.value} className={styles.radioItem}>
+            <label key={opt.valor} className={styles.radioItem}>
               <input
                 type="radio"
-                name="armored"
-                value={opt.value}
-                checked={armored === opt.value}
-                onChange={() => {
-                  setArmored(opt.value);
-                  setPage(1);
-                }}
+                name="blindagem"
+                value={opt.valor}
+                checked={filtros.blindagem === opt.valor}
+                onChange={() => aplicar({ ...filtros, blindagem: opt.valor })}
               />
-              <span>{opt.label}</span>
+              <span>{opt.rotulo}</span>
             </label>
           ))}
         </div>
-      </FilterGroup>
+      </Grupo>
 
-      <button
-        type="button"
-        className={styles.clearBtn}
-        onClick={clearFilters}
-      >
-        Limpar filtros
-      </button>
+      {temFiltro && (
+        <button type="button" className={styles.clearBtn} onClick={limpar}>
+          Limpar filtros
+        </button>
+      )}
     </div>
   );
 
@@ -279,22 +384,22 @@ export default function AcervoClient({
             <div>
               <h1 className={styles.title}>Nosso Acervo</h1>
               <p className={styles.subtitle}>
-                {filteredVehicles.length} veículo
-                {filteredVehicles.length !== 1 ? "s" : ""} disponíve
-                {filteredVehicles.length !== 1 ? "is" : "l"} — curadoria rigorosa, procedência garantida.
+                {resultado.length === veiculos.length
+                  ? `${veiculos.length} veículo${veiculos.length !== 1 ? "s" : ""} — curadoria rigorosa, procedência garantida.`
+                  : `${resultado.length} de ${veiculos.length} veículo${veiculos.length !== 1 ? "s" : ""}`}
               </p>
             </div>
           </header>
 
           <div className={styles.layout}>
             <aside
-              className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ""}`}
+              className={`${styles.sidebar} ${drawerAberto ? styles.sidebarOpen : ""}`}
               onClick={(e) => {
-                if (e.target === e.currentTarget) setSidebarOpen(false);
+                if (e.target === e.currentTarget) setDrawerAberto(false);
               }}
               aria-label="Filtros"
             >
-              {sidebar}
+              {painel}
             </aside>
 
             <div className={styles.results}>
@@ -302,69 +407,107 @@ export default function AcervoClient({
                 <button
                   type="button"
                   className={styles.filterToggle}
-                  onClick={() => setSidebarOpen(true)}
+                  onClick={() => setDrawerAberto(true)}
                   aria-label="Abrir filtros"
                 >
                   <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                     <path d="M4 6h16M7 12h10M10 18h4" />
                   </svg>
                   Filtrar
+                  {chips.length > 0 && <span className={styles.contaFiltro}>{chips.length}</span>}
                 </button>
+
+                <input
+                  type="search"
+                  className={styles.busca}
+                  placeholder="Busque por marca ou modelo"
+                  value={buscaLocal}
+                  onChange={(e) => setBuscaLocal(e.target.value)}
+                  aria-label="Buscar por marca ou modelo"
+                />
 
                 <label className={styles.sortWrap}>
                   <span className={styles.sortLabel}>Ordenar por</span>
                   <select
                     className={styles.sort}
-                    value={sortBy}
-                    onChange={(e) => {
-                      setSortBy(e.target.value);
-                      setPage(1);
-                    }}
+                    value={filtros.ordem}
+                    onChange={(e) => aplicar({ ...filtros, ordem: e.target.value })}
                     aria-label="Ordenar veículos"
                   >
-                    {SORT_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
+                    {ORDENS.map((o) => (
+                      <option key={o.valor} value={o.valor}>
+                        {o.rotulo}
                       </option>
                     ))}
                   </select>
                 </label>
               </div>
 
-              {pageSlice.length > 0 ? (
+              {/* Os chips existem para a pessoa entender IMEDIATAMENTE o que
+                  está filtrado — e poder desfazer uma coisa por vez, em vez de
+                  ter que reabrir o painel e caçar o checkbox. */}
+              {chips.length > 0 && (
+                <div className={styles.chips}>
+                  {chips.map((chip) => (
+                    <button
+                      key={chip.id}
+                      type="button"
+                      className={styles.chip}
+                      onClick={() => {
+                        if (chip.id === "busca") setBuscaLocal("");
+                        aplicar(chip.remover(filtros));
+                      }}
+                      aria-label={`Remover filtro ${chip.rotulo}`}
+                    >
+                      {chip.rotulo}
+                      <span aria-hidden="true">×</span>
+                    </button>
+                  ))}
+                  <button type="button" className={styles.chipLimpar} onClick={limpar}>
+                    Limpar tudo
+                  </button>
+                </div>
+              )}
+
+              {daPagina.length > 0 ? (
                 <div className={styles.grid}>
-                  {pageSlice.map((vehicle) => (
-                    <VehicleCard key={vehicle.id} vehicle={vehicle} />
+                  {daPagina.map((veiculo, i) => (
+                    <VehicleCard
+                      key={veiculo.id}
+                      vehicle={veiculo}
+                      // Só o primeiro card: é o candidato a LCP da página.
+                      prioridade={i === 0}
+                    />
                   ))}
                 </div>
               ) : (
                 <div className={styles.empty}>
                   <p>Nenhum veículo encontrado com os filtros selecionados.</p>
-                  <button type="button" className={styles.clearBtn} onClick={clearFilters}>
+                  <button type="button" className={styles.clearBtn} onClick={limpar}>
                     Limpar filtros
                   </button>
                 </div>
               )}
 
-              {totalPages > 1 && (
+              {totalPaginas > 1 && (
                 <nav className={styles.pagination} aria-label="Paginação">
                   <button
                     type="button"
                     className={styles.pageBtn}
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
+                    onClick={() => irParaPagina(Math.max(1, paginaAtual - 1))}
+                    disabled={paginaAtual === 1}
                     aria-label="Página anterior"
                   >
                     ←
                   </button>
 
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
+                  {Array.from({ length: totalPaginas }, (_, i) => i + 1).map((n) => (
                     <button
                       key={n}
                       type="button"
-                      className={`${styles.pageBtn} ${n === currentPage ? styles.pageBtnActive : ""}`}
-                      onClick={() => setPage(n)}
-                      aria-current={n === currentPage ? "page" : undefined}
+                      className={`${styles.pageBtn} ${n === paginaAtual ? styles.pageBtnActive : ""}`}
+                      onClick={() => irParaPagina(n)}
+                      aria-current={n === paginaAtual ? "page" : undefined}
                     >
                       {n}
                     </button>
@@ -373,15 +516,15 @@ export default function AcervoClient({
                   <button
                     type="button"
                     className={styles.pageBtn}
-                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages}
+                    onClick={() => irParaPagina(Math.min(totalPaginas, paginaAtual + 1))}
+                    disabled={paginaAtual === totalPaginas}
                     aria-label="Próxima página"
                   >
                     →
                   </button>
 
                   <span className={styles.pageInfo}>
-                    Página {currentPage} de {totalPages}
+                    Página {paginaAtual} de {totalPaginas}
                   </span>
                 </nav>
               )}
@@ -395,7 +538,7 @@ export default function AcervoClient({
   );
 }
 
-function FilterGroup({ label, children }) {
+function Grupo({ label, children }) {
   return (
     <div className={styles.filterGroup}>
       <h3 className={styles.filterLabel}>{label}</h3>

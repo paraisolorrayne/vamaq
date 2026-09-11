@@ -42,8 +42,17 @@ export default function Header() {
 
   useEffect(() => {
     window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll();
-    return () => window.removeEventListener('scroll', handleScroll);
+    // Um frame depois, NÃO sincronamente. Chamar handleScroll() direto aqui é
+    // setState síncrono dentro de effect: a regra do React 19 acusa, e com
+    // razão — dispara render em cascata em toda montagem do header, ou seja em
+    // toda página. O frame de atraso continua acertando o caso que esta
+    // chamada existe para resolver: entrar na página já rolada, como ao voltar
+    // do detalhe de um veículo.
+    const frame = requestAnimationFrame(handleScroll);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, [handleScroll]);
 
   useEffect(() => {
