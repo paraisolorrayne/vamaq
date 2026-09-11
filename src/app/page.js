@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
@@ -41,11 +42,19 @@ export default async function HomePage() {
                   aria-label={`Ver ${heroVehicle.brand} ${heroVehicle.model}`}
                 >
                   {heroVehicle.images?.main && (
-                    <img
+                    <Image
                       src={heroVehicle.images.main}
                       alt={`${heroVehicle.brand} ${heroVehicle.model} ${anoVeiculo(heroVehicle)}`}
                       className={styles.heroImage}
+                      // O wrap já tem position:relative e aspect-ratio 16/9,
+                      // então o espaço está reservado e o visual não muda —
+                      // o object-fit: contain e o multiply seguem no CSS.
+                      fill
+                      sizes="(max-width: 768px) 100vw, 640px"
+                      // Esta é a foto que define o LCP da home. `priority`
+                      // está depreciado no Next 16; este par é a forma atual.
                       loading="eager"
+                      fetchPriority="high"
                     />
                   )}
                 </Link>
@@ -155,10 +164,16 @@ export default async function HomePage() {
           <div className="container">
             <div className={styles.discoverCard}>
               <div className={styles.discoverImage}>
-                <img
-                  src="/images/equipe/mateus-showroom.png"
+                {/* Era um PNG de 1,96 MB — formato errado para fotografia,
+                    não só tamanho errado. O webp tem 139 kB e é a MESMA
+                    imagem, nas mesmas dimensões. */}
+                <Image
+                  src="/images/equipe/mateus-showroom.webp"
                   alt="Showroom da Vamaq Motors"
                   className={styles.discoverImageImg}
+                  fill
+                  sizes="(max-width: 900px) 100vw, 50vw"
+                  loading="lazy"
                 />
               </div>
               <div className={styles.discoverContent}>

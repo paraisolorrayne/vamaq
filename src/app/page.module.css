@@ -226,6 +226,9 @@
 }
 
 .discoverImage {
+  /* position:relative é o que o next/image `fill` exige do pai. A proporção
+     e o recorte continuam os mesmos — nada muda na aparência. */
+  position: relative;
   aspect-ratio: 16 / 9;
   overflow: hidden;
 }
