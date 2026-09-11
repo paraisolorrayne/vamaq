@@ -141,18 +141,19 @@
   gap: 10px;
 }
 
+/* A caixa carrega a medida que a foto não tem: as fotos sobem com a
+   proporção original preservada, então é o CSS que reserva o espaço.
+   Sem isto o texto abaixo salta quando a foto termina de carregar. */
 .heroImage {
   position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 100%;
+  max-width: 600px;
+  margin-inline: auto;
+  aspect-ratio: 4 / 3;
   min-height: 280px;
 }
 
 .heroImg {
-  width: 100%;
-  max-width: 600px;
-  height: auto;
   object-fit: contain;
   display: block;
   /* Foto de estúdio com fundo branco: multiply funde o branco com o
@@ -306,14 +307,18 @@
   display: none;
 }
 
+/* Mesma razão do .heroImage: a proporção mora aqui, não na foto. A tira já
+   recortava (object-fit: cover), então fixar a caixa não muda o que se vê —
+   só impede o salto de layout enquanto cada foto carrega. */
 .galleryImage {
+  position: relative;
   flex: 0 0 auto;
   width: 70%;
   max-width: 600px;
-  height: auto;
+  aspect-ratio: 4 / 3;
   max-height: 450px;
-  object-fit: cover;
   border-radius: 8px;
+  overflow: hidden;
   scroll-snap-align: center;
   cursor: zoom-in;
   opacity: 0.6;
@@ -785,11 +790,16 @@
   to   { opacity: 1; }
 }
 
+/* Quadro do lightbox: dá ao next/image o pai posicionado que `fill` exige.
+   O `contain` preserva a foto inteira, sem corte — é a tela cheia. */
+.lightboxFrame {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  cursor: default;
+}
+
 .lightboxImage {
-  max-width: 100%;
-  max-height: 100%;
-  width: auto;
-  height: auto;
   object-fit: contain;
   border-radius: 12px;
   cursor: default;

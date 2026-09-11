@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { getWhatsAppUrl } from '@/lib/whatsapp';
 import { anoVeiculo } from '@/lib/anoVeiculo';
 import styles from './VehicleCard.module.css';
@@ -17,7 +18,12 @@ function getBadgeClass(badge) {
   return map[badge] || styles.badgeNew;
 }
 
-export default function VehicleCard({ vehicle }) {
+/**
+ * `prioridade` marca o card que está acima da dobra — quem renderiza a grade
+ * sabe qual é o primeiro, o card não. Só o primeiro deve receber: marcar
+ * vários faz o navegador disputar banda com eles mesmos e o LCP piora.
+ */
+export default function VehicleCard({ vehicle, prioridade = false }) {
   const whatsappUrl = getWhatsAppUrl(vehicle);
 
   return (
@@ -28,11 +34,23 @@ export default function VehicleCard({ vehicle }) {
         aria-label={`Ver detalhes: ${vehicle.brand} ${vehicle.model}`}
       >
         {vehicle.images?.main ? (
-          <img
+          <Image
             src={vehicle.images.main}
             alt={`${vehicle.brand} ${vehicle.model} ${anoVeiculo(vehicle)}`}
             className={styles.image}
-            loading="lazy"
+            // O wrap já tem position:relative e aspect-ratio 16/10, então o
+            // espaço está reservado antes da foto chegar: sem fill seria
+            // preciso repetir as medidas aqui e no CSS, e as duas divergiriam.
+            fill
+            // Sem `sizes` o Next assume 100vw e serve a foto inteira para um
+            // card de um terço de tela. Estes cortes acompanham o grid do
+            // acervo (1 coluna no celular, 2 no tablet, 3 no desktop).
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            // O primeiro card da primeira dobra costuma ser o LCP da página.
+            // `priority` foi depreciado no Next 16 — a forma atual é dizer ao
+            // navegador para não adiar e priorizar a busca.
+            loading={prioridade ? 'eager' : 'lazy'}
+            fetchPriority={prioridade ? 'high' : 'auto'}
           />
         ) : (
           <div className={styles.placeholder}>

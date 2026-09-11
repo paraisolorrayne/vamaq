@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import VehicleCard from '@/components/VehicleCard';
 import { getWhatsAppUrl } from '@/lib/whatsapp';
 import { anoVeiculo } from '@/lib/anoVeiculo';
@@ -104,6 +105,10 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
     <main id="main-content" className={styles.page}>
       {/* ===== HERO SECTION ===== */}
       <section className={styles.hero}>
+        {/* SVG decorativo continua em <img> de propósito: o otimizador do
+            Next não processa SVG sem ligar dangerouslyAllowSVG, e um vetor
+            de gradiente já é menor que qualquer raster que sairia dele. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img className={styles.heroBgImg} src="/images/bg-gradient.svg" alt="" aria-hidden="true" />
         <div className={styles.heroInner}>
           <div className={styles.heroInfo}>
@@ -154,11 +159,19 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
 
           <div className={styles.heroImage}>
             {galleryImages[0] ? (
-              <img
+              <Image
                 src={galleryImages[0]}
                 alt={`${vehicle.brand} ${vehicle.model} ${anoVeiculo(vehicle)}`}
                 className={styles.heroImg}
+                // As fotos sobem com a proporção ORIGINAL preservada (o upload
+                // usa fit:"inside"), então não há medida fixa para declarar.
+                // A caixa com proporção no CSS resolve pelos dois lados: o
+                // espaço fica reservado antes da foto chegar (sem layout
+                // shift) e o `contain` garante que nada seja cortado.
+                fill
+                sizes="(max-width: 900px) 100vw, 600px"
                 loading="eager"
+                fetchPriority="high"
               />
             ) : (
               <div className={styles.heroPlaceholder}>
@@ -186,18 +199,29 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
             <>
               <div className={styles.galleryTrack} ref={trackRef}>
                 {galleryImages.map((src, i) => (
-                  <img
+                  <div
                     key={`${src}-${i}`}
-                    src={src}
-                    alt={`${vehicle.brand} ${vehicle.model} — foto ${i + 1}`}
                     className={`${styles.galleryImage} ${i === index ? styles.galleryImageActive : ''}`}
-                    loading={i < 3 ? 'eager' : 'lazy'}
-                    draggable={false}
                     onClick={() => {
                       setIndex(i);
                       setLightboxOpen(true);
                     }}
-                  />
+                  >
+                    <Image
+                      src={src}
+                      alt={`${vehicle.brand} ${vehicle.model} — foto ${i + 1}`}
+                      fill
+                      // A tira mostra uma foto por vez ocupando ~70% da
+                      // largura; pedir a imagem inteira para cada uma era o
+                      // que fazia a página baixar o acervo de fotos do carro.
+                      sizes="(max-width: 900px) 80vw, 600px"
+                      // Só a PRIMEIRA sai na frente. As outras esperam entrar
+                      // na tela — num carro com 15 fotos, adiantar três já
+                      // significa ~1,2 MB antes de o visitante rolar.
+                      loading={i === 0 ? 'eager' : 'lazy'}
+                      draggable={false}
+                    />
+                  </div>
                 ))}
               </div>
               {count > 1 && (
@@ -255,13 +279,16 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
             </div>
           )}
 
-          <img
-            src={galleryImages[index]}
-            alt={`${vehicle.brand} ${vehicle.model} — foto ${index + 1}`}
-            className={styles.lightboxImage}
-            onClick={(e) => e.stopPropagation()}
-            draggable={false}
-          />
+          <div className={styles.lightboxFrame} onClick={(e) => e.stopPropagation()}>
+            <Image
+              src={galleryImages[index]}
+              alt={`${vehicle.brand} ${vehicle.model} — foto ${index + 1}`}
+              className={styles.lightboxImage}
+              fill
+              sizes="100vw"
+              draggable={false}
+            />
+          </div>
 
           {count > 1 && (
             <>

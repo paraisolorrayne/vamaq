@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import Image from 'next/image';
 import styles from './VehicleGallery.module.css';
 
 /**
@@ -81,11 +82,19 @@ export default function VehicleGallery({ images = [], alt = 'Veículo', badge = 
             onClick={() => setLightboxOpen(true)}
             aria-label="Abrir imagem em tela cheia"
           >
-            <img
+            <Image
               src={safeImages[index]}
               alt={`${alt} — foto ${index + 1} de ${count}`}
               className={styles.mainImage}
+              // .mainButton é absolute inset:0 dentro de .stage, que já tem
+              // aspect-ratio 4/3 — o espaço está reservado antes da foto vir.
+              fill
+              sizes="(max-width: 900px) 100vw, 60vw"
+              // Esta é a foto grande da página do veículo: é ela o LCP.
+              // `priority` foi depreciado no Next 16; o par abaixo é a forma
+              // atual de dizer "não adie e busque na frente".
               loading="eager"
+              fetchPriority="high"
               draggable={false}
             />
           </button>
@@ -157,10 +166,17 @@ export default function VehicleGallery({ images = [], alt = 'Veículo', badge = 
               className={`${styles.thumb} ${i === index ? styles.thumbActive : ''}`}
               onClick={() => goTo(i)}
             >
-              <img
+              <Image
                 src={src}
                 alt=""
                 className={styles.thumbImage}
+                // O DEFEITO QUE ISTO CORRIGE: a miniatura apontava para o
+                // MESMO arquivo da foto grande. Num carro com 15 fotos de
+                // ~400 kB, a tira de miniaturas sozinha baixava ~6 MB para
+                // desenhar quadradinhos de 96×68. Com a medida declarada, o
+                // otimizador serve uma versão do tamanho do quadrado.
+                width={96}
+                height={68}
                 loading="lazy"
                 draggable={false}
               />
@@ -196,13 +212,19 @@ export default function VehicleGallery({ images = [], alt = 'Veículo', badge = 
             </div>
           )}
 
-          <img
-            src={safeImages[index]}
-            alt={`${alt} — foto ${index + 1} de ${count}`}
-            className={styles.lightboxImage}
-            onClick={(e) => e.stopPropagation()}
-            draggable={false}
-          />
+          {/* O quadro existe porque `fill` precisa de um pai posicionado e
+              com medida. A foto continua contida e centralizada, como antes,
+              mas agora passa pelo otimizador em vez de baixar o original. */}
+          <div className={styles.lightboxFrame} onClick={(e) => e.stopPropagation()}>
+            <Image
+              src={safeImages[index]}
+              alt={`${alt} — foto ${index + 1} de ${count}`}
+              className={styles.lightboxImage}
+              fill
+              sizes="100vw"
+              draggable={false}
+            />
+          </div>
 
           {isCarousel && (
             <>
