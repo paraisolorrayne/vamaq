@@ -1,312 +1,207 @@
 import Link from "next/link";
-import Image from "next/image";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
-import { getAllVehicles } from "@/lib/repositories/vehicles";
+import VehicleCard from "@/components/VehicleCard";
+import { getFeaturedVehicles, getAllVehicles } from "@/lib/repositories/vehicles";
 import { getWhatsAppGenericUrl } from "@/lib/whatsapp";
 import { anoVeiculo } from "@/lib/anoVeiculo";
 import styles from "./page.module.css";
 
-/**
- * Home — capa editorial, não catálogo.
- *
- * A narrativa é: um veículo protagonista ocupando a tela, três frases de
- * curadoria, uma composição de destaques em pesos diferentes, a casa, e o
- * convite para o acervo. O carro é o protagonista; a interface é direção de
- * arte e não disputa com ele.
- *
- * SEM JAVASCRIPT DE CLIENTE, DE PROPÓSITO. Todo o movimento é CSS
- * scroll-driven (ver page.module.css): o contador de cada seção é fixo, então
- * não há estado a acompanhar, e o que restaria para o JS — parallax e reveal —
- * o navegador faz sozinho, fora da thread principal. Página pública que não
- * hidrata nada é a que responde melhor no celular.
- */
-
-function precoFormatado(price) {
-  if (!price) return "Sob consulta";
-  return price.toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-    minimumFractionDigits: 0,
-  });
-}
-
-function kmFormatado(mileage) {
-  if (mileage === 0) return "0 km";
-  if (!mileage) return null;
-  return `${mileage.toLocaleString("pt-BR")} km`;
-}
-
-/** As etiquetas do veículo — só as que existem, sem espaço vazio. */
-function etiquetas(v) {
-  return [
-    anoVeiculo(v),
-    kmFormatado(v.mileage),
-    v.blindagem?.blindado ? "Blindado" : null,
-    v.transmission,
-  ].filter(Boolean);
-}
-
-export const metadata = {
-  title: "Vamaq Motors — Boutique de veículos premium e esportivos",
-  description:
-    "Curadoria de veículos premium, esportivos e superesportivos. Mais de 13 anos de mercado, procedência verificada e atendimento direto.",
-};
+// Render dinâmico: o hero/vitrine lê o estoque direto do Postgres, então o
+// cache estático não enxerga alterações feitas no admin. Ver /acervo.
+export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  // UMA leitura da tabela, não duas. A home pedia getFeaturedVehicles() E
-  // getAllVehicles() — com 32 veículos, filtrar em memória custa menos que
-  // uma segunda ida ao Postgres.
-  const todos = await getAllVehicles();
-  const destacados = todos.filter((v) => v.featured);
-
-  const heroVehicle = destacados[0] || todos[0] || null;
+  const [featuredVehicles, allVehicles] = await Promise.all([
+    getFeaturedVehicles(1),
+    getAllVehicles(),
+  ]);
+  const heroVehicle = featuredVehicles[0] || allVehicles[0] || null;
   const heroId = heroVehicle?.id;
-  const vitrine = [...destacados, ...todos]
-    .filter((v, i, arr) => v.id !== heroId && arr.findIndex((o) => o.id === v.id) === i)
-    .slice(0, 3);
-
-  const [principal, ...secundarios] = vitrine;
+  const gridVehicles = allVehicles.filter((v) => v.id !== heroId).slice(0, 3);
 
   return (
     <>
       <Header />
-      <main id="main-content" className={styles.page}>
-        {/* ============ 01 — O VEÍCULO ============ */}
-        <section className={styles.hero} aria-labelledby="hero-titulo">
-          {heroVehicle ? (
-            <>
-              {/* A fotografia domina e sangra pela direita. O recorte muda
-                  com o scroll (ver .heroMedia no CSS) — é o movimento que
-                  abre a narrativa. */}
-              <div className={styles.heroMedia}>
-                {heroVehicle.images?.main ? (
-                  <Image
-                    src={heroVehicle.images.main}
-                    alt={`${heroVehicle.brand} ${heroVehicle.model}`}
-                    className={styles.heroImg}
-                    fill
-                    sizes="(max-width: 900px) 100vw, 62vw"
-                    // O LCP da home é esta foto. `priority` está depreciado
-                    // no Next 16 — este par é a forma atual.
-                    loading="eager"
-                    fetchPriority="high"
-                  />
-                ) : (
-                  <div className={styles.heroMediaVazio} aria-hidden="true" />
-                )}
-                <div className={styles.heroVeu} aria-hidden="true" />
-              </div>
-
-              <div className={styles.heroTexto}>
-                <span className={styles.contador}>01 / 04</span>
-                <span className={styles.sobrescrito}>
-                  Vamaq Motors — mais de 13 anos no mercado premium
-                </span>
-
-                <h1 id="hero-titulo" className={styles.heroTitulo}>
-                  <span className={styles.heroMarca}>{heroVehicle.brand}</span>
-                  <span className={styles.heroModelo}>{heroVehicle.model}</span>
-                </h1>
-
-                <p className={styles.heroPreco}>{precoFormatado(heroVehicle.price)}</p>
-
-                <ul className={styles.pilulas}>
-                  {etiquetas(heroVehicle).map((t) => (
-                    <li key={t} className={styles.pilula}>
-                      {t}
-                    </li>
-                  ))}
-                </ul>
-
-                <div className={styles.acoes}>
-                  <Link
-                    href={`/veiculo/${heroVehicle.slug}`}
-                    className={styles.botaoPrimario}
-                  >
-                    Conhecer este veículo
-                  </Link>
-                  <Link href="/acervo" className={styles.botaoSecundario}>
-                    Explorar acervo
-                  </Link>
+      <main id="main-content">
+        {/* ======== HERO — Compact featured + 3 vehicles grid (pyramid) ======== */}
+        <section className={styles.hero}>
+          <div className={styles.heroInner}>
+            {heroVehicle ? (
+              <>
+                <div className={styles.heroText}>
+                  <h6 className={styles.heroBrand}>{heroVehicle.brand}</h6>
+                  <h1 className={styles.heroModel}>{heroVehicle.model}</h1>
                 </div>
-              </div>
 
-              <span className={styles.rolar} aria-hidden="true">
-                Role para explorar
-              </span>
-            </>
-          ) : (
-            <div className={styles.heroTexto}>
-              <span className={styles.sobrescrito}>Vamaq Motors</span>
-              <h1 id="hero-titulo" className={styles.heroTitulo}>
-                <span className={styles.heroModelo}>Boutique automotiva</span>
-              </h1>
-              <p className={styles.heroPreco}>Acervo em atualização</p>
-              <div className={styles.acoes}>
-                <Link href="/acervo" className={styles.botaoPrimario}>
-                  Explorar acervo
-                </Link>
-                <a
-                  href={getWhatsAppGenericUrl()}
-                  className={styles.botaoSecundario}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <Link
+                  href={`/veiculo/${heroVehicle.slug}`}
+                  className={styles.heroImageWrap}
+                  aria-label={`Ver ${heroVehicle.brand} ${heroVehicle.model}`}
                 >
-                  Fale conosco
-                </a>
-              </div>
-            </div>
-          )}
-        </section>
-
-        {/* ============ 02 — CURADORIA, EM TRÊS FRASES ============ */}
-        <section className={styles.manifesto} aria-labelledby="manifesto-titulo">
-          <span className={styles.contador}>02 / 04</span>
-          <h2 id="manifesto-titulo" className={styles.manifestoTitulo}>
-            <span className={styles.frase}>Não vendemos apenas carros.</span>
-            <span className={`${styles.frase} ${styles.fraseForte}`}>
-              Selecionamos aquilo que merece estar aqui.
-            </span>
-          </h2>
-          <p className={styles.manifestoLinha}>
-            Procedência. Curadoria. Performance.
-          </p>
-        </section>
-
-        {/* ============ 03 — DESTAQUES, EM PESOS DIFERENTES ============ */}
-        {principal && (
-          <section className={styles.destaques} aria-labelledby="destaques-titulo">
-            <div className={styles.destaquesTopo}>
-              <span className={styles.contador}>03 / 04</span>
-              <h2 id="destaques-titulo" className={styles.destaquesTitulo}>
-                Do acervo
-              </h2>
-            </div>
-
-            {/* Composição assimétrica: o primeiro ocupa a largura, os outros
-                entram abaixo em par. Não é card/card/card. */}
-            <article className={styles.destaquePrincipal}>
-              <Link href={`/veiculo/${principal.slug}`} className={styles.destaqueLink}>
-                <div className={styles.destaqueFoto}>
-                  {principal.images?.main && (
-                    <Image
-                      src={principal.images.main}
-                      alt={`${principal.brand} ${principal.model}`}
-                      fill
-                      sizes="(max-width: 900px) 100vw, 90vw"
-                      loading="lazy"
+                  {heroVehicle.images?.main && (
+                    <img
+                      src={heroVehicle.images.main}
+                      alt={`${heroVehicle.brand} ${heroVehicle.model} ${anoVeiculo(heroVehicle)}`}
+                      className={styles.heroImage}
+                      loading="eager"
                     />
                   )}
-                </div>
-                <div className={styles.destaqueInfo}>
-                  <h3 className={styles.destaqueNome}>
-                    <span className={styles.destaqueMarca}>{principal.brand}</span>{" "}
-                    {principal.model}
-                  </h3>
-                  <p className={styles.destaqueMeta}>
-                    {etiquetas(principal).slice(0, 3).join(" · ")}
-                  </p>
-                  <p className={styles.destaquePreco}>{precoFormatado(principal.price)}</p>
-                </div>
-              </Link>
-            </article>
+                </Link>
 
-            <div className={styles.destaquesPar}>
-              {secundarios.map((v) => (
-                <article key={v.id} className={styles.destaqueSecundario}>
-                  <Link href={`/veiculo/${v.slug}`} className={styles.destaqueLink}>
-                    <div className={styles.destaqueFoto}>
-                      {v.images?.main && (
-                        <Image
-                          src={v.images.main}
-                          alt={`${v.brand} ${v.model}`}
-                          fill
-                          sizes="(max-width: 900px) 100vw, 45vw"
-                          loading="lazy"
-                        />
-                      )}
-                    </div>
-                    <div className={styles.destaqueInfo}>
-                      <h3 className={styles.destaqueNome}>
-                        <span className={styles.destaqueMarca}>{v.brand}</span>{" "}
-                        {v.model}
-                      </h3>
-                      <p className={styles.destaqueMeta}>
-                        {etiquetas(v).slice(0, 3).join(" · ")}
-                      </p>
-                      <p className={styles.destaquePreco}>{precoFormatado(v.price)}</p>
-                    </div>
+                <div className={styles.heroSpecs}>
+                  <div className={styles.heroSpec}>
+                    <span className={styles.heroSpecLabel}>Ano</span>
+                    <span className={styles.heroSpecValue}>{anoVeiculo(heroVehicle)}</span>
+                  </div>
+                  <div className={styles.heroSpec}>
+                    <span className={styles.heroSpecLabel}>Km</span>
+                    <span className={styles.heroSpecValue}>
+                      {heroVehicle.mileage
+                        ? `${heroVehicle.mileage.toLocaleString("pt-BR")}km`
+                        : "0km"}
+                    </span>
+                  </div>
+                  <div className={styles.heroSpec}>
+                    <span className={styles.heroSpecLabel}>Valor</span>
+                    <span className={styles.heroSpecValue}>
+                      {heroVehicle.price
+                        ? heroVehicle.price.toLocaleString("pt-BR", {
+                            style: "currency",
+                            currency: "BRL",
+                            minimumFractionDigits: 0,
+                          })
+                        : "Sob consulta"}
+                    </span>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className={styles.heroEmpty}>
+                <h6 className={styles.heroBrand}>Vamaq Motors</h6>
+                <h1 className={styles.heroModel}>Boutique Automotiva</h1>
+                <p className={styles.heroVersion}>
+                  Esportivos e superesportivos com curadoria rigorosa
+                </p>
+                <div className={styles.heroEmptyActions}>
+                  <Link href="/acervo" className="btn btn--accent btn--lg">
+                    Ver Acervo
                   </Link>
-                </article>
-              ))}
-            </div>
+                  <a
+                    href={getWhatsAppGenericUrl(
+                      "Olá! Vi o site da Vamaq Motors e gostaria de mais informações."
+                    )}
+                    className="btn btn--outline btn--lg"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Fale no WhatsApp
+                  </a>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
 
-            <Link href="/acervo" className={styles.botaoSecundario}>
-              Ver todo o acervo
-            </Link>
+        {/* ======== VEHICLES GRID — 3 columns below hero ======== */}
+        {gridVehicles.length > 0 && (
+          <section className={styles.featured}>
+            <div className="container">
+              <div className={styles.featuredGrid}>
+                {gridVehicles.map((vehicle) => (
+                  <VehicleCard key={vehicle.id} vehicle={vehicle} />
+                ))}
+              </div>
+            </div>
           </section>
         )}
 
-        {/* ============ 04 — A CASA ============ */}
-        <section className={styles.curadoria} aria-labelledby="curadoria-titulo">
-          {/* A fotografia começa contida e ganha espaço conforme se avança —
-              o texto vive noutro plano, entrando mais devagar. */}
-          <div className={styles.curadoriaFoto}>
-            <Image
-              src="/images/equipe/mateus-showroom.webp"
-              alt="Showroom da Vamaq Motors"
-              fill
-              sizes="(max-width: 900px) 100vw, 55vw"
-              loading="lazy"
-            />
+        {/* ======== REFERÊNCIA / ABOUT ======== */}
+        <section className={styles.reference}>
+          <div className="container">
+            <div className={styles.referenceGrid}>
+              <div className={styles.referenceLeft}>
+                <span className={styles.referenceEyebrow}>Viva o seu sucesso</span>
+                <h2 className={styles.referenceTitle}>
+                  Referência no mercado premium
+                </h2>
+              </div>
+              <div className={styles.referenceRight}>
+                <h6 className={styles.referenceCompany}>Vamaq Motors</h6>
+                <p className={styles.referenceText}>
+                  Liderada por Mateus Parreira, com mais de 13 anos de experiência
+                  no mercado automotivo de luxo. Curadoria rigorosa, procedência
+                  garantida e os esportivos mais desejados do mercado.
+                </p>
+              </div>
+            </div>
           </div>
+        </section>
 
-          <div className={styles.curadoriaTexto}>
-            <span className={styles.contador}>04 / 04</span>
-            <h2 id="curadoria-titulo" className={styles.curadoriaTitulo}>
-              Cada veículo entra no acervo por um motivo.
-            </h2>
-            <p className={styles.curadoriaCorpo}>
-              Liderada por Mateus Parreira, com mais de 13 anos de experiência no
-              mercado automotivo de luxo. Procedência não é detalhe — é o começo
-              da conversa.
-            </p>
+        {/* ======== SEE ALL BUTTON ======== */}
+        {featuredVehicles.length > 0 && (
+          <section className={styles.featuredMoreSection}>
+            <div className="container">
+              <Link href="/acervo" className={styles.featuredMoreBtn}>
+                Conheça todos os veículos
+              </Link>
+            </div>
+          </section>
+        )}
 
-            <dl className={styles.numeros}>
-              <div className={styles.numero}>
-                <dt className={styles.numeroRotulo}>Anos de mercado</dt>
-                <dd className={styles.numeroValor}>13+</dd>
+        {/* ======== ABOUT / DESCUBRA ======== */}
+        <section className={styles.discover}>
+          <div className="container">
+            <div className={styles.discoverCard}>
+              <div className={styles.discoverImage}>
+                <img
+                  src="/images/equipe/mateus-showroom.png"
+                  alt="Showroom da Vamaq Motors"
+                  className={styles.discoverImageImg}
+                />
               </div>
-              <div className={styles.numero}>
-                <dt className={styles.numeroRotulo}>Veículos negociados</dt>
-                <dd className={styles.numeroValor}>2.500+</dd>
+              <div className={styles.discoverContent}>
+                <h2 className={styles.discoverTitle}>Conheça a Vamaq</h2>
+                <p className={styles.discoverText}>
+                  Boutique automotiva especializada em veículos premium,
+                  esportivos e superesportivos. Cada carro passa por uma
+                  curadoria rigorosa.
+                </p>
+                <Link href="/sobre" className={styles.discoverLink}>
+                  Sobre nós
+                </Link>
               </div>
-              <div className={styles.numero}>
-                <dt className={styles.numeroRotulo}>Procedência verificada</dt>
-                <dd className={styles.numeroValor}>100%</dd>
-              </div>
-            </dl>
+            </div>
+          </div>
+        </section>
 
-            <div className={styles.acoes}>
+        {/* ======== CTA — Venda seu carro ======== */}
+        <section className={styles.sellCta}>
+          <div className="container">
+            <div className={styles.sellCtaInner}>
+              <div className={styles.sellCtaText}>
+                <span className={styles.sellCtaEyebrow}>Fale com um especialista</span>
+                <h2 className={styles.sellCtaTitle}>
+                  Pronto para o próximo nível?
+                </h2>
+              </div>
               <a
-                href={getWhatsAppGenericUrl()}
-                className={styles.botaoPrimario}
+                href={getWhatsAppGenericUrl(
+                  "Olá! Vi o site da Vamaq Motors e gostaria de falar com um especialista."
+                )}
+                className={styles.sellCtaBtn}
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                Fale conosco
+                Fale no WhatsApp →
               </a>
-              <Link href="/sobre" className={styles.botaoSecundario}>
-                Conheça a Vamaq
-              </Link>
             </div>
           </div>
         </section>
       </main>
-      <WhatsAppFloat />
       <Footer />
+      <WhatsAppFloat />
     </>
   );
 }

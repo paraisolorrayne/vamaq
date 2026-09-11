@@ -12,10 +12,7 @@
   background-color: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  /* A seção 22 do brief pede transição suave entre integrado à fotografia e
-     fundo próprio. Só cor e sombra transicionam — nada de layout. */
-  transition: box-shadow var(--ease-base), background-color 0.35s ease,
-    border-color 0.35s ease;
+  transition: box-shadow var(--ease-base);
 }
 
 .header--scrolled {
@@ -43,37 +40,6 @@
   border-color: #fff;
 }
 .header--transparent .header__hamburger-line { background-color: #fff; }
-
-/* --- Home rolada: escuro translúcido ---------------------------------------
-   A transição entre transparente e escuro é só de background-color e borda,
-   as duas em `transition` no .header — nada que force reflow, e por isso a
-   passagem é suave mesmo rolando rápido. */
-.header--escuro {
-  /* 0,92 e não 0,82: a 18% de transparência o preço do hero continuava
-     legível atrás da barra, e texto atrás de texto é ruído, não sofisticação. */
-  background-color: rgba(10, 10, 10, 0.92);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: none;
-}
-
-.header--escuro .header__nav-link { color: rgba(255, 255, 255, 0.82); }
-.header--escuro .header__nav-link:hover { color: #fff; }
-
-.header--escuro .header__cta {
-  background-color: transparent;
-  border: 1.5px solid rgba(255, 255, 255, 0.45);
-  color: #fff;
-}
-
-.header--escuro .header__cta:hover {
-  background-color: #fff;
-  color: var(--color-ink);
-  border-color: #fff;
-}
-
-.header--escuro .header__hamburger-line { background-color: #fff; }
 
 /* --- Inner layout --- */
 

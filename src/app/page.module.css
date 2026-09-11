@@ -1,579 +1,384 @@
-/*
- * Home — capa editorial.
- *
- * ESTRATÉGIA DE MOVIMENTO (uma só, de propósito): CSS scroll-driven
- * animations. Nada de biblioteca, nada de listener de scroll, nada de cálculo
- * por frame — o navegador liga a animação ao scroll fora da thread principal,
- * que é o que mantém 60fps no celular.
- *
- * A REGRA QUE MANTÉM ISSO SEGURO: o estado FINAL é o padrão. Quem não suporta
- * `animation-timeline` (Safari antigo) simplesmente vê o conteúdo pronto, sem
- * página quebrada e sem texto invisível. As animações entram só dentro do
- * @supports, e saem inteiras no prefers-reduced-motion.
- *
- * Só transform, opacity e clip-path — nenhuma propriedade que force reflow.
- */
+/* ============================================
+   VAMAQ MOTORS — Home Page Styles
+   Light theme, inspired by 4boss.com.br
+   ============================================ */
 
-.page {
-  background: var(--color-ink);
-  color: var(--text-on-dark);
-}
-
-/* ===================== peças compartilhadas ===================== */
-
-.contador {
-  display: block;
-  font-size: 0.6875rem;
-  letter-spacing: 0.18em;
-  color: var(--text-on-dark-mut);
-  font-variant-numeric: tabular-nums;
-}
-
-.sobrescrito {
-  display: block;
-  margin-top: var(--space-sm);
-  font-size: 0.6875rem;
-  text-transform: uppercase;
-  letter-spacing: 0.2em;
-  color: var(--text-on-dark-soft);
-}
-
-.pilulas {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: var(--space-md) 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.pilula {
-  padding: 7px 14px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: 999px;
-  font-size: 0.75rem;
-  letter-spacing: 0.04em;
-  color: var(--text-on-dark-soft);
-  white-space: nowrap;
-}
-
-.acoes {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: var(--space-lg, 2rem);
-}
-
-/* Alvo de toque de 48px: o brief pede botão grande no mobile, e este é o
-   caminho por onde o negócio acontece. */
-.botaoPrimario,
-.botaoSecundario {
-  display: inline-flex;
-  align-items: center;
-  min-height: 48px;
-  padding: 0 26px;
-  border-radius: 999px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  text-decoration: none;
-  transition: background-color 0.28s ease, border-color 0.28s ease,
-    transform 0.28s ease;
-}
-
-.botaoPrimario {
-  background: var(--color-accent);
-  color: var(--text-on-accent);
-  border: 1px solid var(--color-accent);
-}
-
-.botaoPrimario:hover {
-  background: var(--color-accent-hover);
-  border-color: var(--color-accent-hover);
-}
-
-.botaoSecundario {
-  background: transparent;
-  color: var(--text-on-dark);
-  border: 1px solid rgba(255, 255, 255, 0.28);
-}
-
-.botaoSecundario:hover {
-  border-color: rgba(255, 255, 255, 0.6);
-}
-
-/* O movimento é de 2px: o suficiente para o dedo/cursor sentir resposta,
-   longe do "spring" cartunesco que o brief proíbe. */
-.botaoPrimario:active,
-.botaoSecundario:active {
-  transform: translateY(2px);
-}
-
-.botaoPrimario:focus-visible,
-.botaoSecundario:focus-visible,
-.destaqueLink:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 3px;
-}
-
-/* ===================== 01 — hero ===================== */
-
+/* --- HERO (compact, featured vehicle at top of pyramid) --- */
 .hero {
   position: relative;
-  min-height: 100svh;
-  display: grid;
-  grid-template-columns: minmax(0, 44%) minmax(0, 56%);
-  align-items: center;
+  background-color: var(--bg-primary);
+  padding: 110px 0 0;
   overflow: hidden;
-  background: var(--color-ink);
 }
 
-.heroMedia {
+.heroInner {
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: 0 var(--container-pad);
+  text-align: center;
+}
+
+.heroText {
+  padding-top: var(--space-sm);
+}
+
+.heroBrand {
+  font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  margin-bottom: 8px;
+}
+
+.heroModel {
+  font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
+  font-weight: var(--fw-bold);
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  color: var(--color-ink);
+  line-height: 0.95;
+  margin-bottom: 8px;
+}
+
+.heroVersion {
+  font-size: var(--text-md);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: var(--space-md);
+}
+
+/* Hero vehicle image — compact */
+.heroImageWrap {
+  display: block;
   position: relative;
-  grid-column: 2;
-  grid-row: 1;
-  align-self: stretch;
-  /* Sangra para fora da grade: a foto encosta na borda da tela, como capa. */
-  margin-right: calc(var(--container-pad, 24px) * -1);
+  width: 100%;
+  max-width: 640px;
+  margin: var(--space-md) auto 0;
+  aspect-ratio: 16 / 9;
+  /* isolate keeps the multiply blend contained to this wrap */
+  isolation: isolate;
+}
+
+.heroImage {
+  width: 100%;
   height: 100%;
-}
-
-.heroImg {
-  object-fit: cover;
+  object-fit: contain;
   object-position: center;
-}
-
-.heroMediaVazio {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, #141422 0%, #0a0a14 100%);
-}
-
-/* Véu que desce da esquerda: garante contraste do texto sobre a foto quando
-   as colunas se encontram, sem escurecer o carro inteiro. */
-.heroVeu {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    90deg,
-    var(--color-ink) 0%,
-    rgba(10, 10, 10, 0.65) 22%,
-    rgba(10, 10, 10, 0) 55%
-  );
-  pointer-events: none;
-}
-
-.heroTexto {
-  position: relative;
-  z-index: 2;
-  grid-column: 1;
-  grid-row: 1;
-  padding: var(--space-xl, 3rem) 0 var(--space-xl, 3rem) var(--container-pad, 24px);
-  max-width: 34rem;
-}
-
-.heroTitulo {
-  margin: var(--space-md) 0 0;
-  line-height: 0.94;
-  letter-spacing: -0.03em;
-}
-
-.heroMarca,
-.heroModelo {
   display: block;
+  transition: transform var(--ease-slow);
+  /* Foto de estúdio com fundo branco: multiply faz o branco
+     se fundir com a cor da seção, eliminando o quadrado branco. */
+  mix-blend-mode: multiply;
+}
+.heroImageWrap:hover .heroImage {
+  transform: scale(1.02);
 }
 
-.heroMarca {
-  font-size: clamp(1.75rem, 3.4vw, var(--text-2xl));
-  font-weight: 500;
-  color: var(--text-on-dark-soft);
+/* Hero specs bar (Ano / Km / Valor) */
+.heroSpecs {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xl);
+  padding: var(--space-sm) var(--container-pad) var(--space-md);
+  max-width: 500px;
+  margin: 0 auto;
 }
 
-.heroModelo {
-  font-size: clamp(2.5rem, 6.4vw, var(--text-4xl));
-  font-weight: 700;
-  color: var(--text-on-dark);
-}
-
-.heroPreco {
-  margin: var(--space-md) 0 0;
-  font-size: var(--text-lg);
-  font-weight: 600;
-  color: var(--color-accent);
-}
-
-.rolar {
-  position: absolute;
-  left: var(--container-pad, 24px);
-  bottom: 26px;
-  z-index: 2;
-  font-size: 0.625rem;
-  text-transform: uppercase;
-  letter-spacing: 0.24em;
-  color: var(--text-on-dark-mut);
-}
-
-/* ===================== 02 — manifesto ===================== */
-
-.manifesto {
-  padding: clamp(6rem, 18vh, 12rem) var(--container-pad, 24px);
-  max-width: 62rem;
-  margin-inline: auto;
-}
-
-.manifestoTitulo {
-  margin: var(--space-md) 0 0;
-  font-size: clamp(1.9rem, 5.2vw, 3.6rem);
-  line-height: 1.08;
-  letter-spacing: -0.025em;
-  font-weight: 600;
-}
-
-.frase {
-  display: block;
-}
-
-/* A primeira frase recua, a segunda é a que fica: o contraste de cor faz o
-   trabalho que uma animação por palavra faria pior. */
-.frase:first-child {
-  color: var(--text-on-dark-mut);
-}
-
-.fraseForte {
-  color: var(--text-on-dark);
-  margin-top: 0.25em;
-}
-
-.manifestoLinha {
-  margin: var(--space-lg, 2rem) 0 0;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.28em;
-  color: var(--color-accent);
-}
-
-/* ===================== 03 — destaques ===================== */
-
-.destaques {
-  padding: clamp(4rem, 10vh, 7rem) var(--container-pad, 24px);
+.heroSpec {
   display: flex;
   flex-direction: column;
-  gap: var(--space-lg, 2rem);
-  align-items: flex-start;
+  align-items: center;
+  gap: 4px;
 }
 
-.destaquesTopo {
+.heroSpecLabel {
+  font-size: var(--text-xs);
+  font-weight: var(--fw-medium);
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.heroSpecValue {
+  font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
+  font-size: var(--text-md);
+  font-weight: var(--fw-bold);
+  color: var(--color-ink);
+}
+
+/* Hero empty state (no vehicles in DB) */
+.heroEmpty {
+  padding: var(--space-3xl) 0 var(--space-2xl);
+  text-align: center;
+}
+
+.heroEmptyActions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  justify-content: center;
+  align-items: center;
+  margin-top: var(--space-lg);
+}
+
+/* --- REFERENCE / ABOUT section --- */
+.reference {
+  padding: var(--space-2xl) 0;
+  border-top: 1px solid var(--border-light);
+}
+
+.referenceGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-xl);
+  align-items: start;
+}
+
+.referenceEyebrow {
+  font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-medium);
+  font-style: italic;
+  color: var(--text-secondary);
+  display: block;
+  margin-bottom: var(--space-xs);
+}
+
+.referenceTitle {
+  font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
+  font-size: clamp(1.5rem, 4vw, 2.75rem);
+  font-weight: var(--fw-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--color-accent);
+  line-height: 1.05;
+}
+
+.referenceCompany {
+  font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-ink);
+  margin-bottom: var(--space-xs);
+}
+
+.referenceText {
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+/* --- FEATURED VEHICLES GRID (below hero — pyramid base) --- */
+.featured {
+  padding: 0 0 var(--space-lg);
+}
+
+.featuredGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+.featuredMoreSection {
+  padding: 0 0 var(--space-xl);
+}
+
+.featuredMoreBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 32px;
+  font-size: var(--text-sm);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-ink);
+  background: transparent;
+  border: 1.5px solid var(--color-ink);
+  border-radius: var(--radius-sm);
+  transition: all var(--ease-fast);
+  cursor: pointer;
+}
+.featuredMoreBtn:hover {
+  background: var(--color-ink);
+  color: #FFFFFF;
+}
+
+/* --- DISCOVER / ABOUT CARD --- */
+.discover {
+  padding: var(--space-2xl) 0;
+}
+
+.discoverCard {
+  display: grid;
+  grid-template-columns: 1fr;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--bg-dark-section);
+  min-height: 320px;
+}
+
+.discoverImage {
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+}
+
+.discoverImageImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  display: block;
+}
+
+.discoverContent {
+  padding: var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.discoverTitle {
+  font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
+  font-size: var(--text-xl);
+  font-weight: var(--fw-bold);
+  color: var(--text-on-dark);
   margin-bottom: var(--space-sm);
 }
 
-.destaquesTitulo {
-  margin: var(--space-sm) 0 0;
-  font-size: clamp(1.6rem, 3.6vw, var(--text-2xl));
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-
-.destaquePrincipal,
-.destaqueSecundario {
-  width: 100%;
-}
-
-.destaquesPar {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-lg, 2rem);
-  width: 100%;
-}
-
-.destaqueLink {
-  display: block;
-  text-decoration: none;
-  color: inherit;
-}
-
-.destaqueFoto {
-  position: relative;
-  width: 100%;
-  /* A proporção mora aqui porque as fotos sobem com a proporção original —
-     é a caixa que reserva o espaço e impede o salto de layout. */
-  aspect-ratio: 16 / 9;
-  overflow: hidden;
-  border-radius: 4px;
-  background: #141422;
-}
-
-.destaqueSecundario .destaqueFoto {
-  aspect-ratio: 4 / 3;
-}
-
-.destaqueFoto :global(img) {
-  object-fit: cover;
-  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-/* Hover contido: 1.03 é perceptível e não vira efeito. No toque não existe
-   hover, e nada aqui depende dele — a informação já está visível. */
-.destaqueLink:hover .destaqueFoto :global(img) {
-  transform: scale(1.03);
-}
-
-.destaqueInfo {
-  padding-top: var(--space-md);
-}
-
-.destaqueNome {
-  margin: 0;
-  font-size: var(--text-md);
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
-
-.destaqueMarca {
-  color: var(--text-on-dark-soft);
-  font-weight: 500;
-}
-
-.destaqueMeta {
-  margin: 6px 0 0;
-  font-size: 0.8125rem;
-  color: var(--text-on-dark-mut);
-}
-
-.destaquePreco {
-  margin: 10px 0 0;
+.discoverText {
   font-size: var(--text-base);
-  font-weight: 600;
-  color: var(--color-accent);
+  color: var(--text-on-dark-soft);
+  line-height: 1.7;
+  margin-bottom: var(--space-lg);
 }
 
-/* ===================== 04 — curadoria ===================== */
-
-.curadoria {
-  display: grid;
-  grid-template-columns: minmax(0, 55%) minmax(0, 45%);
-  gap: clamp(2rem, 5vw, 4rem);
+.discoverLink {
+  display: inline-flex;
   align-items: center;
-  padding: clamp(4rem, 12vh, 9rem) var(--container-pad, 24px);
+  gap: 8px;
+  font-size: var(--text-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--color-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  transition: gap var(--ease-fast);
+}
+.discoverLink::after {
+  content: '';
+  display: inline-block;
+  width: 40px;
+  height: 1px;
+  background: var(--color-accent);
+  transition: width var(--ease-fast);
+}
+.discoverLink:hover::after {
+  width: 60px;
 }
 
-.curadoriaFoto {
-  position: relative;
-  aspect-ratio: 4 / 3;
-  overflow: hidden;
-  border-radius: 4px;
-  background: #141422;
+/* --- SELL CTA --- */
+.sellCta {
+  padding: var(--space-2xl) 0;
+  border-top: 1px solid var(--border-light);
 }
 
-.curadoriaFoto :global(img) {
-  object-fit: cover;
+.sellCtaInner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  align-items: flex-start;
 }
 
-.curadoriaTitulo {
-  margin: var(--space-md) 0 0;
-  font-size: clamp(1.6rem, 3.8vw, 2.6rem);
-  line-height: 1.12;
-  letter-spacing: -0.02em;
-  font-weight: 600;
-}
-
-.curadoriaCorpo {
-  margin: var(--space-md) 0 0;
-  font-size: var(--text-base);
-  line-height: 1.65;
-  color: var(--text-on-dark-soft);
-  max-width: 34rem;
-}
-
-.numeros {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-md);
-  margin: var(--space-lg, 2rem) 0 0;
-  padding-top: var(--space-md);
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-.numeroRotulo {
-  font-size: 0.6875rem;
+.sellCtaEyebrow {
+  font-size: var(--text-xs);
+  font-weight: var(--fw-medium);
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  color: var(--text-on-dark-mut);
+  color: var(--text-tertiary);
+  margin-bottom: 4px;
+  display: block;
 }
 
-.numeroValor {
-  margin: 6px 0 0;
-  font-size: var(--text-lg);
-  font-weight: 700;
-  color: var(--text-on-dark);
+.sellCtaTitle {
+  font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
+  font-size: clamp(1.5rem, 3vw, 2.25rem);
+  font-weight: var(--fw-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  color: var(--color-ink);
+  line-height: 1.1;
 }
 
-/* ===================== mobile ===================== */
-/*
- * Mobile não é desktop reduzido: as colunas viram pilha, a foto do hero passa
- * a ocupar a metade de cima da tela em vez de ficar atrás do texto, e o véu
- * gira para subir de baixo — senão o texto cairia sobre a parte clara da foto.
- */
-@media (max-width: 900px) {
+.sellCtaBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 36px;
+  font-size: var(--text-sm);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #FFFFFF;
+  background-color: var(--color-ink);
+  border-radius: var(--radius-sm);
+  transition: all var(--ease-fast);
+  white-space: nowrap;
+}
+.sellCtaBtn:hover {
+  background-color: var(--color-accent);
+  transform: translateY(-1px);
+  box-shadow: var(--accent-glow);
+}
+
+/* --- RESPONSIVE --- */
+@media (min-width: 640px) {
+  .heroEmptyActions {
+    flex-direction: row;
+  }
+  .featuredGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 768px) {
   .hero {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: 46svh auto;
-    min-height: 100svh;
-    align-items: start;
+    padding: 110px 0 0;
   }
-
-  .heroMedia {
-    grid-column: 1;
-    grid-row: 1;
-    margin-right: 0;
+  .heroSpecs {
+    gap: var(--space-2xl);
   }
-
-  .heroVeu {
-    background: linear-gradient(
-      180deg,
-      rgba(10, 10, 10, 0) 40%,
-      rgba(10, 10, 10, 0.75) 78%,
-      var(--color-ink) 100%
-    );
+  .referenceGrid {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-2xl);
   }
-
-  .heroTexto {
-    grid-column: 1;
-    grid-row: 2;
-    padding: var(--space-lg, 2rem) var(--container-pad, 24px) var(--space-xl, 3rem);
-    max-width: none;
+  .discoverCard {
+    grid-template-columns: 2fr 3fr;
   }
-
-  .rolar {
-    display: none;
+  .discoverImage {
+    aspect-ratio: auto;
   }
-
-  .destaquesPar,
-  .curadoria,
-  .numeros {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .numeros {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: var(--space-sm);
+  .sellCtaInner {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
   }
 }
 
-/* ===================== movimento ===================== */
-/*
- * Tudo daqui para baixo é ENFEITE: se o navegador não suportar, ou se a
- * pessoa pedir menos movimento, o conteúdo continua idêntico e legível.
- */
-@media (prefers-reduced-motion: no-preference) {
-  @supports (animation-timeline: view()) {
-    /* A foto do hero entra ampliada e volta ao natural conforme se rola:
-       é a "mudança lenta de enquadramento" — escala, não posição, para não
-       descolar o carro da moldura. */
-    .heroMedia {
-      animation: heroEnquadrar linear both;
-      animation-timeline: scroll();
-      animation-range: 0 100svh;
-    }
-
-    @keyframes heroEnquadrar {
-      from {
-        transform: scale(1.12);
-      }
-      to {
-        transform: scale(1);
-      }
-    }
-
-    /* O texto sai antes da fotografia — elementos em velocidades diferentes,
-       que é o que dá a sensação de profundidade sem "flutuar". */
-    .heroTexto {
-      animation: heroTextoSair linear both;
-      animation-timeline: scroll();
-      animation-range: 0 70svh;
-    }
-
-    @keyframes heroTextoSair {
-      0%,
-      35% {
-        opacity: 1;
-        transform: translateY(0);
-      }
-      100% {
-        opacity: 0;
-        transform: translateY(-2.5rem);
-      }
-    }
-
-    .rolar {
-      animation: sumir linear both;
-      animation-timeline: scroll();
-      animation-range: 0 30svh;
-    }
-
-    @keyframes sumir {
-      to {
-        opacity: 0;
-      }
-    }
-
-    /* As frases do manifesto sobem em ritmos diferentes — a segunda um pouco
-       depois da primeira, que é o que cria a leitura em duas batidas. */
-    .frase,
-    .manifestoLinha,
-    .destaqueInfo,
-    .numeros {
-      animation: subir linear both;
-      animation-timeline: view();
-      animation-range: entry 10% cover 32%;
-    }
-
-    @keyframes subir {
-      from {
-        opacity: 0;
-        transform: translateY(1.75rem);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    /* Revelação por máscara: a fotografia aparece de baixo para cima em vez
-       de simplesmente surgir. clip-path anima na GPU. */
-    .destaqueFoto,
-    .curadoriaFoto {
-      animation: revelar linear both;
-      animation-timeline: view();
-      animation-range: entry 5% cover 38%;
-    }
-
-    @keyframes revelar {
-      from {
-        clip-path: inset(14% 0 0 0);
-        opacity: 0.55;
-      }
-      to {
-        clip-path: inset(0 0 0 0);
-        opacity: 1;
-      }
-    }
-
-    /* Curadoria: a foto ganha espaço conforme se avança — o "zoom lento" da
-       referência, aplicado à imagem e não à caixa, para não empurrar o texto
-       ao lado (empurrar seria layout, e layout não anima de graça). */
-    .curadoriaFoto :global(img) {
-      animation: crescer linear both;
-      animation-timeline: view();
-      animation-range: entry 0% exit 100%;
-    }
-
-    @keyframes crescer {
-      from {
-        transform: scale(1);
-      }
-      to {
-        transform: scale(1.1);
-      }
-    }
+@media (min-width: 1024px) {
+  .heroSpecs {
+    gap: var(--space-3xl);
+  }
+  .featuredGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .referenceTitle {
+    font-size: var(--text-2xl);
   }
 }

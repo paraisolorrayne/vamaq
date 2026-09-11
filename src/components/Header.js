@@ -33,15 +33,8 @@ export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
-
-  // A home é uma capa editorial de fundo quase preto; as outras páginas são
-  // claras. É isso que decide o header, não a rolagem sozinha:
-  //   home no topo   → transparente, integrado à fotografia
-  //   home rolada    → escuro translúcido (branco ali seria um susto)
-  //   outras páginas → o header claro de sempre
-  const sobreFundoEscuro = pathname === '/';
-  const transparent = sobreFundoEscuro && !isScrolled;
-  const escuroSolido = sobreFundoEscuro && isScrolled;
+  const isHome = pathname === '/';
+  const transparent = false;
 
   const handleScroll = useCallback(() => {
     setIsScrolled(window.scrollY > 50);
@@ -49,16 +42,8 @@ export default function Header() {
 
   useEffect(() => {
     window.addEventListener('scroll', handleScroll, { passive: true });
-    // Um frame depois, NÃO sincronamente. Chamar handleScroll() direto aqui
-    // é setState síncrono dentro de effect — a regra do React 19 acusa, e com
-    // razão: dispara render em cascata em toda montagem. O frame de atraso
-    // continua acertando o caso que isto existe para resolver (entrar na
-    // página já rolada, ex.: voltar do detalhe do veículo).
-    const frame = requestAnimationFrame(handleScroll);
-    return () => {
-      cancelAnimationFrame(frame);
-      window.removeEventListener('scroll', handleScroll);
-    };
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
   }, [handleScroll]);
 
   useEffect(() => {
@@ -82,7 +67,6 @@ export default function Header() {
     styles.header,
     isScrolled ? styles['header--scrolled'] : '',
     transparent ? styles['header--transparent'] : '',
-    escuroSolido ? styles['header--escuro'] : '',
   ]
     .filter(Boolean)
     .join(' ');
@@ -106,12 +90,7 @@ export default function Header() {
       <div className={styles.header__inner}>
         {/* Logo */}
         <Link href="/" className={styles.header__logo} aria-label="Vamaq Motors - Pagina inicial">
-          {/* "dark" = wordmark branco, para fundo escuro — e na home o fundo
-              é escuro nos dois estados, transparente ou rolado. */}
-          <LogoVamaq
-            className={styles['header__logo-img']}
-            variant={sobreFundoEscuro ? 'dark' : 'light'}
-          />
+          <LogoVamaq className={styles['header__logo-img']} variant={transparent ? 'dark' : 'light'} />
         </Link>
 
         {/* Desktop nav */}
