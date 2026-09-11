@@ -24,6 +24,7 @@ function EstoqueConteudo({ podeEmitirNota }) {
   // Vem do atalho "Buscar por placa" do Dashboard: /admin/estoque?busca=ABC1D23
   const [search, setSearch] = useState(searchParams.get("busca") || "");
   const [refreshKey, setRefreshKey] = useState(0);
+  const [exportando, setExportando] = useState(false);
   const [de, setDe] = useState("");
   const [ate, setAte] = useState("");
   const [campo, setCampo] = useState("data_entrada");
@@ -43,6 +44,24 @@ function EstoqueConteudo({ podeEmitirNota }) {
       });
     return () => { cancelled = true; };
   }, [refreshKey]);
+
+  // A lista sai de TODOS os carros carregados, não do que a busca filtrou: o
+  // vendedor manda o estoque da loja, e uma lista que muda conforme o que ele
+  // digitou na busca chegaria ao cliente sem ele perceber o que faltou. Quem
+  // decide o recorte é a própria lista — só o que está disponível entra.
+  //
+  // O jsPDF só é baixado quando alguém clica: são ~350 kB que não podem pesar
+  // na abertura da tela de estoque, que é a mais usada do painel.
+  async function exportarLista() {
+    setExportando(true);
+    try {
+      const { exportarListaPdf } = await import("@/lib/estoque/listaPdf");
+      await exportarListaPdf(vehicles);
+    } catch {
+      alert("Não deu para gerar a lista. Tente de novo — se insistir, avise o suporte.");
+    }
+    setExportando(false);
+  }
 
   // Desativar em vez de excluir: o veículo sai do site mas fica no estoque,
   // preservando o histórico (PR-C do ADR-002). Reativar volta pra 'disponível'.
@@ -111,6 +130,14 @@ function EstoqueConteudo({ podeEmitirNota }) {
           <Link href="/admin/estoque/entradas-saidas" className={styles.btnSecondary}>
             📋 Entradas e saídas
           </Link>
+          <button
+            type="button"
+            onClick={exportarLista}
+            disabled={exportando || loading}
+            className={styles.btnSecondary}
+          >
+            {exportando ? "Gerando…" : "📄 Exportar lista"}
+          </button>
           <Link href="/admin/estoque/novo" className={styles.btnPrimary}>
             + Novo Veículo
           </Link>

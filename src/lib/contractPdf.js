@@ -638,7 +638,9 @@ function formatToday() {
 // Carrega um SVG da pasta /public, rasteriza para PNG via canvas e devolve
 // { dataUrl, aspect }. Só funciona no browser; fora dele retorna null (o
 // cabeçalho então usa o wordmark em texto como fallback).
-async function loadVamaqLogo(path) {
+// Exportada para a lista de estoque montar o mesmo cabeçalho sem duplicar a
+// rasterização do SVG.
+export async function loadVamaqLogo(path) {
   if (typeof window === "undefined" || typeof document === "undefined") return null;
   try {
     const res = await fetch(path);
