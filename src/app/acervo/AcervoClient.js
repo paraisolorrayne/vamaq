@@ -380,7 +380,7 @@ function Acervo({ veiculos }) {
             <span>Acervo</span>
           </nav>
 
-          <header className={styles.header}>
+          <header className={`${styles.header} revela-entrada`}>
             <div>
               <h1 className={styles.title}>Nosso Acervo</h1>
               <p className={styles.subtitle}>
@@ -470,7 +470,7 @@ function Acervo({ veiculos }) {
               )}
 
               {daPagina.length > 0 ? (
-                <div className={styles.grid}>
+                <div className={`${styles.grid} revela-grupo`}>
                   {daPagina.map((veiculo, i) => (
                     <VehicleCard
                       key={veiculo.id}

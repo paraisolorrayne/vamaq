@@ -31,14 +31,14 @@ export default async function HomePage() {
           <div className={styles.heroInner}>
             {heroVehicle ? (
               <>
-                <div className={styles.heroText}>
+                <div className={`${styles.heroText} revela-entrada`}>
                   <h6 className={styles.heroBrand}>{heroVehicle.brand}</h6>
                   <h1 className={styles.heroModel}>{heroVehicle.model}</h1>
                 </div>
 
                 <Link
                   href={`/veiculo/${heroVehicle.slug}`}
-                  className={styles.heroImageWrap}
+                  className={`${styles.heroImageWrap} revela-entrada-2`}
                   aria-label={`Ver ${heroVehicle.brand} ${heroVehicle.model}`}
                 >
                   {heroVehicle.images?.main && (
@@ -59,7 +59,7 @@ export default async function HomePage() {
                   )}
                 </Link>
 
-                <div className={styles.heroSpecs}>
+                <div className={`${styles.heroSpecs} revela-entrada-3`}>
                   <div className={styles.heroSpec}>
                     <span className={styles.heroSpecLabel}>Ano</span>
                     <span className={styles.heroSpecValue}>{anoVeiculo(heroVehicle)}</span>
@@ -87,7 +87,7 @@ export default async function HomePage() {
                 </div>
               </>
             ) : (
-              <div className={styles.heroEmpty}>
+              <div className={`${styles.heroEmpty} revela-entrada`}>
                 <h6 className={styles.heroBrand}>Vamaq Motors</h6>
                 <h1 className={styles.heroModel}>Boutique Automotiva</h1>
                 <p className={styles.heroVersion}>
@@ -117,7 +117,7 @@ export default async function HomePage() {
         {gridVehicles.length > 0 && (
           <section className={styles.featured}>
             <div className="container">
-              <div className={styles.featuredGrid}>
+              <div className={`${styles.featuredGrid} revela-grupo`}>
                 {gridVehicles.map((vehicle) => (
                   <VehicleCard key={vehicle.id} vehicle={vehicle} />
                 ))}
@@ -127,7 +127,7 @@ export default async function HomePage() {
         )}
 
         {/* ======== REFERÊNCIA / ABOUT ======== */}
-        <section className={styles.reference}>
+        <section className={`${styles.reference} revela`}>
           <div className="container">
             <div className={styles.referenceGrid}>
               <div className={styles.referenceLeft}>
@@ -150,7 +150,7 @@ export default async function HomePage() {
 
         {/* ======== SEE ALL BUTTON ======== */}
         {featuredVehicles.length > 0 && (
-          <section className={styles.featuredMoreSection}>
+          <section className={`${styles.featuredMoreSection} revela`}>
             <div className="container">
               <Link href="/acervo" className={styles.featuredMoreBtn}>
                 Conheça todos os veículos
@@ -160,7 +160,7 @@ export default async function HomePage() {
         )}
 
         {/* ======== ABOUT / DESCUBRA ======== */}
-        <section className={styles.discover}>
+        <section className={`${styles.discover} revela`}>
           <div className="container">
             <div className={styles.discoverCard}>
               <div className={styles.discoverImage}>
@@ -192,7 +192,7 @@ export default async function HomePage() {
         </section>
 
         {/* ======== CTA — Venda seu carro ======== */}
-        <section className={styles.sellCta}>
+        <section className={`${styles.sellCta} revela`}>
           <div className="container">
             <div className={styles.sellCtaInner}>
               <div className={styles.sellCtaText}>

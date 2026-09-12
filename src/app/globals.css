@@ -289,3 +289,102 @@ p { overflow-wrap: break-word; }
   white-space: nowrap;
   border-width: 0;
 }
+
+/* ============================================
+   MOVIMENTO — revelação ao rolar
+   ============================================
+
+   Utilitários globais (como .container e .btn) para qualquer página usar:
+
+     .revela        um elemento entra ao aparecer na tela
+     .revela-grupo  os FILHOS entram em cascata, um atrás do outro
+
+   POR QUE CSS PURO E NÃO BIBLIOTECA: `animation-timeline: view()` liga a
+   animação à posição do elemento na rolagem, e o navegador executa isso FORA
+   da thread principal. Sem IntersectionObserver, sem listener de scroll, sem
+   cálculo por frame — e portanto sem competir com o carregamento das fotos,
+   que era a exigência.
+
+   POR QUE NÃO ATRAPALHA A FOTO: só `opacity` e `transform` são animados, as
+   duas propriedades que o compositor resolve sozinho, sem recalcular layout.
+   Opacidade não adia download: o navegador busca a imagem igual, e o
+   `loading="lazy"` continua decidindo pela proximidade da viewport.
+
+   NADA DE will-change AQUI, DE PROPÓSITO: promover dezenas de elementos a
+   camada própria come memória de GPU e é como "otimização" de animação piora
+   celular antigo. O compositor já trata transform e opacity sem ajuda.
+
+   A REGRA QUE MANTÉM ISSO SEGURO: o estado FINAL é o padrão. Quem não suporta
+   `animation-timeline` (Safari mais antigo) vê o conteúdo pronto, e não uma
+   página em branco esperando um reveal que nunca vem. As animações só entram
+   dentro do @supports. */
+
+/* Curva única para tudo: desaceleração firme, sem repique. É o que faz o
+   movimento parecer mecânico e intencional em vez de fofo. */
+:root {
+  --mov-curva: cubic-bezier(0.22, 1, 0.36, 1);
+  --mov-sobe: 1.5rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .revela,
+    .revela-grupo > * {
+      animation: revela-sobe linear both;
+      animation-timeline: view();
+      /* Começa quando o elemento mostra 8% de si e termina quando cruzou
+         28% da tela: rápido o suficiente para não deixar texto meio
+         transparente sob o olho de quem lê. */
+      animation-range: entry 8% cover 28%;
+    }
+
+    @keyframes revela-sobe {
+      from {
+        opacity: 0;
+        transform: translateY(var(--mov-sobe));
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* CASCATA, pelo animation-range — NÃO por animation-delay.
+       `animation-delay` não vale para animação ligada à rolagem: quando há
+       `animation-timeline`, a especificação manda deslocar pelo RANGE. Um
+       delay ali é silenciosamente ignorado e a cascata simplesmente não
+       acontece, com o CSS parecendo correto.
+       Cada irmão começa 5% mais tarde na entrada, então a fileira se
+       preenche conforme sobe. Vai até 9 porque é o tamanho da página do
+       acervo (POR_PAGINA = 9). */
+    .revela-grupo > *:nth-child(2) { animation-range: entry 13% cover 33%; }
+    .revela-grupo > *:nth-child(3) { animation-range: entry 18% cover 38%; }
+    .revela-grupo > *:nth-child(4) { animation-range: entry 23% cover 43%; }
+    .revela-grupo > *:nth-child(5) { animation-range: entry 28% cover 48%; }
+    .revela-grupo > *:nth-child(6) { animation-range: entry 33% cover 53%; }
+    .revela-grupo > *:nth-child(7) { animation-range: entry 38% cover 58%; }
+    .revela-grupo > *:nth-child(8) { animation-range: entry 43% cover 63%; }
+    .revela-grupo > *:nth-child(9) { animation-range: entry 48% cover 68%; }
+
+    /* Variante para o que já está na primeira dobra no carregamento: não há
+       rolagem para acompanhar, então entra por tempo, uma vez. */
+    .revela-entrada {
+      animation: revela-sobe 0.7s var(--mov-curva) both;
+    }
+    .revela-entrada-2 { animation: revela-sobe 0.7s var(--mov-curva) 0.08s both; }
+    .revela-entrada-3 { animation: revela-sobe 0.7s var(--mov-curva) 0.16s both; }
+    .revela-entrada-4 { animation: revela-sobe 0.7s var(--mov-curva) 0.24s both; }
+  }
+}
+
+/* Resposta ao toque nos botões da marca — 1px, o suficiente para o dedo
+   sentir que a interface respondeu, longe do repique de mola. */
+@media (prefers-reduced-motion: no-preference) {
+  .btn {
+    transition: transform 0.2s var(--mov-curva), background-color 0.2s ease,
+      border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .btn:active {
+    transform: translateY(1px);
+  }
+}

@@ -104,7 +104,7 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
   return (
     <main id="main-content" className={styles.page}>
       {/* ===== HERO SECTION ===== */}
-      <section className={styles.hero}>
+      <section className={`${styles.hero} revela-entrada`}>
         {/* SVG decorativo continua em <img> de propósito: o otimizador do
             Next não processa SVG sem ligar dangerouslyAllowSVG, e um vetor
             de gradiente já é menor que qualquer raster que sairia dele. */}
@@ -187,7 +187,7 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
       </section>
 
       {/* ===== GALLERY & INFO SECTION ===== */}
-      <section className={styles.gallerySection}>
+      <section className={`${styles.gallerySection} revela`}>
         <div className={styles.gallerySidebar}>
           <h5 className={styles.galleryBrand}>{vehicle.brand}</h5>
           <h2 className={styles.galleryModel}>{vehicle.model}</h2>
@@ -320,7 +320,7 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
       )}
 
       {/* ===== INFORMAÇÕES PRINCIPAIS — always visible below gallery ===== */}
-      <section className={styles.specsSection}>
+      <section className={`${styles.specsSection} revela`}>
         <div className="container">
           <h2 className={styles.specsSectionTitle}>Informações principais</h2>
           <div className={styles.specsGrid}>
@@ -399,7 +399,7 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
       </section>
 
       {/* ===== CTA SECTION ===== */}
-      <section className={styles.ctaSection}>
+      <section className={`${styles.ctaSection} revela`}>
         <div className={styles.ctaInner}>
           <h3 className={styles.ctaEyebrow}>Expanda seu horizonte</h3>
           <p className={styles.ctaTitle}>
@@ -423,7 +423,7 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
 
       {/* ===== RELATED VEHICLES ===== */}
       {related.length > 0 && (
-        <section className={styles.relatedSection}>
+        <section className={`${styles.relatedSection} revela`}>
           <div className="container">
             <div className={styles.relatedHeader}>
               <h2 className={styles.sectionTitle}>Você também pode gostar</h2>
@@ -431,7 +431,7 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
                 Ver acervo completo →
               </Link>
             </div>
-            <div className={styles.relatedGrid}>
+            <div className={`${styles.relatedGrid} revela-grupo`}>
               {related.map((v) => (
                 <VehicleCard key={v.id} vehicle={v} />
               ))}
