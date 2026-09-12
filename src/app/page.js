@@ -4,7 +4,6 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import HomeMotion from "@/components/HomeMotion";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
-import VehicleCard from "@/components/VehicleCard";
 import { getFeaturedVehicles, getAllVehicles } from "@/lib/repositories/vehicles";
 import { getWhatsAppGenericUrl } from "@/lib/whatsapp";
 import { anoVeiculo } from "@/lib/anoVeiculo";
@@ -56,6 +55,12 @@ function vehicleDifferentials(vehicle) {
     .slice(0, 2);
 }
 
+function newestFirst(vehicles) {
+  return [...vehicles].sort(
+    (a, b) => Date.parse(b.created_at || 0) - Date.parse(a.created_at || 0)
+  );
+}
+
 export default async function HomePage() {
   const [featuredVehicles, allVehicles] = await Promise.all([
     getFeaturedVehicles(4),
@@ -63,11 +68,9 @@ export default async function HomePage() {
   ]);
   const heroVehicle = featuredVehicles[0] || allVehicles[0] || null;
   const heroId = heroVehicle?.id;
-  const editorialVehicles = [
-    ...featuredVehicles.filter((v) => v.id !== heroId),
-    ...allVehicles.filter((v) => v.id !== heroId),
-  ].slice(0, 4);
-  const narrativeVehicle = editorialVehicles[0] || heroVehicle;
+  const recentVehicles = newestFirst(allVehicles.filter((v) => v.id !== heroId));
+  const editorialVehicles = recentVehicles.slice(0, 6);
+  const narrativeVehicle = recentVehicles[0] || heroVehicle;
 
   return (
     <>
@@ -176,9 +179,13 @@ export default async function HomePage() {
               )}
             </div>
             <div className={`${styles.storyCopy} revela`}>
-              <p>Não vendemos apenas carros.</p>
-              <p>Selecionamos aquilo que merece estar aqui.</p>
-              <h2>Procedência. Curadoria. Performance.</h2>
+              <span>Curadoria Vamaq</span>
+              <h2>Não é volume. É seleção.</h2>
+              <p>
+                O acervo muda conforme chegam veículos com procedência,
+                configuração e estado compatíveis com o padrão da Vamaq.
+              </p>
+              <Link href="/sobre">Conheça nossa curadoria</Link>
             </div>
           </section>
         )}
@@ -186,8 +193,8 @@ export default async function HomePage() {
         {editorialVehicles.length > 0 && (
           <section className={styles.editorial}>
             <div className={styles.sectionHead}>
-              <span>Acervo selecionado</span>
-              <h2>Carros escolhidos para provocar decisão, não apenas navegação.</h2>
+              <span>Recém-chegados</span>
+              <h2>Os veículos mais recentes do acervo.</h2>
               <Link href="/acervo">Ver todos</Link>
             </div>
 
@@ -208,7 +215,7 @@ export default async function HomePage() {
                         alt={`${vehicle.brand} ${vehicle.model} ${anoVeiculo(vehicle)}`}
                         className={styles.editorialImage}
                         fill
-                        sizes={index === 0 ? "(max-width: 900px) 100vw, 58vw" : "(max-width: 900px) 100vw, 28vw"}
+                        sizes={index === 0 ? "(max-width: 900px) 100vw, 48vw" : "(max-width: 900px) 100vw, 24vw"}
                         loading="lazy"
                       />
                     )}
