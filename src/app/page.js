@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import HomeMotion from "@/components/HomeMotion";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
 import VehicleCard from "@/components/VehicleCard";
 import { getFeaturedVehicles, getAllVehicles } from "@/lib/repositories/vehicles";
@@ -71,8 +72,9 @@ export default async function HomePage() {
   return (
     <>
       <Header />
+      <HomeMotion />
       <main id="main-content">
-        <section className={styles.hero}>
+        <section className={styles.hero} data-home-hero>
           {heroVehicle ? (
             <>
               <div className={styles.heroPhoto} aria-hidden="true">
@@ -160,7 +162,7 @@ export default async function HomePage() {
         </section>
 
         {narrativeVehicle && (
-          <section className={styles.story}>
+          <section className={styles.story} data-home-story>
             <div className={styles.storyMedia}>
               {narrativeVehicle.images?.main && (
                 <Image
