@@ -30,16 +30,23 @@
 /* --- Page header --- */
 
 .header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-lg);
   margin-bottom: var(--space-xl);
+  padding-bottom: var(--space-lg);
+  border-bottom: 1px solid var(--border-light);
 }
 
 .title {
   font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
-  font-size: var(--text-2xl);
+  font-size: clamp(2.6rem, 7vw, 6.2rem);
   font-weight: var(--fw-bold);
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
+  text-transform: uppercase;
   color: var(--color-ink);
-  line-height: 1.05;
+  line-height: 0.88;
   margin-bottom: 6px;
 }
 
@@ -70,8 +77,10 @@
   gap: var(--space-sm);
   flex-wrap: wrap;
   margin-bottom: var(--space-lg);
-  padding-bottom: var(--space-md);
-  border-bottom: 1px solid var(--border-light);
+  padding: 12px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
 }
 
 .filterToggle {
@@ -84,7 +93,7 @@
   color: var(--color-ink);
   background: #FFFFFF;
   border: 1px solid var(--border-light);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all var(--ease-fast);
 }
@@ -113,7 +122,7 @@
   color: var(--color-ink);
   background: #FFFFFF;
   border: 1px solid var(--border-light);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-sm);
   cursor: pointer;
   appearance: none;
   -webkit-appearance: none;
@@ -254,7 +263,7 @@
   padding: 8px 14px;
   background: var(--bg-soft);
   border: 1px solid var(--border-light);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-sm);
   transition: border-color var(--ease-fast);
 }
 
@@ -309,7 +318,7 @@
   color: #FFFFFF;
   background: var(--color-ink);
   border: none;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background var(--ease-fast);
 }
@@ -330,7 +339,7 @@
   padding: var(--space-2xl) var(--space-lg);
   text-align: center;
   background: var(--bg-soft);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   color: var(--text-secondary);
 }
 
@@ -366,7 +375,7 @@
   color: var(--color-ink);
   background: #FFFFFF;
   border: 1px solid var(--border-light);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all var(--ease-fast);
 }
@@ -413,14 +422,17 @@
   }
 
   .sidebarInner {
-    position: static;
+    position: sticky;
+    top: 108px;
     width: auto;
     max-width: none;
-    height: auto;
-    padding: var(--space-md) 0 0;
-    overflow: visible;
+    height: calc(100svh - 128px);
+    padding: var(--space-md);
+    overflow: auto;
     box-shadow: none;
-    background: transparent;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
   }
 
   .sidebarClose {
@@ -462,7 +474,7 @@
   color: var(--text-primary);
   background: var(--bg-primary);
   border: 1px solid var(--border-light);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-sm);
   transition: border-color var(--ease-fast);
 }
 
@@ -492,7 +504,7 @@
   color: var(--text-secondary);
   background: transparent;
   border: 1px solid var(--border-light);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all var(--ease-fast);
 }
@@ -545,7 +557,7 @@
   color: var(--text-primary);
   background: var(--color-accent-light);
   border: 1px solid var(--color-accent);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background-color var(--ease-fast);
 }
@@ -586,7 +598,7 @@
   font-weight: var(--fw-bold);
   color: #fff;
   background: var(--color-accent);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-sm);
 }
 
 /* Alvo de toque de 48px nos controles do painel: é onde o dedo trabalha no

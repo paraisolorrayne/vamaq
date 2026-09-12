@@ -8,7 +8,7 @@ import { getWhatsAppGenericUrl } from '@/lib/whatsapp';
 import styles from './Header.module.css';
 
 const NAV_LINKS = [
-  { href: '/', label: 'Inicio' },
+  { href: '/', label: 'Início' },
   { href: '/acervo', label: 'Acervo' },
   { href: '/sobre', label: 'Sobre' },
   { href: '/contato', label: 'Contato' },
@@ -34,7 +34,7 @@ export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
   const isHome = pathname === '/';
-  const transparent = false;
+  const transparent = isHome && !isScrolled && !isMenuOpen;
 
   const handleScroll = useCallback(() => {
     setIsScrolled(window.scrollY > 50);

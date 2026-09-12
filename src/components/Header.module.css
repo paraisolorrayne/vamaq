@@ -12,7 +12,8 @@
   background-color: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  transition: box-shadow var(--ease-base);
+  transition: background-color var(--ease-base), box-shadow var(--ease-base),
+    border-color var(--ease-base), backdrop-filter var(--ease-base);
 }
 
 .header--scrolled {
@@ -27,9 +28,9 @@
 
 /* Transparente sobre o hero dark (home, topo) */
 .header--transparent {
-  background-color: transparent;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+  background-color: rgba(10, 10, 10, 0.08);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   box-shadow: none;
 }
 .header--transparent .header__nav-link { color: rgba(255, 255, 255, 0.82); }
