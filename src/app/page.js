@@ -31,14 +31,14 @@ export default async function HomePage() {
           <div className={styles.heroInner}>
             {heroVehicle ? (
               <>
-                <div className={`${styles.heroText} revela-entrada`}>
+                <div className={styles.heroText}>
                   <h6 className={styles.heroBrand}>{heroVehicle.brand}</h6>
                   <h1 className={styles.heroModel}>{heroVehicle.model}</h1>
                 </div>
 
                 <Link
                   href={`/veiculo/${heroVehicle.slug}`}
-                  className={`${styles.heroImageWrap} revela-entrada-2`}
+                  className={styles.heroImageWrap}
                   aria-label={`Ver ${heroVehicle.brand} ${heroVehicle.model}`}
                 >
                   {heroVehicle.images?.main && (
@@ -59,7 +59,7 @@ export default async function HomePage() {
                   )}
                 </Link>
 
-                <div className={`${styles.heroSpecs} revela-entrada-3`}>
+                <div className={styles.heroSpecs}>
                   <div className={styles.heroSpec}>
                     <span className={styles.heroSpecLabel}>Ano</span>
                     <span className={styles.heroSpecValue}>{anoVeiculo(heroVehicle)}</span>

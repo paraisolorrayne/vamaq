@@ -385,3 +385,122 @@
     font-size: var(--text-2xl);
   }
 }
+
+/* ============================================
+   HERO — coreografia de entrada
+   ============================================
+
+   O pedido (Lorrayne, 12/09/2026): "aqui que quero a principal mudança".
+   A primeira versão do movimento era timidez — 1,5 rem de fade, que no topo
+   da página acontece antes de a pessoa olhar. Aqui o movimento é visível de
+   propósito, e continua sendo só transform, opacity e clip-path.
+
+   POR QUE A FOTO NÃO FAZ FADE: ela é o LCP da home. Elemento que começa em
+   opacity 0 só conta como "pintado" quando aparece, então um fade na foto
+   principal EMPURRA o LCP medido para frente — a página fica mais lenta na
+   métrica sem ficar mais lenta de verdade, que é o pior dos dois mundos. A
+   foto só assenta de escala; a opacidade dela nunca sai de 1.
+
+   Ordem: marca → nome do modelo → foto → especificações. Cada um pega o
+   anterior no meio, que é o que faz parecer uma sequência e não quatro
+   coisas piscando juntas. */
+
+@media (prefers-reduced-motion: no-preference) {
+  .heroBrand {
+    animation: heroSobe 0.6s var(--mov-curva) both;
+  }
+
+  /* O NOME DO MODELO sobe de trás de uma linha invisível, em vez de aparecer.
+     É o gesto mais visível da tela e o que dá o tom editorial: clip-path
+     anima na GPU, e o translate acompanha para a letra parecer empurrada de
+     baixo e não esticada. */
+  /* CURVA PRÓPRIA, MAIS LENTA NO COMEÇO. Com a --mov-curva (quint) medi no
+     console: em 30% do tempo a máscara já estava 60% aberta, e tudo acabava
+     em ~400 ms. Movimento que ninguém consegue ver não é movimento — é só
+     custo. Esta curva distribui a revelação pelo tempo todo. */
+  .heroModel {
+    animation: heroRevela 1.1s cubic-bezier(0.33, 1, 0.68, 1) 0.15s both;
+  }
+
+  @keyframes heroRevela {
+    from {
+      clip-path: inset(100% 0 0 0);
+      transform: translateY(0.5em);
+    }
+    to {
+      clip-path: inset(-0.25em 0 -0.25em 0);
+      transform: translateY(0);
+    }
+  }
+
+  /* A foto assenta: começa 4% maior e chega ao tamanho. Sem fade, pelo LCP. */
+  .heroImageWrap {
+    animation: heroAssenta 1.4s var(--mov-curva) 0.2s both;
+  }
+
+  @keyframes heroAssenta {
+    from {
+      transform: scale(1.04);
+    }
+    to {
+      transform: scale(1);
+    }
+  }
+
+  /* As três especificações entram uma atrás da outra. Aqui animation-delay
+     FUNCIONA porque a animação é por tempo — diferente da revelação por
+     rolagem, onde o delay é ignorado e o deslocamento tem que ir no
+     animation-range. */
+  .heroSpec {
+    animation: heroSobe 0.6s var(--mov-curva) both;
+  }
+  .heroSpec:nth-child(1) { animation-delay: 0.55s; }
+  .heroSpec:nth-child(2) { animation-delay: 0.65s; }
+  .heroSpec:nth-child(3) { animation-delay: 0.75s; }
+
+  @keyframes heroSobe {
+    from {
+      opacity: 0;
+      transform: translateY(1rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* PARALAXE NO SCROLL: ao descer, a foto sobe mais devagar que o texto. É o
+     que cria profundidade sem nada "flutuando" — a diferença de velocidade
+     faz o trabalho, não o deslocamento grande. Ligada à rolagem, então roda
+     fora da thread principal. */
+  @supports (animation-timeline: scroll()) {
+    .heroImageWrap {
+      animation:
+        heroAssenta 1.4s var(--mov-curva) 0.2s both,
+        heroDeriva linear both;
+      animation-timeline: auto, scroll();
+      animation-range: normal, 0 90svh;
+    }
+
+    @keyframes heroDeriva {
+      to {
+        transform: translateY(-3.5rem);
+      }
+    }
+
+    /* O texto sai um pouco mais rápido que a foto — velocidades diferentes
+       são o efeito; se os dois andassem juntos não haveria profundidade. */
+    .heroText {
+      animation: heroTextoDeriva linear both;
+      animation-timeline: scroll();
+      animation-range: 0 90svh;
+    }
+
+    @keyframes heroTextoDeriva {
+      to {
+        transform: translateY(-5.5rem);
+        opacity: 0.35;
+      }
+    }
+  }
+}
