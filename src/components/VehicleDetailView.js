@@ -218,7 +218,9 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
                       // Só a PRIMEIRA sai na frente. As outras esperam entrar
                       // na tela — num carro com 15 fotos, adiantar três já
                       // significa ~1,2 MB antes de o visitante rolar.
-                      loading={i === 0 ? 'eager' : 'lazy'}
+                      loading={i < 3 ? 'eager' : 'lazy'}
+                      fetchPriority={i < 3 ? 'high' : 'auto'}
+                      unoptimized
                       draggable={false}
                     />
                   </div>
