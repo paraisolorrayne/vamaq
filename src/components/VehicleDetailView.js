@@ -100,6 +100,9 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
   const version = vehicle.fuel
     ? `${vehicle.power || ''} ${vehicle.fuel} ${vehicle.transmission || ''}`.trim()
     : '';
+  const priceLabel = vehicle.price
+    ? `R$ ${vehicle.price.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`
+    : 'Sob consulta';
 
   return (
     <main id="main-content" className={styles.page}>
@@ -127,17 +130,17 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
                   {vehicle.mileage?.toLocaleString('pt-BR') || '0'} km
                 </span>
               </div>
+              {vehicle.color && (
+                <div className={styles.heroMetaItem}>
+                  <span className={styles.heroMetaLabel}>Cor</span>
+                  <span className={styles.heroMetaValue}>{vehicle.color}</span>
+                </div>
+              )}
             </div>
 
-            {vehicle.price ? (
-              <h2 className={styles.heroPrice}>
-                R$ {vehicle.price.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}
-              </h2>
-            ) : (
-              <h2 className={`${styles.heroPrice} ${styles.heroPriceConsult}`}>
-                Sob consulta
-              </h2>
-            )}
+            <h2 className={`${styles.heroPrice} ${vehicle.price ? '' : styles.heroPriceConsult}`}>
+              {priceLabel}
+            </h2>
 
             <a
               href={isPreview ? '#' : whatsappUrl}
@@ -182,12 +185,22 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
                 <span>Fotos em breve</span>
               </div>
             )}
+            <div className={styles.heroImageMeta} aria-hidden="true">
+              <span>01</span>
+              <span>{count ? `${count} fotos` : 'showroom'}</span>
+            </div>
           </div>
         </div>
       </section>
 
+      <nav className={styles.detailNav} aria-label="Seções do veículo">
+        <a href="#imagens">Imagens</a>
+        <a href="#especificacoes">Especificações</a>
+        <a href="#detalhes">Detalhes</a>
+      </nav>
+
       {/* ===== GALLERY & INFO SECTION ===== */}
-      <section className={`${styles.gallerySection} revela`}>
+      <section id="imagens" className={`${styles.gallerySection} revela`}>
         <div className={styles.gallerySidebar}>
           <h5 className={styles.galleryBrand}>{vehicle.brand}</h5>
           <h2 className={styles.galleryModel}>{vehicle.model}</h2>
@@ -322,9 +335,12 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
       )}
 
       {/* ===== INFORMAÇÕES PRINCIPAIS — always visible below gallery ===== */}
-      <section className={`${styles.specsSection} revela`}>
+      <section id="especificacoes" className={`${styles.specsSection} revela`}>
         <div className="container">
-          <h2 className={styles.specsSectionTitle}>Informações principais</h2>
+          <div className={styles.specsHeading}>
+            <span>Especificações</span>
+            <h2 className={styles.specsSectionTitle}>Informações principais</h2>
+          </div>
           <div className={styles.specsGrid}>
             <ul className={styles.specsList}>
               <li className={styles.specItem}>
@@ -363,8 +379,7 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
               )}
             </ul>
 
-            {(vehicle.description || vehicle.specs?.engine) && (
-              <div className={styles.specsExtra}>
+            <div id="detalhes" className={styles.specsExtra}>
                 {vehicle.description && (
                   <div className={styles.infoPanelBlock}>
                     <h4 className={styles.infoPanelTitle}>Sobre este veículo</h4>
@@ -394,8 +409,15 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
                     </dl>
                   </div>
                 )}
+                {!vehicle.description && !vehicle.specs?.engine && (
+                  <div className={styles.infoPanelBlock}>
+                    <h4 className={styles.infoPanelTitle}>Detalhes</h4>
+                    <p className={styles.infoPanelText}>
+                      Consulte a equipe Vamaq para receber a ficha completa, histórico e condições deste veículo.
+                    </p>
+                  </div>
+                )}
               </div>
-            )}
           </div>
         </div>
       </section>
@@ -413,7 +435,7 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
           </p>
           <Link href="/acervo" className={styles.ctaButton}>
             <span className={styles.ctaButtonInner}>
-              Conhecer acervo
+              Conhecer showroom
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <line x1="5" y1="12" x2="19" y2="12" />
                 <polyline points="12 5 19 12 12 19" />
@@ -430,7 +452,7 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
             <div className={styles.relatedHeader}>
               <h2 className={styles.sectionTitle}>Você também pode gostar</h2>
               <Link href="/acervo" className={styles.relatedLink}>
-                Ver acervo completo →
+                Ver showroom completo →
               </Link>
             </div>
             <div className={`${styles.relatedGrid} revela-grupo`}>

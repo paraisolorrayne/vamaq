@@ -21,9 +21,9 @@ import AcervoClient from "./AcervoClient";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Nosso Acervo — Vamaq Motors",
+  title: "Showroom — Vamaq Motors",
   description:
-    "Veículos premium, esportivos e superesportivos selecionados pela Vamaq Motors. Curadoria rigorosa, procedência garantida.",
+    "Showroom de veículos premium, esportivos e superesportivos selecionados pela Vamaq Motors. Curadoria rigorosa, procedência garantida.",
 };
 
 export default async function AcervoPage() {

@@ -4,7 +4,7 @@ const STEPS = [
   {
     number: 'Passo 01',
     title: 'Escolha',
-    text: 'Navegue pelo nosso acervo e encontre o carro ideal',
+    text: 'Navegue pelo nosso showroom e encontre o carro ideal',
     icon: 'search',
   },
   {

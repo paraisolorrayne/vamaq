@@ -9,7 +9,7 @@ const FAQ_DATA = [
     id: 'compra',
     question: 'Como funciona a compra de um veículo?',
     answer:
-      'O processo é simples: escolha o veículo no nosso acervo, entre em contato pelo WhatsApp ou telefone, agende uma visita para conhecer o carro pessoalmente e, após a aprovação, finalizamos toda a documentação. Cuidamos de cada etapa para que sua experiência seja tranquila e sem burocracia.',
+      'O processo é simples: escolha o veículo no nosso showroom, entre em contato pelo WhatsApp ou telefone, agende uma visita para conhecer o carro pessoalmente e, após a aprovação, finalizamos toda a documentação. Cuidamos de cada etapa para que sua experiência seja tranquila e sem burocracia.',
   },
   {
     id: 'financiamento',
@@ -21,7 +21,7 @@ const FAQ_DATA = [
     id: 'procedencia',
     question: 'Os veículos possuem procedência verificada?',
     answer:
-      'Absolutamente. Todos os veículos do nosso acervo passam por uma curadoria rigorosa que inclui verificação completa de procedência, histórico de manutenção, laudo cautelar e inspeção mecânica detalhada. Garantimos 100% de transparência em cada negociação.',
+      'Absolutamente. Todos os veículos do nosso showroom passam por uma curadoria rigorosa que inclui verificação completa de procedência, histórico de manutenção, laudo cautelar e inspeção mecânica detalhada. Garantimos 100% de transparência em cada negociação.',
   },
   {
     id: 'test-drive',

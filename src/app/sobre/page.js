@@ -57,7 +57,7 @@ export default function SobrePage() {
 
                 <h2 className={styles.heading}>Como trabalhamos</h2>
                 <p>
-                  Cada carro que entra no nosso acervo passa por uma
+                  Cada carro que entra no nosso showroom passa por uma
                   verificação rigorosa de procedência, histórico de manutenção
                   e estado de conservação. Trabalhamos com o melhor do mercado
                   premium — Porsche, BMW, Mercedes-AMG, Audi, Range Rover,
@@ -81,7 +81,7 @@ export default function SobrePage() {
                 <h3 className={styles.valueTitle}>Curadoria Rigorosa</h3>
                 <p className={styles.valueText}>
                   Cada veículo é inspecionado pessoalmente antes de entrar no
-                  acervo. Só fica o que passaria no nosso próprio crivo de
+                  showroom. Só fica o que passaria no nosso próprio crivo de
                   compra.
                 </p>
               </div>
@@ -111,7 +111,7 @@ export default function SobrePage() {
               <p>
                 Nossa loja fica na Av. Francisco Galassi, 1434, em Uberlândia.
                 Um showroom pensado para você conhecer de perto cada veículo do
-                acervo, com calma e sem pressa. Venha nos visitar — o café fica
+                showroom, com calma e sem pressa. Venha nos visitar — o café fica
                 por nossa conta.
               </p>
             </div>

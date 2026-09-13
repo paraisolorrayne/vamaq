@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 export const metadata = {
   title: "Vamaq Motors — Curadoria de carros especiais",
   description:
-    "Acervo de veículos premium, esportivos e modelos especiais com curadoria, procedência e atendimento especializado.",
+    "Showroom de veículos premium, esportivos e modelos especiais com curadoria, procedência e atendimento especializado.",
 };
 
 function formatPrice(vehicle) {
@@ -100,7 +100,7 @@ export default async function HomePage() {
               <div className={styles.heroInner}>
                 <div className={`${styles.heroCopy} revela-entrada`}>
                   <p className={styles.heroKicker}>Vamaq Motors</p>
-                  <p className={styles.heroContext}>Destaque do acervo</p>
+                  <p className={styles.heroContext}>Destaque do showroom</p>
                   <p className={styles.heroBrand}>{heroVehicle.brand}</p>
                   <h1 className={styles.heroModel}>{heroVehicle.model}</h1>
 
@@ -124,7 +124,7 @@ export default async function HomePage() {
                       Conhecer este veículo
                     </Link>
                     <Link href="/acervo" className={styles.heroSecondary}>
-                      Explorar acervo
+                      Explorar showroom
                     </Link>
                   </div>
                 </div>
@@ -146,7 +146,7 @@ export default async function HomePage() {
                 </p>
                 <div className={styles.heroEmptyActions}>
                   <Link href="/acervo" className="btn btn--accent btn--lg">
-                    Ver Acervo
+                    Ver Showroom
                   </Link>
                   <a
                     href={getWhatsAppGenericUrl(
@@ -182,7 +182,7 @@ export default async function HomePage() {
               <span>Curadoria Vamaq</span>
               <h2>Não é volume. É seleção.</h2>
               <p>
-                O acervo muda conforme chegam veículos com procedência,
+                O showroom muda conforme chegam veículos com procedência,
                 configuração e estado compatíveis com o padrão da Vamaq.
               </p>
               <Link href="/sobre">Conheça nossa curadoria</Link>
@@ -194,7 +194,7 @@ export default async function HomePage() {
           <section className={styles.editorial}>
             <div className={styles.sectionHead}>
               <span>Recém-chegados</span>
-              <h2>Os veículos mais recentes do acervo.</h2>
+              <h2>Os veículos mais recentes do showroom.</h2>
               <Link href="/acervo">Ver todos</Link>
             </div>
 
@@ -238,7 +238,7 @@ export default async function HomePage() {
           <div className={styles.curadoriaInner}>
             <div className={`${styles.curadoriaCopy} revela`}>
               <span>Curadoria Vamaq</span>
-              <h2>Cada veículo entra no acervo por um motivo.</h2>
+              <h2>Cada veículo entra no showroom por um motivo.</h2>
               <p>
                 Liderada por Mateus Parreira, com mais de 13 anos de experiência
                 no mercado automotivo de luxo. Curadoria rigorosa, procedência

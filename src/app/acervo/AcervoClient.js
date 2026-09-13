@@ -36,7 +36,7 @@ const POR_PAGINA = 9;
  */
 export default function AcervoClient({ veiculos = [] }) {
   return (
-    <Suspense fallback={<p className={styles.page}>Carregando acervo…</p>}>
+    <Suspense fallback={<p className={styles.page}>Carregando showroom…</p>}>
       <Acervo veiculos={veiculos} />
     </Suspense>
   );
@@ -377,12 +377,12 @@ function Acervo({ veiculos }) {
           <nav className={styles.breadcrumb} aria-label="Navegação">
             <Link href="/">Início</Link>
             <span aria-hidden="true"> / </span>
-            <span>Acervo</span>
+            <span>Showroom</span>
           </nav>
 
           <header className={`${styles.header} revela-entrada`}>
             <div>
-              <h1 className={styles.title}>Nosso Acervo</h1>
+              <h1 className={styles.title}>Showroom</h1>
               <p className={styles.subtitle}>
                 {resultado.length === veiculos.length
                   ? `${veiculos.length} veículo${veiculos.length !== 1 ? "s" : ""} — curadoria rigorosa, procedência garantida.`

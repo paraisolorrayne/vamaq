@@ -7,7 +7,7 @@ import { BUSINESS } from '@/lib/businessInfo';
 import styles from './Footer.module.css';
 
 const QUICK_LINKS = [
-  { href: '/acervo', label: 'Acervo' },
+  { href: '/acervo', label: 'Showroom' },
   { href: '/sobre', label: 'Sobre' },
   { href: '/contato', label: 'Contato' },
 ];
@@ -162,7 +162,7 @@ export default function Footer() {
           <div>
             <h3 className={styles.footer__heading}>Newsletter</h3>
             <p className={styles['footer__newsletter-text']}>
-              Receba novidades sobre os veiculos que chegam ao nosso acervo.
+              Receba novidades sobre os veiculos que chegam ao nosso showroom.
             </p>
             <form
               className={styles['footer__newsletter-form']}

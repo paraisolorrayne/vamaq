@@ -9,7 +9,7 @@ import styles from './Header.module.css';
 
 const NAV_LINKS = [
   { href: '/', label: 'Início' },
-  { href: '/acervo', label: 'Acervo' },
+  { href: '/acervo', label: 'Showroom' },
   { href: '/sobre', label: 'Sobre' },
   { href: '/contato', label: 'Contato' },
 ];
