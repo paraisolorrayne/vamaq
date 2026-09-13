@@ -18,7 +18,7 @@ export default function TutorialEstoquePage() {
         <h1 className={styles.pageTitle}>Estoque: cadastrar e publicar um veículo</h1>
         <p className={styles.pageSubtitle}>
           O estoque é a vitrine do site — o que você publica aqui é o que o
-          cliente vê no acervo
+          cliente vê no showroom
         </p>
       </div>
 
@@ -111,7 +111,7 @@ export default function TutorialEstoquePage() {
         <div className={t.stepBody}>
           <h3 className={t.stepTitle}>Suba as fotos</h3>
           <p>
-            A <strong>foto principal</strong> é a capa do card no acervo. As
+            A <strong>foto principal</strong> é a capa do card no showroom. As
             demais entram na <strong>galeria</strong> da página do veículo.
           </p>
           <div className={t.warning}>
@@ -178,7 +178,7 @@ export default function TutorialEstoquePage() {
           <ul>
             <li>
               <strong>Destaque</strong>: o carro aparece na vitrine da página
-              inicial, além do acervo;
+              inicial, além do showroom;
             </li>
             <li>
               <strong>Selo</strong> (Novo / Destaque / Blindado): a etiqueta que
@@ -186,7 +186,7 @@ export default function TutorialEstoquePage() {
             </li>
             <li>
               <strong>Publicado</strong>: controla se o carro{" "}
-              <strong>aparece no site</strong>. Despublicado, ele some do acervo
+              <strong>aparece no site</strong>. Despublicado, ele some do showroom
               mas continua no seu estoque para editar depois.
             </li>
           </ul>
@@ -199,7 +199,7 @@ export default function TutorialEstoquePage() {
           <h3 className={t.stepTitle}>Salve e confira no site</h3>
           <p>
             Clique em <span className={t.uiButton}>Salvar</span>. O site é
-            atualizado na hora — abra <span className={t.uiField}>/acervo</span>{" "}
+            atualizado na hora — abra <span className={t.uiField}>Showroom</span>{" "}
             (ou a página do veículo) para conferir foto, preço e dados.
           </p>
           <div className={t.tip}>

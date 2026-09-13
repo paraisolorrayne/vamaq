@@ -368,7 +368,7 @@ export default function CriativosPage() {
                 ["vitrine", "Vitrine"],
                 ["performance", "Performance"],
                 ["loja", "Loja"],
-                ["acervo", "Acervo"],
+                ["acervo", "Showroom"],
               ],
               tpl,
               setTpl,
@@ -499,7 +499,7 @@ export default function CriativosPage() {
           {tpl === "acervo" && (
             <div className={styles.card}>
               <h3 style={{ fontSize: "0.9rem", fontWeight: 700, marginBottom: 12 }}>
-                Acervo — título e carros
+                Showroom — título e carros
               </h3>
               <div className={styles.grid2}>
                 <Field label="Título — linha 1" value={values.at1} onChange={(v) => setValue("at1", v)} />

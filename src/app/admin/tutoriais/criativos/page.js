@@ -36,7 +36,7 @@ export default function TutorialCriativosPage() {
             </li>
             <li>
               <strong>Template</strong>: um <strong>veículo em destaque</strong>{" "}
-              ou <span className={t.uiField}>Acervo</span> (vários carros na
+              ou <span className={t.uiField}>Showroom</span> (vários carros na
               mesma arte).
             </li>
           </ul>

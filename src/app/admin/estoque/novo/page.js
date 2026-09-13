@@ -627,7 +627,7 @@ function NovoVeiculoForm() {
                   checked={form.published}
                   onChange={(e) => handleChange("published", e.target.checked)}
                 />
-                <span>Publicado no site (aparece no acervo)</span>
+                <span>Publicado no site (aparece no showroom)</span>
               </label>
             </div>
             <div className={`${styles.formGroup} ${styles.formGroupFull}`}>

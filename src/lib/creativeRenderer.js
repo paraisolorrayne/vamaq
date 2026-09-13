@@ -19,7 +19,7 @@ export const TEMPLATE_HINTS = {
     "Vitrine: fundo branco premium, foto em card, specs e preço (vazio = “Consulte o Valor”).",
   performance:
     "Performance: fundo escuro, números grandes (potência, 0–100, km) e CTA laranja.",
-  acervo: "Acervo: lista de até 4 carros (Story) ou 3 (Feed) em cards brancos.",
+  acervo: "Showroom: lista de até 4 carros (Story) ou 3 (Feed) em cards brancos.",
   loja:
     "Loja: a foto da fachada da Vamaq como fundo, as informações do carro no topo e a foto do veículo numa faixa de lateral a lateral embaixo. Funciona com a foto do estoque como está (não precisa remover fundo). Use zoom/posição para enquadrar o carro na faixa.",
 };
@@ -588,7 +588,7 @@ export function renderCreative(cv, data) {
       ctx.fillStyle = SOFT;
       ctx.textAlign = "center";
       ctx.font = "500 30px Inter, sans-serif";
-      ctx.fillText("Preencha os carros do acervo no formulário", W / 2, areaY + areaH / 2);
+      ctx.fillText("Preencha os carros do showroom no formulário", W / 2, areaY + areaH / 2);
       ctx.textAlign = "left";
     }
 
