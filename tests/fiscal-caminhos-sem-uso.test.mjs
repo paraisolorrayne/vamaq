@@ -63,6 +63,10 @@ before(async () => {
     "fiscal-carta-correcao.sql",
     "fiscal-cancelamento-externo.sql",
     "fiscal-cancelamento-evidencia.sql",
+    // Task 5 (guardas fiscais por ciclo): notas.js agora lê vehicles.ciclo
+    // incondicionalmente em getDadosEmissao — sem esta coluna, toda chamada
+    // à Focus falharia antes de sair, na leitura do veículo.
+    "estoque-ciclo.sql",
   ]) {
     await pool.query(await readFile(path.join(ROOT, "db", f), "utf8"));
   }
