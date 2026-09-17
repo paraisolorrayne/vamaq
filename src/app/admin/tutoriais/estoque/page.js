@@ -261,10 +261,45 @@ export default function TutorialEstoquePage() {
         </div>
       </div>
 
+      <div className={t.step}>
+        <div className={t.stepNumber}>9</div>
+        <div className={t.stepBody}>
+          <h3 className={t.stepTitle}>O carro voltou na troca? Volte ele ao estoque</h3>
+          <p>
+            Quando a Vamaq vende um carro e recebe outro de volta como parte do
+            pagamento, use <span className={t.uiButton}>Voltar ao estoque</span>{" "}
+            na linha do carro <strong>vendido</strong>.
+          </p>
+          <p>
+            O carro volta como <strong>Disponível</strong>, volta para o site, e a{" "}
+            <strong>entrada passa a ser hoje</strong> — a contagem de dias no
+            pátio recomeça, porque é uma compra nova. A venda anterior{" "}
+            <strong>fica no histórico</strong>, visível em{" "}
+            <Link href="/admin/estoque/entradas-saidas">Entradas e saídas</Link>{" "}
+            como &quot;1ª passagem&quot;.
+          </p>
+          <div className={t.warning}>
+            <span className={t.boxLabel}>A próxima venda exige uma nova nota</span>
+            <p>
+              Fiscalmente, o carro que volta é uma <strong>nova aquisição</strong>{" "}
+              — a nota da nova venda vai citar essa nova entrada.
+            </p>
+          </div>
+          <div className={t.tip}>
+            <span className={t.boxLabel}>Não é para desfazer uma venda por engano</span>
+            <p>
+              Não use este botão para corrigir uma venda marcada errada — o
+              retorno grava uma <strong>compra</strong> no histórico. Para
+              desfazer, veja o suporte.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <h2 className={t.sectionTitle}>Entradas e saídas</h2>
 
       <div className={t.step}>
-        <div className={t.stepNumber}>7</div>
+        <div className={t.stepNumber}>10</div>
         <div className={t.stepBody}>
           <h3 className={t.stepTitle}>Registre quando o carro entrou e saiu</h3>
           <p>
@@ -289,7 +324,7 @@ export default function TutorialEstoquePage() {
       </div>
 
       <div className={t.step}>
-        <div className={t.stepNumber}>8</div>
+        <div className={t.stepNumber}>11</div>
         <div className={t.stepBody}>
           <h3 className={t.stepTitle}>Veja tudo junto</h3>
           <p>

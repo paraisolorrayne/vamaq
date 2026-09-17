@@ -7,6 +7,7 @@ import { normalizaBusca } from "@/lib/buscaVeiculo";
 import { filtraPorPeriodo, semData } from "@/lib/estoque/periodo";
 import { anoVeiculo } from "@/lib/anoVeiculo";
 import { podeMarcarVendido } from "@/lib/vendaVeiculo";
+import { podeRetornarAoEstoque } from "@/lib/estoque/retornoVeiculo";
 import styles from "../admin.module.css";
 
 export default function EstoqueClient({ podeEmitirNota }) {
@@ -65,13 +66,39 @@ function EstoqueConteudo({ podeEmitirNota }) {
 
   // Desativar em vez de excluir: o veículo sai do site mas fica no estoque,
   // preservando o histórico (PR-C do ADR-002). Reativar volta pra 'disponível'.
-  async function setStatus(id, status, confirmMsg) {
+  async function setStatus(id, status, confirmMsg, republicar = false) {
     if (confirmMsg && !confirm(confirmMsg)) return;
     await fetch(`/api/admin/vehicles/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ status, republicar }),
     });
+    setRefreshKey((k) => k + 1);
+  }
+
+  // Retorno ao estoque do carro que a Vamaq vendeu e recebeu de volta na troca.
+  // O aviso diz a parte FISCAL de propósito: é a informação que a operadora não
+  // tem como adivinhar, e a que custa caro quando falta.
+  async function retornarAoEstoque(id) {
+    if (
+      !confirm(
+        "Voltar este carro ao estoque?\n\n" +
+          "Ele volta como DISPONÍVEL e volta para o site, com entrada de hoje. " +
+          "A venda anterior fica no histórico.\n\n" +
+          "A próxima venda vai exigir uma NOVA nota de entrada."
+      )
+    )
+      return;
+    const res = await fetch(`/api/admin/vehicles/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ acao: "retornar-ao-estoque" }),
+    });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      alert(d.error || "Não deu para voltar o carro ao estoque. Tente de novo.");
+      return;
+    }
     setRefreshKey((k) => k + 1);
   }
 
@@ -314,6 +341,16 @@ function EstoqueConteudo({ podeEmitirNota }) {
                             Emitir nota
                           </Link>
                         )}
+                        {podeRetornarAoEstoque(v) && (
+                          <button
+                            type="button"
+                            onClick={() => retornarAoEstoque(v.id)}
+                            className={`${styles.btnSecondary} ${styles.btnSmall}`}
+                            style={{ minHeight: 48 }}
+                          >
+                            Voltar ao estoque
+                          </button>
+                        )}
                         <StatusButton vehicle={v} onSet={setStatus} />
                       </div>
                     </td>
@@ -390,6 +427,16 @@ function EstoqueConteudo({ podeEmitirNota }) {
                       Emitir nota
                     </Link>
                   )}
+                  {podeRetornarAoEstoque(v) && (
+                    <button
+                      type="button"
+                      onClick={() => retornarAoEstoque(v.id)}
+                      className={`${styles.btnSecondary} ${styles.btnSmall}`}
+                      style={{ minHeight: 48 }}
+                    >
+                      Voltar ao estoque
+                    </button>
+                  )}
                   <StatusButton vehicle={v} onSet={setStatus} />
                 </div>
               </div>
@@ -408,7 +455,7 @@ function StatusButton({ vehicle, onSet }) {
   if (vehicle.status === "inativo") {
     return (
       <button
-        onClick={() => onSet(vehicle.id, "disponivel")}
+        onClick={() => onSet(vehicle.id, "disponivel", null, true)}
         className={styles.btnSecondary}
       >
         Reativar

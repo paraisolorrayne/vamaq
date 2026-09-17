@@ -80,6 +80,17 @@ const ROTAS = [
       ),
   },
   {
+    nome: "PATCH /vehicles/[id] (voltar ao estoque)",
+    permitidos: ["estoque", "financeiro", "vendedor", "secretaria", "admin"],
+    chamar: () =>
+      vehicleIdRoute.PATCH(
+        reqJson(`http://localhost/api/admin/vehicles/${UUID}`, "PATCH", {
+          acao: "retornar-ao-estoque",
+        }),
+        ctxComId()
+      ),
+  },
+  {
     nome: "DELETE /vehicles/[id]",
     permitidos: TODOS,
     chamar: () => vehicleIdRoute.DELETE(reqGet(`http://localhost/api/admin/vehicles/${UUID}`), ctxComId()),

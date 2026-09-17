@@ -886,6 +886,24 @@ function NovoVeiculoForm() {
           </div>
         )}
 
+        {/* Carro que já voltou ao estoque na troca (Task 4, retornarAoEstoque):
+            `ciclo` vem de SELECT_COLS, sem busca extra. EMPTY_VEHICLE não tem
+            `ciclo`, então em cadastro novo Number(undefined) > 1 é falso e o
+            aviso fica escondido, como deve ser. */}
+        {Number(form.ciclo) > 1 && (
+          <div
+            className={styles.card}
+            style={{ borderLeft: "4px solid #3730a3", background: "#eef2ff", marginBottom: 20 }}
+          >
+            <strong>Este carro já passou pela loja {form.ciclo} vezes.</strong>
+            <p style={{ margin: "6px 0 0", fontSize: "0.9rem", color: "#333" }}>
+              A data de entrada abaixo é a da passagem atual. As anteriores, com datas e
+              valores, estão em{" "}
+              <Link href="/admin/estoque/entradas-saidas">Entradas e saídas</Link>.
+            </p>
+          </div>
+        )}
+
         {/* Contratos gerados pelo sistema (Compra e venda, Consignação, Termo de
             vistoria...) para este veículo — somente leitura, mesma fonte da tela
             /admin/documentos/gerados. Só no modo edição. */}
