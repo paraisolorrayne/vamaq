@@ -421,7 +421,10 @@ function StatusButton({ vehicle, onSet }) {
         onSet(
           vehicle.id,
           "inativo",
-          "Desativar este veículo? Ele sai do site, mas continua no estoque (histórico preservado). Dá para reativar depois."
+          // "continua no estoque" sozinho já custou uma dúvida (Mayra,
+          // 17/09/2026): ela leu como "continua na lista que vai pro cliente".
+          // O aviso agora separa as duas coisas — o cadastro fica, a lista não.
+          "Desativar este veículo? Ele sai do site e sai da lista de estoque em PDF, mas continua no cadastro, com o histórico preservado. Dá para reativar depois."
         )
       }
       className={styles.btnDanger}

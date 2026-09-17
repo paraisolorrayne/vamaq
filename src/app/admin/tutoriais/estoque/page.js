@@ -205,10 +205,14 @@ export default function TutorialEstoquePage() {
           <div className={t.tip}>
             <span className={t.boxLabel}>Não usou o carro? Use Desativar</span>
             <p>
-              Na lista de estoque, o botão <strong>Desativar</strong> tira o
-              carro do site mas o mantém no estoque (dá para{" "}
-              <strong>Reativar</strong> depois) — para o carro sair de
-              circulação sem ter sido vendido. Para uma venda de verdade, veja
+              O botão <strong>Desativar</strong> é para o carro sair de
+              circulação sem ter sido vendido — o caso clássico é o de
+              consignação que você cadastrou só para gerar o contrato e o dono
+              levou de volta. Ele tira o carro <strong>do site</strong> e{" "}
+              <strong>da lista de estoque em PDF</strong> (a que você manda para
+              o cliente: ela só traz carro <strong>Disponível</strong>), mas o
+              cadastro continua aqui, com o histórico, e dá para{" "}
+              <strong>Reativar</strong> depois. Para uma venda de verdade, veja
               o próximo passo: <strong>Desativar não marca o carro como
               vendido</strong> e não libera a nota fiscal.
             </p>

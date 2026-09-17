@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import styles from "../admin.module.css";
-import { DEFAULT_TEMPLATES } from "@/lib/contractTemplates";
+import { DEFAULT_TEMPLATES, camposEmBranco, camposVisiveis } from "@/lib/contractTemplates";
 import { clienteDoDocumento } from "@/lib/documentosCliente";
 import { generateContractPdf, buildContractDoc } from "@/lib/contractPdf";
 import { camposDoTemplate, prefixoDoTemplate } from "@/lib/clientes/prefill";
@@ -33,6 +33,10 @@ export default function DocumentosPage() {
   const [vehicles, setVehicles] = useState([]);
   const [generating, setGenerating] = useState(false);
   const [preview, setPreview] = useState(null);
+  // Campos que vão sair como "_______________" no contrato. Calculados junto
+  // com o corpo, na geração, e mostrados em cima da pré-visualização: ninguém
+  // confere doze cláusulas a olho procurando linha vazia.
+  const [lacunas, setLacunas] = useState([]);
   // Rascunhos de uso único vindos de /api/admin/prefill: abrem o modelo já
   // preenchido e são apagados do servidor quando o PDF é baixado.
   const [prefills, setPrefills] = useState([]);
@@ -228,13 +232,16 @@ export default function DocumentosPage() {
     if (!selectedTemplate) return;
     setGenerating(true);
     try {
+      // O corpo é montado conforme os dados (anuente opcional, favorecido do
+      // pagamento, alienação fiduciária) — a API só preenche os campos. Ele
+      // serve duas vezes: vai para a API e diz quais lacunas sobraram, antes
+      // de a API trocá-las por "_______________" e a lacuna sumir de vista.
+      const corpo = selectedTemplate.build(values);
       const res = await fetch("/api/admin/documents", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          // O corpo é montado conforme os dados (anuente opcional, favorecido
-          // do pagamento, alienação fiduciária) — a API só preenche os campos.
-          templateBody: selectedTemplate.build(values),
+          templateBody: corpo,
           values,
           title: selectedTemplate.name,
         }),
@@ -243,6 +250,7 @@ export default function DocumentosPage() {
       if (!res.ok) {
         throw new Error(data.error || "Erro ao gerar documento");
       }
+      setLacunas(camposEmBranco(corpo, selectedTemplate.fields, values));
       setPreview(data);
     } catch (err) {
       alert("Erro ao gerar documento: " + err.message);
@@ -499,6 +507,35 @@ export default function DocumentosPage() {
           {avisoCopia && (
             <p style={{ color: "#a16207", fontSize: "0.85rem" }}>{avisoCopia}</p>
           )}
+          {/* Campo vazio não some do contrato: vira uma linha "_______________"
+              no meio da cláusula. Às vezes é o que se quer (preencher à
+              caneta), às vezes é a Cláusula Segunda sem a forma de pagamento —
+              por isso avisa e não bloqueia. */}
+          {lacunas.length > 0 && (
+            <div
+              className={styles.card}
+              style={{
+                borderLeft: "4px solid #a16207",
+                background: "#fffbeb",
+                marginBottom: 20,
+                padding: 16,
+              }}
+            >
+              <strong style={{ color: "#a16207" }}>
+                {lacunas.length === 1
+                  ? "1 campo vai sair em branco no contrato"
+                  : `${lacunas.length} campos vão sair em branco no contrato`}
+              </strong>
+              <p style={{ margin: "6px 0 0", fontSize: "0.9rem", color: "#333" }}>
+                {lacunas.map((c) => c.label).join(" · ")}
+              </p>
+              <p style={{ margin: "6px 0 0", fontSize: "0.85rem", color: "#666" }}>
+                Cada um aparece como uma linha tracejada para preencher à mão. Se
+                não era essa a intenção, volte em{" "}
+                <strong>Editar Dados</strong> antes de baixar o PDF.
+              </p>
+            </div>
+          )}
           {viewMode === "pdf" ? (
             pdfUrl ? (
               <iframe
@@ -666,7 +703,10 @@ export default function DocumentosPage() {
           )}
 
           <div className={styles.card}>
-            {groupBySection(selectedTemplate.fields).map(([section, fields]) => (
+            {/* Só os campos que a forma de pagamento escolhida realmente usa:
+                campo visível que o contrato descarta é armadilha (ver
+                camposVisiveis em contractTemplates.js). */}
+            {groupBySection(camposVisiveis(selectedTemplate.fields, values)).map(([section, fields]) => (
               <div key={section || "geral"} style={{ marginBottom: 24 }}>
                 {section && (
                   <h3

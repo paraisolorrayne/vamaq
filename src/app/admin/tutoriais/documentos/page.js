@@ -71,7 +71,7 @@ export default function TutorialDocumentosPage() {
           assinado volta e fica guardado aqui automaticamente.
         </p>
         <p>
-          O <strong>passo 7</strong>, no fim desta página, explica como funciona
+          O <strong>passo 8</strong>, no fim desta página, explica como funciona
           — inclusive o que fazer quando o cliente diz que o e-mail não chegou.
         </p>
       </Novidade>
@@ -328,6 +328,62 @@ export default function TutorialDocumentosPage() {
       <div className={guia.step}>
         <div className={guia.stepNumber}>6</div>
         <div className={guia.stepBody}>
+          <h3 className={guia.stepTitle}>
+            Financiado ou parcelado? Escolha a forma de pagamento
+          </h3>
+          <p>
+            No contrato de <strong>Venda</strong>, na seção{" "}
+            <strong>Preço</strong>, o campo{" "}
+            <span className={guia.uiField}>Forma de Pagamento</span> decide o
+            que a <strong>CLÁUSULA SEGUNDA</strong> vai dizer. Ele já vem
+            marcado como <span className={guia.uiField}>À vista / PIX</span>,
+            que é a venda mais comum da loja — <strong>trocar esse campo é o
+            primeiro passo</strong>, porque os campos de cada forma só aparecem
+            depois de escolhê-la.
+          </p>
+          <ul>
+            <li>
+              <span className={guia.uiField}>À vista / PIX</span> — o preço é
+              pago na assinatura e o contrato dá quitação na hora.
+            </li>
+            <li>
+              <span className={guia.uiField}>Financiamento bancário</span> — é a
+              venda com <strong>entrada + banco</strong>. Preencha{" "}
+              <span className={guia.uiField}>Entrada paga pelo Comprador</span>,{" "}
+              <span className={guia.uiField}>Valor Financiado</span> e{" "}
+              <span className={guia.uiField}>Instituição Financeira</span>: a
+              cláusula sai com os dois valores escritos e a quitação fica
+              condicionada à liberação do dinheiro pelo banco. Sem entrada
+              (banco cobrindo 100%), deixe a entrada em branco.
+            </li>
+            <li>
+              <span className={guia.uiField}>Personalizado</span> — para o que
+              não é nenhum dos dois (parcelas próprias, vencimentos combinados).
+              Aqui o contrato escreve <strong>o texto que você digitar</strong>{" "}
+              em <span className={guia.uiField}>Forma de Pagamento
+              Personalizada</span>, e só ele: valores de entrada e financiamento
+              não entram nessa forma.
+            </li>
+          </ul>
+          <div className={guia.warning}>
+            <span className={guia.boxLabel}>
+              Não descreva o pagamento só nas Cláusulas Personalizadas
+            </span>
+            <p>
+              Se a forma ficar em <strong>À vista / PIX</strong> e o
+              financiamento for explicado lá no fim do contrato, a Cláusula
+              Segunda continua afirmando que a venda foi{" "}
+              <strong>paga à vista, com quitação plena</strong> — e dá quitação
+              de um dinheiro que o banco ainda não liberou. As duas partes se
+              contradizem, e é a primeira que vale.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className={guia.step}>
+        <div className={guia.stepNumber}>7</div>
+        <div className={guia.stepBody}>
           <h3 className={guia.stepTitle}>Gere, confira e baixe o PDF</h3>
           <p>
             Clique em <span className={guia.uiButton}>Gerar Documento</span> e
@@ -368,10 +424,31 @@ export default function TutorialDocumentosPage() {
             <li>
               <span className={guia.checkbox} />
               <span>
+                A <strong>forma de pagamento</strong> na Cláusula Segunda é a
+                combinada — à vista, financiada ou o texto que você escreveu;
+              </span>
+            </li>
+            <li>
+              <span className={guia.checkbox} />
+              <span>
                 <strong>Data e cidade</strong> no fim do contrato estão certas.
               </span>
             </li>
           </ul>
+          <div className={guia.warning}>
+            <span className={guia.boxLabel}>
+              A tarja amarela lista o que ficou em branco
+            </span>
+            <p>
+              Campo não preenchido não some do contrato: ele vira uma{" "}
+              <strong>linha tracejada</strong> no meio da cláusula, para
+              completar à caneta. Quando isso acontece, aparece um aviso em
+              cima da prévia com <strong>o nome de cada campo vazio</strong>.
+              Às vezes é de propósito; quando não for, clique em{" "}
+              <span className={guia.uiButton}>Editar Dados</span> e preencha
+              antes de baixar.
+            </p>
+          </div>
           <div className={guia.tip}>
             <span className={guia.boxLabel}>Errou? Sem problema</span>
             <p>
@@ -393,7 +470,7 @@ export default function TutorialDocumentosPage() {
       </div>
 
       <div className={guia.step}>
-        <div className={guia.stepNumber}>7</div>
+        <div className={guia.stepNumber}>8</div>
         <div className={guia.stepBody}>
           <h3 className={guia.stepTitle}>
             Envie para assinatura pela internet

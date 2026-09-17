@@ -1278,33 +1278,41 @@ export const DEFAULT_TEMPLATES = [
         section: "Preço",
         hint: "Sai escrito na CLÁUSULA SEGUNDA. Financiado ou parcelado NÃO deve ficar só nas Cláusulas Personalizadas: a cláusula do preço passaria a dizer que a venda foi à vista.",
       },
+      // Os quatro campos abaixo só aparecem na forma que os usa. Fora dela o
+      // build() os descarta em silêncio, e campo visível que não vai para o
+      // contrato é armadilha: preenchidos sob "À vista / PIX", a venda saía
+      // financiada na planilha e à vista na Cláusula Segunda.
       {
         key: "venda_entrada",
         label: "Entrada paga pelo Comprador (R$)",
         type: "text",
         section: "Preço",
-        hint: "Só no financiamento. Ex.: 27.000,00 — em branco, o contrato sai como financiamento sem entrada. O valor por extenso é gerado automaticamente.",
+        showIf: (values) => formaDePagamento(values) === FORMA_FINANCIAMENTO,
+        hint: "Ex.: 27.000,00 — em branco, o contrato sai como financiamento sem entrada (o banco cobre 100%). O valor por extenso é gerado automaticamente.",
       },
       {
         key: "venda_valor_financiado",
         label: "Valor Financiado (R$)",
         type: "text",
         section: "Preço",
-        hint: "Só no financiamento. Ex.: 80.000,00 — o valor que a instituição libera direto para a Vamaq.",
+        showIf: (values) => formaDePagamento(values) === FORMA_FINANCIAMENTO,
+        hint: "Ex.: 80.000,00 — o valor que a instituição libera direto para a Vamaq. Preço − entrada.",
       },
       {
         key: "venda_instituicao_financeira",
         label: "Instituição Financeira",
         type: "text",
         section: "Preço",
-        hint: "Só no financiamento. Ex.: Banco Bradesco Financiamentos S.A. — sai em maiúsculas na cláusula.",
+        showIf: (values) => formaDePagamento(values) === FORMA_FINANCIAMENTO,
+        hint: "Ex.: Banco Bradesco Financiamentos S.A. — sai em maiúsculas na cláusula.",
       },
       {
         key: "venda_pagamento_descricao",
         label: "Forma de Pagamento Personalizada",
         type: "textarea",
         section: "Preço",
-        hint: 'Só quando a forma acima for "Personalizado". Descreva o combinado — parcelas, vencimentos, valores. Entra dentro da CLÁUSULA SEGUNDA, não no fim do contrato.',
+        showIf: (values) => formaDePagamento(values) === FORMA_PERSONALIZADO,
+        hint: "Descreva o combinado — parcelas, vencimentos, valores. Entra dentro da CLÁUSULA SEGUNDA, não no fim do contrato. Em branco, a cláusula sai com uma linha vazia no lugar.",
       },
       { key: "data_contrato", label: "Data do Contrato", type: "date", section: "Contrato" },
       {
@@ -1457,3 +1465,58 @@ export const DEFAULT_TEMPLATES = [
     ],
   },
 ];
+
+// --- O que a tela mostra, e o que ela cobra ---------------------------------
+//
+// Duas perguntas que o formulário fazia errado e custaram um contrato torto
+// (Mayra, 17/09/2026): quais campos valem a pena preencher, e quais ficaram
+// em branco. Puras de propósito — a tela só desenha o que elas respondem.
+
+/**
+ * Os campos que fazem sentido para os valores digitados até agora.
+ *
+ * Campo sem `showIf` fica sempre. Quem tem `showIf` só aparece quando o que
+ * ele preenche vai mesmo para o contrato: Entrada e Valor Financiado à mostra
+ * numa venda à vista são um convite a preencher o que o build() descarta em
+ * silêncio — foi exatamente assim que uma venda financiada saiu com a
+ * Cláusula Segunda dizendo "pago à vista, em parcela única".
+ *
+ * A ordem original é preservada: o formulário agrupa por seção na sequência
+ * em que os campos foram declarados.
+ */
+export function camposVisiveis(fields, values) {
+  const vals = values || {};
+  return (fields || []).filter((f) => (typeof f?.showIf === "function" ? f.showIf(vals) : true));
+}
+
+/**
+ * Os campos que o contrato vai imprimir como lacuna, com o rótulo da tela.
+ *
+ * Um campo vazio não some do contrato: `/api/admin/documents` troca `{{chave}}`
+ * pelo valor digitado ou, na falta dele, por "_______________" — e a lacuna vai
+ * impressa no meio da cláusula. Isso é proposital para o que se preenche à
+ * caneta, mas quem gera precisa SABER, e o corpo é longo demais para conferir
+ * a olho antes de assinar.
+ *
+ * Precisa dos DOIS: o corpo diz quais placeholders sobreviveram ao build()
+ * (que já decide sozinho parte deles, conforme a forma de pagamento e a
+ * troca), e os valores dizem quais deles a rota não terá com que preencher.
+ *
+ * @param {string} corpo   o contrato montado, antes da substituição da rota
+ * @param {Array} fields   os campos do template, para traduzir chave em rótulo
+ * @param {Object} values  o que foi digitado no formulário
+ * @returns {Array<{key: string, label: string}>} na ordem do formulário
+ */
+export function camposEmBranco(corpo, fields, values) {
+  const texto = typeof corpo === "string" ? corpo : "";
+  const vals = values || {};
+  const noTexto = new Set();
+  for (const m of texto.matchAll(/\{\{([a-zA-Z0-9_]+)\}\}/g)) noTexto.add(m[1]);
+
+  // Percorre `fields`, não o texto: o aviso tem que ler na mesma ordem em que
+  // a pessoa vai descer o formulário para consertar. Placeholder sem campo
+  // correspondente (extenso calculado, chave interna) não é pendência dela.
+  return (fields || [])
+    .filter((f) => f?.key && noTexto.has(f.key) && !filled(vals, f.key))
+    .map((f) => ({ key: f.key, label: f.label || f.key }));
+}
