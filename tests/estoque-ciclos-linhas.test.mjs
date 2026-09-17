@@ -45,6 +45,17 @@ test("carro que voltou na troca dá uma linha por ciclo, na ordem", () => {
   assert.equal(linhas[0].data_saida, "2026-06-20");
   assert.equal(linhas[1].data_entrada, "2026-09-17");
   assert.equal(linhas[1].data_saida, null);
+
+  // Contrato de herança (carry-over): o carro voltou na troca (ciclo 2), mas a
+  // recompra ainda não foi lançada no financeiro — `margens` nem tem entrada
+  // para "v1|2". A linha do ciclo corrente não pode herdar o dinheiro do ciclo
+  // 1 nem virar 0 (que se leria como "comprado de graça"); tem que sair null.
+  // `assert.equal` aqui é o de node:assert/strict — equivale a strictEqual, e
+  // por isso `undefined` (o que sobraria de um `m.resultado_liquido` sem
+  // guarda) NÃO passaria como se fosse `null`.
+  assert.equal(linhas[1].compra, null, "sem lançamento no ciclo novo, compra não pode ter valor");
+  assert.equal(linhas[1].venda, null, "sem lançamento no ciclo novo, venda não pode ter valor");
+  assert.equal(linhas[1].resultado, null, "resultado não pode cair para outro ciclo nem virar 0");
 });
 
 test("cada linha casa a margem do seu ciclo", () => {
