@@ -160,7 +160,14 @@ test("um carro pode ir e voltar mais de uma vez", async () => {
   assert.deepEqual(rows.map((x) => x.ciclo), [1, 2]);
 });
 
-test("choque no histórico desfaz tudo — o vínculo não é tudo-ou-nada por acaso", async () => {
+// Este teste NÃO prova atomicidade: o choque acontece no PRIMEIRO write
+// (o insert em vehicle_ciclos), então o update em vehicles nunca é alcançado
+// pelo controle de fluxo do JS — com ou sem transação, o resultado seria o
+// mesmo. O que ele prova é outra coisa, que também vale a pena documentar:
+// um clash de ciclo vira erro explícito, não um retorno silenciosamente
+// incompleto. A prova de atomicidade de verdade é o teste seguinte, que força
+// a falha no SEGUNDO write — depois que o primeiro já rodou.
+test("choque no histórico é rejeitado, não silenciado", async () => {
   const id = await carroVendido("q5-retorno-choque-historico");
   // Planta o ciclo 1 no histórico ANTES do retorno de verdade: o insert que
   // retornarAoEstoque faz vai bater na unique(vehicle_id, ciclo) e estourar.
@@ -172,9 +179,8 @@ test("choque no histórico desfaz tudo — o vínculo não é tudo-ou-nada por a
 
   await assert.rejects(() => retornarAoEstoque(id, null));
 
-  // Nada do update pode ter passado: é a mesma transação do insert que falhou.
   const v = await getVehicleById(id);
-  assert.equal(v.status, "vendido", "o rollback tem que desfazer o update também");
+  assert.equal(v.status, "vendido");
   assert.equal(v.ciclo, 1);
   assert.equal(String(v.data_saida).slice(0, 10), "2026-06-20");
 
@@ -184,6 +190,62 @@ test("choque no histórico desfaz tudo — o vínculo não é tudo-ou-nada por a
     [id]
   );
   assert.deepEqual(rows.map((r) => r.ciclo), [1]);
+});
+
+// A prova real de atomicidade: o choque tem que acontecer no SEGUNDO write
+// (o update em vehicles), depois que o insert em vehicle_ciclos já rodou.
+// Só assim "o insert sumiu" só pode ser explicado por um rollback de verdade
+// — não por o código nunca ter chegado lá.
+//
+// O gatilho é cirúrgico (só dispara para ESTE id) e é desfeito no finally,
+// para sobreviver a uma asserção que falhe sem vazar para os testes seguintes.
+test("update falha depois do insert: o insert já feito também é desfeito", async () => {
+  const id = await carroVendido("q5-retorno-falha-update");
+
+  await pool.query(`
+    create or replace function _test_falha_update_veiculo() returns trigger as $$
+    begin
+      if OLD.id = '${id}' then
+        raise exception 'falha proposital no update (teste de atomicidade)';
+      end if;
+      return new;
+    end;
+    $$ language plpgsql;
+  `);
+  await pool.query(`
+    drop trigger if exists _test_falha_update_trigger on vehicles;
+    create trigger _test_falha_update_trigger
+      before update on vehicles
+      for each row execute function _test_falha_update_veiculo();
+  `);
+
+  try {
+    await assert.rejects(() => retornarAoEstoque(id, null));
+
+    // O insert em vehicle_ciclos é a PRIMEIRA instrução de retornarAoEstoque
+    // — ele já tinha rodado quando o update (a segunda) estourou. Se a linha
+    // sumiu, só o rollback da transação explica.
+    const { rows } = await pool.query(
+      `select ciclo from vehicle_ciclos where vehicle_id = $1`,
+      [id]
+    );
+    assert.deepEqual(
+      rows,
+      [],
+      "o insert que já tinha rodado tem que ter sido desfeito junto com o update"
+    );
+
+    const v = await getVehicleById(id);
+    assert.equal(v.status, "vendido");
+    assert.equal(v.ciclo, 1);
+    assert.equal(String(v.data_saida).slice(0, 10), "2026-06-20");
+  } finally {
+    // Roda mesmo se as asserções acima falharem — senão o gatilho ficaria
+    // ativo para o resto do arquivo (ou, pior, só para este id, mas
+    // silenciosamente diferente do esperado nos próximos testes).
+    await pool.query(`drop trigger if exists _test_falha_update_trigger on vehicles`);
+    await pool.query(`drop function if exists _test_falha_update_veiculo()`);
+  }
 });
 
 test("encerrado_por grava o id de quem retornou o carro", async () => {
