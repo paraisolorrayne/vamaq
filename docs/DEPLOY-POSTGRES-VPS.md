@@ -183,3 +183,105 @@ os 4 em `draft` ficam ocultos até o Mateus mandar as fotos.
 
 Pendências de conteúdo (confirmar com o Mateus) estão no
 `CONTEUDO-ESTOQUE.md`: modelo exato da "BMW M Sport 2025" e ano/cor da Tiggo.
+
+---
+
+## Deploy do ciclo de vida do veículo (17/09/2026)
+
+O carro que a Vamaq vende e recebe de volta numa troca ganhou um número de
+ciclo (`vehicles.ciclo`, `notas_fiscais.ciclo`, `fin.transactions.ciclo`) —
+ver o cabeçalho de `db/estoque-ciclo.sql` e `db/fin-ciclo.sql` para o porquê.
+Este deploy tem **dois schemas em duas conexões diferentes**, e é do tipo que
+falha sem ninguém perceber na hora. Leia até o fim antes de rodar.
+
+> ⚠️ **Os dois `.sql` são obrigatórios — nenhum substitui o outro.**
+> `db/estoque-ciclo.sql` roda em `$DATABASE_URL` (schema `public`);
+> `db/fin-ciclo.sql` roda em `$DATABASE_URL_FIN` (schema `fin`, role
+> `vamaq_fin`). Aplicar só o primeiro deixa `fin.transactions` sem a coluna
+> `ciclo`, e a consulta de margem — `getVehicleMargins` em
+> `src/lib/fin/repositories/finance.js`, que alimenta o `custoAquisicao` que
+> vira a **base do ICMS da nota de venda** em `src/lib/fiscal/notas.js` —
+> quebra com `column t.ciclo does not exist`. Isso só aparece na hora de
+> emitir uma nota, não num smoke check do site.
+
+### Ordem exata
+
+```bash
+cd /var/www/vamaq
+git pull origin main
+
+# public — o runner já inclui estoque-ciclo.sql (arquivo 9/9, ver o
+# cabeçalho de db/aplicar-schemas.sh). É o caminho seguro: transacional por
+# arquivo e idempotente, então rodar de novo num banco já migrado não dói.
+./db/aplicar-schemas.sh "$DATABASE_URL"
+# alternativa manual, só este arquivo (se já souber que os outros 8 estão em dia):
+# psql "$DATABASE_URL" -f db/estoque-ciclo.sql
+
+# fin — fora do runner, outra conexão, outra role. Ver seção 4.
+psql "$DATABASE_URL_FIN" -f db/fin-ciclo.sql
+
+npm install && npm run build
+pm2 restart vamaq
+
+git rev-parse --short HEAD   # única prova de qual commit ficou rodando — não pular
+```
+
+Migration sempre antes do código: `ciclo` entrou no `SELECT_COLS` de
+`src/lib/vehicleStore.js`, que sustenta nove consultas — `readVehicles` e
+`getVehicleById` entre elas. Se o código subir antes de `db/estoque-ciclo.sql`
+estar aplicado, quebra a listagem inteira de veículos no admin, não só o botão
+novo.
+
+### Smoke check (código 200 não prova nada aqui)
+
+`getAllVehicles` (`src/lib/repositories/vehicles.js`) tem `catch` que devolve
+`[]` — sem o schema do `public` aplicado, a home e o `/acervo` continuam
+respondendo **200, com zero veículos**, e o único sinal é um `console.error`
+no log do pm2.
+
+```bash
+# 1. a vitrine lista carros de verdade, não só responde 200
+curl -s https://vamaqmotors.com.br/acervo | grep -o "Tenho Interesse" | wc -l
+# tem que voltar mais que zero. Use `grep -o | wc -l`, não `grep -c`: -c conta
+# LINHAS com ocorrência, e o HTML do Next varia de quebra de linha entre um
+# build e outro — dá pra ler uma queda que não existe.
+
+# 2. a coluna existe no public e o default pegou nas linhas antigas
+psql "$DATABASE_URL" -c "select count(*) from vehicles where ciclo <> 1"
+# sem a coluna aplicada isto não devolve um número — devolve
+# "ERROR: column "ciclo" does not exist" na cara. Por isso o check é sobre a
+# query RODAR, não só sobre o valor. Esperado: 0 (nenhum carro trocou de
+# ciclo ainda — é o primeiro deploy da feature).
+
+# 3. o mesmo do lado fin — é o que o check 2 NÃO cobre
+psql "$DATABASE_URL_FIN" -c "select count(*) from fin.transactions where ciclo <> 1"
+# mesma lógica: erro alto se a coluna não existe, 0 é o esperado.
+```
+
+O check 1 prova que o site está de pé. Os checks 2 e 3 provam que os dois
+schemas aplicaram — e são os únicos que pegam uma falha do lado `fin`: o
+`/acervo` fica bonito mesmo com `fin.transactions` sem `ciclo`, porque essa
+tabela só entra em jogo na hora de emitir uma nota de venda.
+
+### Se algo falhar no meio
+
+Os dois `.sql` são conexões diferentes — dá pra aplicar um e não perceber que
+o outro ficou de fora. Regra: **não segue para o próximo passo até o anterior
+confirmar `ok`.**
+
+- **`aplicar-schemas.sh` (ou o `psql -f db/estoque-ciclo.sql` manual) falha:**
+  pare aqui. Não aplique `fin-ciclo.sql`, não rode `npm run build`, não
+  reinicie o pm2. O script é transacional por arquivo e idempotente — resolva
+  o erro e rode de novo; nada fica pela metade.
+- **`estoque-ciclo.sql` aplicou, `fin-ciclo.sql` falha:** pare antes do build.
+  O `public` sozinho é inofensivo — o código que ainda está no ar não lê a
+  coluna nova. Confira a role `vamaq_fin` (`scripts/setup-fin-role.sh`) e rode
+  `psql "$DATABASE_URL_FIN" -f db/fin-ciclo.sql` de novo.
+- **Os dois `.sql` aplicaram mas o código subiu antes (ordem invertida):**
+  sintoma duplo — o admin responde 500 nas rotas de veículo e a vitrine
+  pública fica no ar com zero carros. Aplique o(s) `.sql` que faltou e só
+  então repita `npm run build && pm2 restart vamaq`; reiniciar o pm2 sozinho
+  não resolve.
+- **Só percebeu depois do deploy completo:** rode os três smoke checks acima
+  para descobrir qual conexão ficou pra trás antes de aplicar qualquer coisa
+  de novo.
