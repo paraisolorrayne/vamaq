@@ -552,8 +552,15 @@ async function pendenciasDeVeiculos(from, to) {
           count(*) filter (where n.id is null)::int as vendidos_sem_nota,
           count(*)::int as vendidos
          from public.vehicles v
+         -- POR CICLO TAMBÉM: sem n.ciclo = v.ciclo, a nota de saída de um
+         -- ciclo ANTERIOR satisfaz o join e o carro vendido de novo no ciclo
+         -- atual — sem nota nenhuma emitida ainda — passa como "tem nota".
+         -- É exatamente o cenário que este checklist existe para pegar
+         -- ("vendido sem nota"), e o retorno ao estoque é quem o produz. Não
+         -- soma operacao ao join: essa folga é anterior a esta task.
          left join public.notas_fiscais n
-           on n.vehicle_id = v.id and n.status in ('processando','autorizada')
+           on n.vehicle_id = v.id and n.ciclo = v.ciclo
+          and n.status in ('processando','autorizada')
         where v.status = 'vendido'
           and v.data_saida >= $1 and v.data_saida <= $2`,
       [from, to]

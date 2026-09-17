@@ -53,11 +53,17 @@ before(async () => {
   // fiscal-entrada.sql é obrigatório e não opcional: é ele quem cria
   // notas_fiscais.operacao, e o índice/guarda por ciclo de estoque-ciclo.sql
   // é sobre (vehicle_id, operacao, ciclo). Sem ele nada aqui funciona.
+  //
+  // fiscal-consignacao-devolucao.sql entrou no fix round 1 (item 2 da
+  // revisão): sem ele, `notas_fiscais.cfop` não existe (devolverConsignacaoVeiculo
+  // usa) e `operacao='devolucao'` estoura a check constraint (só 'saida' e
+  // 'entrada' eram permitidos antes deste arquivo).
   for (const file of [
     "schema.sql",
     "auth-schema.sql",
     "fiscal-schema.sql",
     "fiscal-entrada.sql",
+    "fiscal-consignacao-devolucao.sql",
     "estoque-ciclo.sql",
   ]) {
     await pool.query(await readFile(path.join(ROOT, "db", file), "utf8"));
@@ -66,6 +72,13 @@ before(async () => {
     `insert into fiscal_config (cnpj) values ('45348469000154')
        on conflict do nothing`
   );
+
+  // Token de mentira só para passar por focusEnabled(): os testes abaixo das
+  // guardas de emitirNotaVeiculo/emitirNotaEntradaVeiculo/devolverConsignacaoVeiculo
+  // param ANTES de qualquer chamada de rede (num erro de validação anterior ao
+  // envio), então não precisam de fetch mockado — mas passam pelo focusEnabled()
+  // primeiro, que é a própria checagem do token.
+  process.env.FOCUS_NFE_TOKEN = "token-de-teste";
 });
 
 after(async () => {
@@ -82,7 +95,13 @@ after(async () => {
   await admin.end();
 });
 
-const { getDadosEmissao } = await import("../src/lib/fiscal/notas.js");
+const {
+  getDadosEmissao,
+  notaEntradaAtiva,
+  emitirNotaVeiculo,
+  emitirNotaEntradaVeiculo,
+  devolverConsignacaoVeiculo,
+} = await import("../src/lib/fiscal/notas.js");
 
 async function novoVeiculo(slug) {
   const { rows } = await pool.query(
@@ -146,4 +165,135 @@ test("getDadosEmissao devolve o ciclo do veículo", async () => {
 
   const dados = await getDadosEmissao(id);
   assert.equal(dados.veiculo.ciclo, 3);
+});
+
+// ── Fix round 1 (revisão): as guardas que EMITEM, não só as que mostram ────
+//
+// Os testes acima cobrem getDadosEmissao — o que a TELA lê. Mas quem de fato
+// BLOQUEIA a emissão são consultas separadas dentro de emitirNotaVeiculo,
+// emitirNotaEntradaVeiculo e devolverConsignacaoVeiculo (o load-bearing
+// insight desta task: a diferença entre "mostrar" e "travar"). Reverter o
+// filtro de ciclo em qualquer uma delas deixava a suíte antiga verde — esta
+// seção fecha esse buraco.
+//
+// Nenhum destes testes chama a Focus: cada cenário "não bloqueado" para
+// propositalmente no PRÓXIMO erro de validação (falta de custo/valor/NCM),
+// que é anterior a qualquer rede — não precisa mockar fetch.
+
+test("notaEntradaAtiva: não enxerga a entrada de um ciclo diferente do informado", async () => {
+  const id = await novoVeiculo("q5-fiscal-notaentradaativa-c2");
+  await nota(id, { ref: "entrada-ativa-outro-ciclo", operacao: "entrada", numero: "10" });
+
+  const ativa = await notaEntradaAtiva(id, 2);
+  assert.equal(ativa, null, "a entrada nasceu no ciclo 1 — não pode aparecer para o ciclo 2");
+});
+
+test("notaEntradaAtiva: enxerga a entrada do MESMO ciclo — é o que a tela de entrada usa", async () => {
+  const id = await novoVeiculo("q5-fiscal-notaentradaativa-c1");
+  await nota(id, { ref: "entrada-ativa-mesmo-ciclo", operacao: "entrada", numero: "10" });
+
+  const ativa = await notaEntradaAtiva(id, 1);
+  assert.ok(ativa);
+  assert.equal(ativa.ref, "entrada-ativa-mesmo-ciclo");
+});
+
+test("emitirNotaVeiculo: nota de saída autorizada do ciclo 1 NÃO bloqueia a EMISSÃO do ciclo 2", async () => {
+  const id = await novoVeiculo("q5-fiscal-emitir-saida-c2");
+  await nota(id, { ref: "saida-emitir-c1", operacao: "saida", numero: "11" });
+  await pool.query(`update vehicles set ciclo = 2 where id = $1`, [id]);
+
+  const res = await emitirNotaVeiculo(id, { destinatario: {}, valorVenda: 200000 });
+  assert.doesNotMatch(
+    res.error || "",
+    /já tem nota|autorizada pela SEFAZ|cancele/i,
+    "a guarda que EMITE (não só a que getDadosEmissao mostra) tem que respeitar o ciclo"
+  );
+  assert.match(
+    res.error,
+    /valor de aquisição/i,
+    "sem custo de aquisição, o próximo passo tem que travar por outro motivo — prova que passou da guarda de ciclo"
+  );
+});
+
+test("emitirNotaVeiculo: nota de saída autorizada do MESMO ciclo continua bloqueando a emissão", async () => {
+  const id = await novoVeiculo("q5-fiscal-emitir-saida-c1");
+  await nota(id, { ref: "saida-emitir-c1-bloqueia", operacao: "saida", numero: "11" });
+
+  const res = await emitirNotaVeiculo(id, { destinatario: {}, valorVenda: 200000 });
+  assert.match(res.error, /já tem nota|cancele/i);
+});
+
+test("emitirNotaEntradaVeiculo: entrada autorizada do ciclo 1 NÃO bloqueia a EMISSÃO da entrada do ciclo 2", async () => {
+  const id = await novoVeiculo("q5-fiscal-emitir-entrada-c2");
+  await nota(id, { ref: "entrada-emitir-c1", operacao: "entrada", numero: "10" });
+  await pool.query(`update vehicles set ciclo = 2 where id = $1`, [id]);
+
+  const res = await emitirNotaEntradaVeiculo(id, { remetente: {}, valorAquisicao: undefined });
+  assert.doesNotMatch(
+    res.error || "",
+    /já tem nota de entrada|autorizada pela SEFAZ/i,
+    "a guarda que EMITE a entrada tem que respeitar o ciclo, não só notaEntradaAtiva isolada"
+  );
+  assert.match(
+    res.error,
+    /valor pago pelo veículo/i,
+    "sem valor de aquisição, o próximo passo tem que travar por outro motivo"
+  );
+});
+
+test("emitirNotaEntradaVeiculo: entrada autorizada do MESMO ciclo continua bloqueando a emissão", async () => {
+  const id = await novoVeiculo("q5-fiscal-emitir-entrada-c1");
+  await nota(id, { ref: "entrada-emitir-c1-bloqueia", operacao: "entrada", numero: "10" });
+
+  const res = await emitirNotaEntradaVeiculo(id, { remetente: {}, valorAquisicao: 100000 });
+  assert.match(res.error, /já tem nota de entrada|cancele/i);
+});
+
+test("devolverConsignacaoVeiculo: entrada de consignação do ciclo 1 NÃO autoriza a devolução no ciclo 2", async () => {
+  const id = await novoVeiculo("q5-fiscal-devolucao-c2");
+  await nota(id, { ref: "consig-entrada-c1", operacao: "entrada", numero: "14" });
+  await pool.query(`update notas_fiscais set cfop = '1917' where ref = 'consig-entrada-c1'`);
+  await pool.query(`update vehicles set ciclo = 2 where id = $1`, [id]);
+
+  const res = await devolverConsignacaoVeiculo(id);
+  assert.match(
+    res.error,
+    /não tem nota de entrada de consignação/i,
+    "a entrada de consignação de um ciclo não pode autorizar a devolução de outro"
+  );
+});
+
+test("devolverConsignacaoVeiculo: devolução já registrada no MESMO ciclo continua bloqueando", async () => {
+  const id = await novoVeiculo("q5-fiscal-devolucao-mesmo-ciclo");
+  await nota(id, { ref: "consig-entrada-bloqueia", operacao: "entrada", numero: "14" });
+  await pool.query(`update notas_fiscais set cfop = '1917' where ref = 'consig-entrada-bloqueia'`);
+  await nota(id, { ref: "consig-devolucao-bloqueia", operacao: "devolucao", numero: null });
+
+  const res = await devolverConsignacaoVeiculo(id);
+  assert.match(res.error, /já foi devolvido/i);
+});
+
+test("devolverConsignacaoVeiculo: devolução do ciclo 1 NÃO bloqueia a devolução de uma consignação nova, do ciclo 2", async () => {
+  const id = await novoVeiculo("q5-fiscal-devolucao-nao-bloqueia-c2");
+  // Ciclo 1: consignação recebida e devolvida — encerrada de verdade.
+  await nota(id, { ref: "consig-entrada-c1-fechada", operacao: "entrada", numero: "14" });
+  await pool.query(`update notas_fiscais set cfop = '1917' where ref = 'consig-entrada-c1-fechada'`);
+  await nota(id, { ref: "consig-devolucao-c1-fechada", operacao: "devolucao", numero: null });
+
+  // Ciclo 2: consignação NOVA, ainda sem devolução.
+  await pool.query(`update vehicles set ciclo = 2 where id = $1`, [id]);
+  await nota(id, { ref: "consig-entrada-c2-nova", operacao: "entrada", numero: "22" });
+  await pool.query(`update notas_fiscais set cfop = '1917' where ref = 'consig-entrada-c2-nova'`);
+
+  const res = await devolverConsignacaoVeiculo(id);
+  assert.doesNotMatch(
+    res.error || "",
+    /já foi devolvido|não tem nota de entrada/i,
+    "a devolução do ciclo 1 não pode travar a devolução de uma consignação nova, do ciclo 2"
+  );
+  assert.match(
+    res.error,
+    /NCM/i,
+    "sem NCM configurado, o próximo passo tem que travar por outro motivo — prova que passou das duas guardas"
+  );
 });

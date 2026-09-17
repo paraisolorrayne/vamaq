@@ -150,8 +150,8 @@ export async function emitirNotaVeiculo(
   // E POR CICLO: esta é a guarda que de fato BLOQUEIA a emissão (getDadosEmissao
   // já trouxe `notaExistente` só para a tela mostrar). Sem o filtro aqui, a
   // nota de saída do ciclo anterior — carro vendido e devolvido na troca —
-  // travaria a venda do ciclo novo, que é exatamente o caso que este ciclo
-  // existe para destravar.
+  // travaria a venda do ciclo novo, que é exatamente o caso que o retorno ao
+  // estoque (esta task) existe para destravar.
   const { rows: existentes } = await query(
     `select ref, status from notas_fiscais
       where vehicle_id=$1 and operacao='saida' and ciclo=$2
@@ -372,6 +372,28 @@ export async function totaisDoMes(ano, mes) {
 }
 
 /**
+ * A nota de ENTRADA ativa (processando ou autorizada) de um veículo, NO
+ * CICLO informado — não em qualquer ciclo do veículo.
+ *
+ * Compartilhada entre a guarda de `emitirNotaEntradaVeiculo` (abaixo) e a
+ * tela de entrada (src/app/admin/fiscal/entrada/[vehicleId]/page.js), que
+ * decide sozinha se mostra o formulário ou o aviso "já tem nota". As duas
+ * já foram cópias divergentes da mesma pergunta uma vez — a guarda ganhou o
+ * filtro de ciclo e a tela ficou para trás, bloqueando a entrada do ciclo
+ * novo com a nota autorizada do ciclo velho. Uma função só fecha essa
+ * lacuna de vez, em vez de reabri-la na próxima cópia.
+ */
+export async function notaEntradaAtiva(vehicleId, ciclo) {
+  const { rows } = await query(
+    `select ref, status from notas_fiscais
+      where vehicle_id=$1 and operacao='entrada' and ciclo=$2
+        and status in ('processando','autorizada')`,
+    [vehicleId, ciclo]
+  );
+  return rows[0] || null;
+}
+
+/**
  * Emite a NF-e de ENTRADA de um veículo comprado de pessoa física.
  *
  * É o passo que hoje trava a operação: o texto obrigatório da nota de VENDA
@@ -397,16 +419,11 @@ export async function emitirNotaEntradaVeiculo(
   // POR CICLO: o carro que voltou na troca já tem uma entrada autorizada do
   // ciclo anterior — sem o filtro, essa guarda bloquearia a entrada da
   // recompra, e a segunda negociação nunca sairia do papel.
-  const { rows: existentes } = await query(
-    `select ref, status from notas_fiscais
-      where vehicle_id=$1 and operacao='entrada' and ciclo=$2
-        and status in ('processando','autorizada')`,
-    [vehicleId, dados.veiculo.ciclo]
-  );
-  if (existentes.length) {
+  const existente = await notaEntradaAtiva(vehicleId, dados.veiculo.ciclo);
+  if (existente) {
     return {
       error:
-        existentes[0].status === "processando"
+        existente.status === "processando"
           ? "A nota de entrada deste veículo já foi enviada e está sendo autorizada pela SEFAZ. Aguarde alguns segundos — não emita de novo."
           : "Este veículo já tem nota de entrada autorizada. Cancele a atual antes de emitir outra.",
     };

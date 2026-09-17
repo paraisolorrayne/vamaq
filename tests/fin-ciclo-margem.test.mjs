@@ -18,6 +18,17 @@
  * A view fin.v_vehicle_margin, essa sim, é exercitada por SQL direto (não é
  * réplica: é o artefato real que db/fin-ciclo.sql cria).
  *
+ * PIN DO PONTO MAIS PERIGOSO (Task 5, fix round 1): este arquivo também
+ * exercita getDadosEmissao — src/lib/fiscal/notas.js:56 — de ponta a ponta,
+ * com os dois bancos de verdade (public via DATABASE_URL, fin via
+ * DATABASE_URL_FIN). Escolhido este arquivo, e não fiscal-ciclo.test.mjs, por
+ * já ter o arnês dos DOIS papéis pronto (vamaq_fin + superusuário); trazer
+ * esse arnês inteiro para o arquivo fiscal seria duplicar tudo que já existe
+ * aqui. tests/fiscal-ciclo.test.mjs nunca carrega o schema `fin` de propósito
+ * — lá o ramo da margem sempre cai no catch e `custoOrigem` fica "ausente";
+ * aqui é o inverso: o financeiro está de pé, e é aqui que se prova que
+ * getDadosEmissao escolhe a linha do CICLO CORRENTE, não a primeira que achar.
+ *
  *   npm test   (usa TEST_ADMIN_URL, default postgres@localhost)
  */
 import { register } from "node:module";
@@ -58,6 +69,14 @@ let accountOutraDespesa; // 4.2 (Preparação e Reparos) — NÃO é custo de aq
 // importados só depois de DATABASE_URL_FIN apontar para o banco de teste.
 let getVehicleMargins;
 let getFinPool;
+// getDadosEmissao (notas.js) usa os DOIS bancos: query() de @/lib/db (público,
+// DATABASE_URL) para vehicles/notas_fiscais, e getVehicleMargins (fin,
+// DATABASE_URL_FIN) para o custo. As duas env vars precisam estar apontando
+// para o banco de teste ANTES deste import.
+let getDadosEmissao;
+// getFechamentoMes chama pendenciasDeVeiculos (finance.js), a única função
+// não coberta que também precisava do fix de ciclo (item 4 da revisão).
+let getFechamentoMes;
 
 before(async () => {
   const admin = new pg.Client({ connectionString: ADMIN_URL });
@@ -106,10 +125,13 @@ before(async () => {
 
   // A PARTIR DAQUI: DATABASE_URL_FIN aponta pro banco de teste, e só então
   // importamos o módulo de verdade — getFinPool() (src/lib/fin/db.js) lê a
-  // env var e cacheia o pool na primeira consulta.
+  // env var e cacheia o pool na primeira consulta. DATABASE_URL (superusuário,
+  // mesmo banco) é o que getDadosEmissao usa para ler vehicles/notas_fiscais.
   process.env.DATABASE_URL_FIN = urlFor("vamaq_fin", FIN_PW);
-  ({ getVehicleMargins } = await import("@/lib/fin/repositories/finance"));
+  process.env.DATABASE_URL = urlFor(su);
+  ({ getVehicleMargins, getFechamentoMes } = await import("@/lib/fin/repositories/finance"));
   ({ getFinPool } = await import("@/lib/fin/db"));
+  ({ getDadosEmissao } = await import("@/lib/fiscal/notas"));
 });
 
 after(async () => {
@@ -117,6 +139,11 @@ after(async () => {
   // o abriu por baixo dos panos, e ele nunca fecha sozinho. Sem fechar aqui, o
   // DROP DATABASE abaixo trava esperando a conexão soltar.
   await getFinPool?.()?.end();
+  // Mesma história para o pool público que getDadosEmissao (via @/lib/db)
+  // abriu por baixo dos panos — outro singleton de módulo que não fecha
+  // sozinho.
+  const { getPool } = await import("@/lib/db");
+  await getPool()?.end();
   delete process.env.DATABASE_URL_FIN;
   await suPool?.end();
   await finPool?.end();
@@ -291,4 +318,75 @@ test("a view acompanha a mesma agregação da função", async () => {
   assert.equal(rows.length, 2, "a view não pode divergir da função");
   assert.equal(Number(rows[0].custo_total), 90000);
   assert.equal(Number(rows[1].custo_total), 70000);
+});
+
+// ── getDadosEmissao × ciclo (notas.js:56) ───────────────────────────────────
+//
+// O PONTO MAIS PERIGOSO do task inteiro: custoAquisicao vira a BASE DO ICMS
+// da nota de venda (ver notas.js e lib/fiscal/impostos.js). Os testes acima
+// provam que getVehicleMargins devolve uma linha por ciclo; este prova que
+// getDadosEmissao — a função que a tela de emissão de verdade chama — pega a
+// linha do ciclo CORRETO, e não a primeira que aparecer no array.
+
+test("getDadosEmissao usa o custo de aquisição do CICLO CORRENTE, não do ciclo antigo", async () => {
+  const id = await novoVeiculo("q5-fin-icms-base-ciclo");
+  // Ciclo 1: comprou por 100.000 — carro já vendido e devolvido na troca.
+  await lancar(id, "expense", 100000);
+  // Voltou: ciclo 2, comprou de novo por um valor DIFERENTE — 130.000.
+  await avancaCiclo(id, 2);
+  await lancar(id, "expense", 130000);
+
+  const dados = await getDadosEmissao(id);
+
+  assert.equal(dados.custoOrigem, "financeiro");
+  assert.equal(
+    dados.custoAquisicao,
+    130000,
+    "citar o custo do ciclo 1 (100.000) na base do ICMS da venda do ciclo 2 " +
+      "seria imposto calculado sobre a compra errada, de outro vendedor"
+  );
+});
+
+test("no ciclo 1, getDadosEmissao continua usando o custo do ciclo 1 — como hoje", async () => {
+  const id = await novoVeiculo("q5-fin-icms-base-ciclo1");
+  await lancar(id, "expense", 90000);
+
+  const dados = await getDadosEmissao(id);
+
+  assert.equal(dados.custoOrigem, "financeiro");
+  assert.equal(dados.custoAquisicao, 90000);
+});
+
+// ── pendenciasDeVeiculos × ciclo (finance.js, item 4 da revisão) ───────────
+//
+// O checklist de fechamento existe para pegar "vendido sem nota". Sem o
+// ciclo no join, a nota AUTORIZADA de um ciclo antigo satisfazia o join e
+// escondia justamente o caso que o retorno ao estoque cria: o carro vendido
+// de novo, no ciclo atual, ainda sem nota nenhuma emitida.
+
+test("getFechamentoMes: nota autorizada de um ciclo antigo não cobre a venda do ciclo atual no checklist", async () => {
+  const id = await novoVeiculo("q5-fin-checklist-ciclo");
+  // Nota de saída AUTORIZADA, gravada enquanto o veículo ainda era ciclo 1 —
+  // o trigger de estoque-ciclo.sql carimba pelo ciclo do veículo NO MOMENTO
+  // do insert, então isto só funciona feito ANTES de avançar o ciclo.
+  await suPool.query(
+    `insert into notas_fiscais (ref, vehicle_id, status, valor, operacao, serie)
+     values ('vamaq-checklist-c1',$1,'autorizada',200000,'saida','2')`,
+    [id]
+  );
+  // Ciclo avança: o carro voltou na troca e foi vendido de novo — SEM nota
+  // nova ainda. data_saida cai dentro do mês do fechamento abaixo.
+  await suPool.query(
+    `update vehicles set status='vendido', data_saida='2027-03-15', ciclo=2 where id=$1`,
+    [id]
+  );
+
+  const fechamento = await getFechamentoMes(2027, 3);
+
+  assert.equal(fechamento.pendencias.vendidos, 1);
+  assert.equal(
+    fechamento.pendencias.vendidos_sem_nota,
+    1,
+    "a nota autorizada do ciclo 1 não pode cobrir a venda do ciclo 2 — o checklist tem que acusar 'sem nota'"
+  );
 });
