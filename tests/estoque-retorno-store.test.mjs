@@ -160,6 +160,51 @@ test("um carro pode ir e voltar mais de uma vez", async () => {
   assert.deepEqual(rows.map((x) => x.ciclo), [1, 2]);
 });
 
+test("choque no histórico desfaz tudo — o vínculo não é tudo-ou-nada por acaso", async () => {
+  const id = await carroVendido("q5-retorno-choque-historico");
+  // Planta o ciclo 1 no histórico ANTES do retorno de verdade: o insert que
+  // retornarAoEstoque faz vai bater na unique(vehicle_id, ciclo) e estourar.
+  await pool.query(
+    `insert into vehicle_ciclos (vehicle_id, ciclo, data_entrada, data_saida, price)
+     values ($1,1,'2026-01-10','2026-06-20',200000)`,
+    [id]
+  );
+
+  await assert.rejects(() => retornarAoEstoque(id, null));
+
+  // Nada do update pode ter passado: é a mesma transação do insert que falhou.
+  const v = await getVehicleById(id);
+  assert.equal(v.status, "vendido", "o rollback tem que desfazer o update também");
+  assert.equal(v.ciclo, 1);
+  assert.equal(String(v.data_saida).slice(0, 10), "2026-06-20");
+
+  // E o histórico continua com só a linha plantada — nada extra foi arquivado.
+  const { rows } = await pool.query(
+    `select ciclo from vehicle_ciclos where vehicle_id = $1`,
+    [id]
+  );
+  assert.deepEqual(rows.map((r) => r.ciclo), [1]);
+});
+
+test("encerrado_por grava o id de quem retornou o carro", async () => {
+  const { rows: userRows } = await pool.query(
+    `insert into users (name, email, password_hash, role)
+     values ('Estoquista Teste', 'estoquista-retorno@vamaq.test', 'x', 'estoque')
+     returning id`
+  );
+  const userId = userRows[0].id;
+
+  const id = await carroVendido("q5-retorno-encerrado-por");
+  const r = await retornarAoEstoque(id, userId);
+  assert.equal(r.error, undefined, r.error);
+
+  const { rows } = await pool.query(
+    `select encerrado_por from vehicle_ciclos where vehicle_id = $1`,
+    [id]
+  );
+  assert.equal(rows[0].encerrado_por, userId);
+});
+
 // --- O conserto do published no Reativar ------------------------------------
 
 test("Reativar sem republicar mantém o comportamento de hoje", async () => {

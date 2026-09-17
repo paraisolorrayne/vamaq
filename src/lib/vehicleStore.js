@@ -244,13 +244,16 @@ export async function retornarAoEstoque(id, userId) {
       [id]
     );
     if (!atual.rows.length) {
-      await client.query('rollback');
+      // .catch() aqui pela mesma razão do catch mais abaixo: numa conexão
+      // morta o rollback rejeitaria, e isso não pode impedir o retorno de
+      // { error } — a função continuaria "explodindo" pelo motivo errado.
+      await client.query('rollback').catch(() => {});
       return { error: 'Veículo não encontrado.' };
     }
     // Mesma regra do botão na lista — reconferida aqui porque a rota é
     // alcançável fora dela (link salvo, histórico do navegador).
     if (!podeRetornarAoEstoque(atual.rows[0])) {
-      await client.query('rollback');
+      await client.query('rollback').catch(() => {});
       return {
         error: 'Só um veículo vendido volta ao estoque. Este está como ' +
           `"${atual.rows[0].status}".`,
