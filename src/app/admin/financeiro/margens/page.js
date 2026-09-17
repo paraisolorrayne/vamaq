@@ -65,13 +65,26 @@ export default function MargensPage() {
                 {margens.map((m) => {
                   const liq = m.resultado_liquido ?? m.resultado;
                   const margem = m.receita > 0 ? (liq / m.receita) * 100 : 0;
+                  // Um carro que voltou na troca gera uma linha por ciclo — sem
+                  // a marca abaixo, as duas apareceriam iguais e pareceriam um
+                  // veículo duplicado por engano.
+                  const ciclosDoCarro = margens.filter((x) => x.vehicle_id === m.vehicle_id).length;
                   return (
-                    <tr key={m.vehicle_id}>
+                    <tr key={`${m.vehicle_id}|${m.ciclo}`}>
                       <td>
                         <strong>{m.brand} {m.model}</strong> {m.year}
                         <span style={{ display: "block", fontSize: "0.75rem", color: "#888" }}>
                           {m.placa || "sem placa"} · {m.status}
                         </span>
+                        {ciclosDoCarro > 1 && (
+                          <span
+                            className={styles.badgeWarning}
+                            style={{ background: "#e0e7ff", color: "#3730a3" }}
+                            title={`Este carro passou pela loja ${ciclosDoCarro} vezes — esta linha é a ${m.ciclo}ª`}
+                          >
+                            {m.ciclo}ª passagem
+                          </span>
+                        )}
                       </td>
                       <td style={{ fontVariantNumeric: "tabular-nums" }}>{money(m.receita)}</td>
                       <td style={{ fontVariantNumeric: "tabular-nums" }}>{money(m.custo_total)}</td>

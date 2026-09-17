@@ -163,7 +163,7 @@ export default function EntradasSaidasClient({ linhas, podeVerValores }) {
                 </thead>
                 <tbody>
                   {lista.map((v) => (
-                    <tr key={v.id}>
+                    <tr key={`${v.id}|${v.ciclo}`}>
                       <td>
                         <Link href={`/admin/estoque/novo?id=${v.id}`} prefetch={false}>
                           <strong>{v.brand} {v.model}</strong>
@@ -172,10 +172,23 @@ export default function EntradasSaidasClient({ linhas, podeVerValores }) {
                         <span style={{ display: "block", fontSize: "0.75rem", color: "#888" }}>
                           {v.placa || "sem placa"}
                         </span>
+                        {v.ciclosDoCarro > 1 && (
+                          <span
+                            className={styles.badgeWarning}
+                            style={{ background: "#e0e7ff", color: "#3730a3" }}
+                            title={`Este carro passou pela loja ${v.ciclosDoCarro} vezes — esta linha é a ${v.ciclo}ª`}
+                          >
+                            {v.ciclo}ª passagem
+                          </span>
+                        )}
                       </td>
                       <td style={{ fontVariantNumeric: "tabular-nums" }}>{dataBR(v.data_entrada)}</td>
                       <td style={{ fontVariantNumeric: "tabular-nums" }}>{dataBR(v.data_saida)}</td>
-                      <td>{STATUS_ROTULO[v.status] || v.status}</td>
+                      <td>
+                        {v.ciclo < v.ciclosDoCarro
+                          ? "Vendido"
+                          : STATUS_ROTULO[v.status] || v.status}
+                      </td>
                       {podeVerValores && (
                         <>
                           <td style={{ fontVariantNumeric: "tabular-nums" }}>{money(v.compra)}</td>

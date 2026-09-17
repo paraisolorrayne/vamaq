@@ -296,6 +296,17 @@ export async function retornarAoEstoque(id, userId) {
   }
 }
 
+/** Os ciclos já encerrados de todos os carros — o passado do pátio. */
+export async function readCiclosEncerrados() {
+  const pool = getPool();
+  if (!pool) return [];
+  const { rows } = await pool.query(
+    `select vehicle_id, ciclo, data_entrada, data_saida, price
+       from vehicle_ciclos order by vehicle_id, ciclo`
+  );
+  return rows;
+}
+
 // --- Documentos do veículo (PR-Inventário) -------------------------------
 // Metadados ficam no jsonb `documentos`; os arquivos, em disco privado
 // (data/vehicle-docs/), geridos pelas rotas /api/admin/vehicles/[id]/documents.
