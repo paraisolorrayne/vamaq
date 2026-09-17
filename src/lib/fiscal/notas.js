@@ -476,9 +476,15 @@ export async function listConsignacoesAbertas() {
       where n.operacao = 'entrada'
         and n.status = 'autorizada'
         and n.cfop = any($1)
+        -- POR CICLO TAMBÉM, não só por veículo: sem d.ciclo = n.ciclo, a
+        -- devolução de uma consignação ANTIGA (ciclo 1) apaga da lista uma
+        -- consignação NOVA e de verdade aberta (ciclo 2) — a entrada nova
+        -- some da tela sem nenhum aviso, porque o NOT EXISTS já achava uma
+        -- devolução para aquele vehicle_id, de outro ciclo.
         and not exists (
           select 1 from notas_fiscais d
            where d.vehicle_id = n.vehicle_id
+             and d.ciclo = n.ciclo
              and d.operacao = 'devolucao'
              and d.status in ('processando','autorizada')
         )

@@ -235,6 +235,75 @@ test("consignação interestadual (2917) também deveria poder ser devolvida", a
   assert.equal(abertas.length, 1, "consignação de outro estado ficou de fora da lista");
 });
 
+// Veículo PRÓPRIO nos dois testes abaixo — não o `vehicleId` compartilhado
+// pelo resto do arquivo. Estes dois mexem em `vehicles.ciclo`, e vazar isso
+// para o `vehicleId` de todo mundo mudaria o ciclo com que `nota()` (que
+// carimba pelo TRIGGER, lendo o ciclo atual do veículo) grava as notas dos
+// testes seguintes.
+async function novoVeiculoConsignacao(slug) {
+  const { rows } = await pool.query(
+    `insert into vehicles (slug, brand, model, year, price, status)
+     values ($1,'Audi','Q5',2025,400000,'disponivel') returning id`,
+    [slug]
+  );
+  return rows[0].id;
+}
+
+test("consignação aberta no ciclo novo não some por causa da devolução do ciclo anterior", async () => {
+  const id = await novoVeiculoConsignacao("q5-consignacao-ciclo-novo");
+
+  // Ciclo 1: consignação recebida e DEVOLVIDA — encerrada de verdade, sem
+  // nenhuma ligação com o que acontece depois.
+  await pool.query(
+    `insert into notas_fiscais (ref, vehicle_id, status, valor, serie, operacao, cfop, destinatario)
+     values ('vamaq-c1-entrada',$1,'autorizada',400000,'2','entrada','1917','{}'::jsonb)`,
+    [id]
+  );
+  await pool.query(
+    `insert into notas_fiscais (ref, vehicle_id, status, valor, serie, operacao, cfop, destinatario)
+     values ('vamaq-c1-devolucao',$1,'autorizada',400000,'2','devolucao','5918','{}'::jsonb)`,
+    [id]
+  );
+
+  // O carro volta numa consignação NOVA — outro ciclo, ainda sem devolução.
+  await pool.query(`update vehicles set ciclo = 2 where id = $1`, [id]);
+  await pool.query(
+    `insert into notas_fiscais (ref, vehicle_id, status, valor, serie, operacao, cfop, destinatario)
+     values ('vamaq-c2-entrada',$1,'autorizada',400000,'2','entrada','1917','{}'::jsonb)`,
+    [id]
+  );
+
+  const doCarro = (await notas.listConsignacoesAbertas()).filter((a) => a.vehicle_id === id);
+  assert.equal(
+    doCarro.length,
+    1,
+    "a devolução do ciclo 1 não pode apagar a consignação aberta do ciclo novo"
+  );
+  assert.equal(doCarro[0].ref, "vamaq-c2-entrada");
+});
+
+test("consignação devolvida no ciclo atual continua saindo da lista", async () => {
+  const id = await novoVeiculoConsignacao("q5-consignacao-ciclo-atual");
+
+  await pool.query(
+    `insert into notas_fiscais (ref, vehicle_id, status, valor, serie, operacao, cfop, destinatario)
+     values ('vamaq-atual-entrada',$1,'autorizada',400000,'2','entrada','1917','{}'::jsonb)`,
+    [id]
+  );
+  await pool.query(
+    `insert into notas_fiscais (ref, vehicle_id, status, valor, serie, operacao, cfop, destinatario)
+     values ('vamaq-atual-devolucao',$1,'autorizada',400000,'2','devolucao','5918','{}'::jsonb)`,
+    [id]
+  );
+
+  const doCarro = (await notas.listConsignacoesAbertas()).filter((a) => a.vehicle_id === id);
+  assert.equal(
+    doCarro.length,
+    0,
+    "devolvida no MESMO ciclo da entrada continua tirando da lista — comportamento de hoje"
+  );
+});
+
 test("devolver funciona para consignação de outro estado, e sai com 6918", async () => {
   // A ponta seguinte do mesmo defeito: se a lista mostra o carro mas a
   // devolução não o encontra, o botão aparece e não faz nada.
