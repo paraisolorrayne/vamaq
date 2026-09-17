@@ -118,7 +118,10 @@ O financeiro (`db/fin-*.sql`) fica **fora** desse script: vive no schema `fin`, 
 outra conexão (`DATABASE_URL_FIN`, role `vamaq_fin`) e a blindagem tem script próprio
 (`scripts/setup-fin-role.sh`). Ver o cabeçalho de `db/aplicar-schemas.sh`.
 
-Deve criar as tabelas `vehicles` e `vehicle_images`, entre outras. Conferir:
+Deve criar a tabela `vehicles`. (Não existe tabela de fotos: elas vivem na
+coluna `images`, um `jsonb` dentro da própria `vehicles`. As demais tabelas —
+`users`, `notas_fiscais`, `clientes`… — vêm dos outros arquivos que o
+`aplicar-schemas.sh` roda na sequência.) Conferir:
 
 ```bash
 PGPASSWORD='TROQUE_ESTA_SENHA' psql "postgres://vamaq@localhost:5432/vamaq" -c '\dt'
@@ -377,7 +380,9 @@ confirmar `ok`.**
 - **`estoque-ciclo.sql` aplicou, `fin-ciclo.sql` falha:** pare antes do build.
   O `public` sozinho é inofensivo — o código que ainda está no ar não lê a
   coluna nova. Confira a role `vamaq_fin` (`scripts/setup-fin-role.sh`) e rode
-  `psql "$DATABASE_URL_FIN" -f db/fin-ciclo.sql` de novo.
+  `psql "$DATABASE_URL_FIN" -v ON_ERROR_STOP=1 --single-transaction -f db/fin-ciclo.sql`
+  de novo — com as mesmas flags do passo original, senão o psql segue depois do
+  erro e sai com código 0, que é justamente o que não pode acontecer aqui.
 - **Os dois `.sql` aplicaram mas o código subiu antes (ordem invertida):**
   o admin responde 500 nas rotas de veículo (`readVehicles`/`getVehicleById`
   batendo em `SELECT_COLS` sem a coluna `ciclo`). A vitrine pública **não** é
