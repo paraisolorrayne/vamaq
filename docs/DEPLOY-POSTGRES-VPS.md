@@ -18,9 +18,13 @@ Debian/Ubuntu (apt).
   apt-get install -y nodejs
   ```
 - O repositório já clonado na VPS. Ajuste `APP_DIR` abaixo para o caminho real.
-- ⚠️ **Não confundir com `/var/vamaq`:** existe um clone antigo e abandonado
-  nesse path, com histórico divergente — nunca rodar nada lá. O app em
-  produção é sempre `/var/www/vamaq`.
+- ⚠️ **Cuidado com `/var/vamaq`.** Repassado sem data de quando foi observado
+  e **não reverificado nesta sessão** — pode estar desatualizado. Registro:
+  havia, nesse path, um clone antigo e abandonado, com histórico divergente
+  do `main`. Se ainda existir na VPS, nunca rodar nada lá — confira com `pwd`
+  e `git remote -v` antes de aplicar qualquer coisa fora de
+  `/var/www/vamaq` (o `$APP_DIR` de baixo). O app em produção é sempre
+  `/var/www/vamaq`.
 
 ```bash
 export APP_DIR=/var/www/vamaq        # <-- ajuste para o path do repo na VPS
@@ -241,7 +245,7 @@ falha sem ninguém perceber na hora. Leia até o fim antes de rodar.
 ### Ordem exata
 
 ```bash
-cd /var/www/vamaq
+cd "$APP_DIR"
 git pull origin main   # se falhar, ver "Se o git pull falhar" na Seção 1
 
 # public — o runner já inclui estoque-ciclo.sql (arquivo 9/9, ver o
@@ -268,34 +272,47 @@ novo.
 
 ### Smoke check (código 200 não prova nada aqui)
 
-`getAllVehicles` (`src/lib/repositories/vehicles.js`) tem `catch` que devolve
-`[]` — sem o schema do `public` aplicado, a home e o `/acervo` continuam
-respondendo **200, com zero veículos**, e o único sinal é um `console.error`
-no log do pm2.
+Nesta migration, a vitrine pública **não é sinal de nada**: o `SELECT` de
+`src/lib/repositories/vehicles.js` (o que abastece home e `/acervo`) lista as
+colunas por nome, e `ciclo` não está entre elas — aplicar ou não
+`db/estoque-ciclo.sql` não muda uma vírgula do que a vitrine mostra. (Isso é
+diferente de outra migration, anterior a esta, que tocava colunas que a
+consulta pública de fato seleciona — ali sim o `catch` de `getAllVehicles`
+devolvendo `[]` fazia a home ficar no ar com 200 e zero carros. Não é o caso
+aqui; não confundir as duas.)
+
+Quem quebra — e quebra **visivelmente** — é o **admin**: `readVehicles` e
+`getVehicleById` (`src/lib/vehicleStore.js`) passam por `SELECT_COLS`, que
+agora inclui `ciclo`, e não têm `catch` em volta da query — sem a coluna
+aplicada, `/api/admin/vehicles` e as rotas que dependem dela respondem 500 na
+hora.
 
 ```bash
-# 1. a vitrine lista carros de verdade, não só responde 200
+# 1. checagem geral de "o deploy não derrubou o site" — NÃO prova a migration:
+#    ficaria com a mesma cara com ou sem db/estoque-ciclo.sql aplicado
 curl -s https://vamaqmotors.com.br/acervo | grep -o "Tenho Interesse" | wc -l
 # tem que voltar mais que zero. Use `grep -o | wc -l`, não `grep -c`: -c conta
 # LINHAS com ocorrência, e o HTML do Next varia de quebra de linha entre um
 # build e outro — dá pra ler uma queda que não existe.
 
-# 2. a coluna existe no public e o default pegou nas linhas antigas
+# 2. a única prova de que a metade public da migration entrou: a coluna
+#    existe e o default pegou nas linhas antigas
 psql "$DATABASE_URL" -c "select count(*) from vehicles where ciclo <> 1"
 # sem a coluna aplicada isto não devolve um número — devolve
 # "ERROR: column "ciclo" does not exist" na cara. Por isso o check é sobre a
 # query RODAR, não só sobre o valor. Esperado: 0 (nenhum carro trocou de
 # ciclo ainda — é o primeiro deploy da feature).
 
-# 3. o mesmo do lado fin — é o que o check 2 NÃO cobre
+# 3. a única prova do lado fin — o que o check 2 NÃO cobre
 psql "$DATABASE_URL_FIN" -c "select count(*) from fin.transactions where ciclo <> 1"
 # mesma lógica: erro alto se a coluna não existe, 0 é o esperado.
 ```
 
-O check 1 prova que o site está de pé. Os checks 2 e 3 provam que os dois
-schemas aplicaram — e são os únicos que pegam uma falha do lado `fin`: o
-`/acervo` fica bonito mesmo com `fin.transactions` sem `ciclo`, porque essa
-tabela só entra em jogo na hora de emitir uma nota de venda.
+O check 1 só prova que o site continua no ar — um operador cansado que vê
+carros no `/acervo` **não pode concluir daí que a migration entrou**. Só os
+checks 2 e 3 provam a migration de verdade, cada um a sua metade; o 3 é o
+único que pega uma falha do lado `fin`, porque `fin.transactions` sem `ciclo`
+só quebra na hora de emitir uma nota de venda, não num smoke check do site.
 
 ### Se algo falhar no meio
 
@@ -312,10 +329,12 @@ confirmar `ok`.**
   coluna nova. Confira a role `vamaq_fin` (`scripts/setup-fin-role.sh`) e rode
   `psql "$DATABASE_URL_FIN" -f db/fin-ciclo.sql` de novo.
 - **Os dois `.sql` aplicaram mas o código subiu antes (ordem invertida):**
-  sintoma duplo — o admin responde 500 nas rotas de veículo e a vitrine
-  pública fica no ar com zero carros. Aplique o(s) `.sql` que faltou e só
-  então repita `npm run build && pm2 restart vamaq`; reiniciar o pm2 sozinho
-  não resolve.
+  o admin responde 500 nas rotas de veículo (`readVehicles`/`getVehicleById`
+  batendo em `SELECT_COLS` sem a coluna `ciclo`). A vitrine pública **não** é
+  afetada — ela não seleciona essa coluna, então continua mostrando carros
+  normalmente; não deixe isso enganar sobre o estado da migration. Aplique
+  o(s) `.sql` que faltou e só então repita `npm run build && pm2 restart
+  vamaq`; reiniciar o pm2 sozinho não resolve.
 - **Só percebeu depois do deploy completo:** rode os três smoke checks acima
   para descobrir qual conexão ficou pra trás antes de aplicar qualquer coisa
   de novo.
