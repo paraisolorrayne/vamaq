@@ -18,6 +18,9 @@ Debian/Ubuntu (apt).
   apt-get install -y nodejs
   ```
 - O repositório já clonado na VPS. Ajuste `APP_DIR` abaixo para o caminho real.
+- ⚠️ **Não confundir com `/var/vamaq`:** existe um clone antigo e abandonado
+  nesse path, com histórico divergente — nunca rodar nada lá. O app em
+  produção é sempre `/var/www/vamaq`.
 
 ```bash
 export APP_DIR=/var/www/vamaq        # <-- ajuste para o path do repo na VPS
@@ -32,6 +35,37 @@ cd "$APP_DIR"
 git pull origin main
 npm install            # instala o driver pg, entre outros
 ```
+
+### Se o `git pull` falhar (VPS não alcança o GitHub direto)
+
+> ⚠️ **Sintoma:** `fatal: could not read Username for 'https://github.com'`
+> seguido de `fatal: expected flush after ref listing`.
+>
+> Registrado numa depuração de 01–02/09/2026 — **não é fato reverificado
+> depois disso; teste o `git pull` direto primeiro e só use o bundle se ele
+> falhar de novo.** Na época, um `git ls-remote` anônimo contra o mesmo
+> repositório falhava do mesmo jeito, mesmo o repositório sendo **público** e
+> um `curl` feito da própria VPS pegando **200** em
+> `https://github.com/paraisolorrayne/vamaq.git/info/refs?service=git-upload-pack`
+> — a mesma URL que o git usa por baixo. Ou seja: a rede estava boa, quem
+> recusava era o git. Já descartado então: proxy (nenhum no ambiente), DNS
+> (`github.com` resolvia certo), `~/.netrc` (não existia), `~/.gitconfig`
+> global (não existia), credential helper (vazio). **Não checado:**
+> `/etc/gitconfig` (escopo *system*, fora do `--global`) e a versão do git —
+> causa raiz nunca foi encontrada.
+>
+> O caminho que funcionou tira o GitHub do meio — um `git bundle`:
+> ```bash
+> # no Mac, a partir do sha que está rodando na VPS:
+> git bundle create ~/Downloads/vamaq-<sha>.bundle <sha-atual-da-vps>..main
+> git bundle verify ~/Downloads/vamaq-<sha>.bundle
+> scp -i ~/.ssh/vamaq_vps ~/Downloads/vamaq-<sha>.bundle root@<ip-da-vps>:/root/
+>
+> # na VPS:
+> cd "$APP_DIR" && git pull /root/vamaq-<sha>.bundle main
+> ```
+> Depois do `git pull` (por bundle ou direto), segue normal a partir do
+> `npm install`.
 
 ---
 
@@ -208,7 +242,7 @@ falha sem ninguém perceber na hora. Leia até o fim antes de rodar.
 
 ```bash
 cd /var/www/vamaq
-git pull origin main
+git pull origin main   # se falhar, ver "Se o git pull falhar" na Seção 1
 
 # public — o runner já inclui estoque-ciclo.sql (arquivo 9/9, ver o
 # cabeçalho de db/aplicar-schemas.sh). É o caminho seguro: transacional por
