@@ -74,10 +74,19 @@ before(async () => {
   const su = new URL(ADMIN_URL).username || "postgres";
   pool = new pg.Pool({ connectionString: urlFor(su) });
   // schema.sql cria a tabela vehicles, mas SELECT_COLS (vehicleStore.js)
-  // também lista `chassi`, que só existe depois de fiscal-schema.sql — sem
-  // ela, a query do painel falharia por coluna inexistente antes mesmo de
-  // chegar a checar ano_modelo.
-  for (const f of ["schema.sql", "fiscal-schema.sql"]) {
+  // também lista `chassi` (só existe depois de fiscal-schema.sql) e `ciclo`
+  // (só existe depois de estoque-ciclo.sql) — sem elas, a query do painel
+  // falharia por coluna inexistente antes mesmo de chegar a checar ano_modelo.
+  // estoque-ciclo.sql por sua vez depende de auth-schema.sql (tabela users,
+  // referenciada por vehicle_ciclos.encerrado_por) e fiscal-entrada.sql
+  // (coluna `operacao` em notas_fiscais, usada no índice por ciclo).
+  for (const f of [
+    "schema.sql",
+    "auth-schema.sql",
+    "fiscal-schema.sql",
+    "fiscal-entrada.sql",
+    "estoque-ciclo.sql",
+  ]) {
     await pool.query(await readFile(path.join(ROOT, "db", f), "utf8"));
   }
 });
