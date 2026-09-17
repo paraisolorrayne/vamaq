@@ -257,6 +257,12 @@ export async function getVehicleMargins({ onlyWithActivity = true } = {}) {
       -- Uma linha por (carro, ciclo): o carro que voltou na troca é uma nova
       -- aquisição, com custo próprio. Somar os ciclos poria o custo da primeira
       -- compra na base do ICMS da segunda venda (ver notas.js).
+      --
+      -- CONTRATO para quem casa por (vehicle_id, ciclo_atual): um carro que já
+      -- voltou na troca (ciclo avançou) mas ainda não tem NENHUM lançamento no
+      -- ciclo novo só aparece com a linha do ciclo FECHADO anterior — não sai
+      -- uma linha vazia para o ciclo corrente. Ausência é o valor esperado
+      -- nesse caso, não um bug.
       group by v.id, coalesce(t.ciclo, v.ciclo), v.ciclo, v.brand, v.model, v.year, v.placa, v.status
       ${onlyWithActivity ? "having coalesce(sum(t.amount),0) <> 0" : ""}
       order by (coalesce(sum(t.amount) filter (where t.type='revenue'),0) - coalesce(sum(t.amount) filter (where t.type='expense'),0)) desc`

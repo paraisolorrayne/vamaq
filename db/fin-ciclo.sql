@@ -18,10 +18,32 @@ create index if not exists tx_vehicle_ciclo_idx
 
 -- Mesmo carimbo por trigger das notas: vehicle_id aqui é OPCIONAL (despesa da
 -- loja não é de carro nenhum), por isso o `if not null` dentro da função.
+--
+-- É um clone byte a byte de `carimba_ciclo_do_veiculo()` em public
+-- (db/estoque-ciclo.sql), não uma chamada a ela: vamaq_fin não tem CREATE em
+-- public (blindagem — db/fin-blindagem.sql), só é dona do schema fin. Duplicar
+-- a função é o preço de manter essa blindagem; não "limpe" isto achando que é
+-- código repetido por descuido.
+--
+-- BEFORE INSERT OR UPDATE, não só INSERT: o fluxo normal de lançar e só
+-- depois linkar o carro (updateTransaction em finance.js, que edita
+-- vehicle_id livremente) insere com vehicle_id nulo — trigger de INSERT
+-- sozinho nunca carimbaria, e a despesa ficaria presa no ciclo 1 default
+-- mesmo linkando um carro em ciclo 2, contaminando a base do ICMS da venda
+-- errada. Mas UPDATE não pode ser incondicional: reeditar o VALOR de um
+-- lançamento antigo, do ciclo 1, não pode empurrá-lo pro ciclo 2 só porque o
+-- carro já avançou — daí o carimbo no UPDATE só disparar quando o
+-- vehicle_id realmente MUDA (e não fica nulo).
 create or replace function fin.carimba_ciclo_do_veiculo() returns trigger as $$
 begin
-  if new.vehicle_id is not null then
-    select v.ciclo into new.ciclo from public.vehicles v where v.id = new.vehicle_id;
+  if TG_OP = 'INSERT' then
+    if new.vehicle_id is not null then
+      select v.ciclo into new.ciclo from public.vehicles v where v.id = new.vehicle_id;
+    end if;
+  elsif TG_OP = 'UPDATE' then
+    if new.vehicle_id is not null and new.vehicle_id is distinct from old.vehicle_id then
+      select v.ciclo into new.ciclo from public.vehicles v where v.id = new.vehicle_id;
+    end if;
   end if;
   return new;
 end;
@@ -29,11 +51,19 @@ $$ language plpgsql;
 
 drop trigger if exists transactions_carimba_ciclo on fin.transactions;
 create trigger transactions_carimba_ciclo
-  before insert on fin.transactions
+  before insert or update on fin.transactions
   for each row execute function fin.carimba_ciclo_do_veiculo();
 
 -- A view acompanha a agregação da função, para as duas não divergirem no dia
 -- em que alguém finalmente ler a view.
+--
+-- CONTRATO para quem casa por (vehicle_id, ciclo): o `coalesce(t.ciclo,
+-- v.ciclo)` só produz uma linha "vazia" no ciclo corrente quando o LEFT JOIN
+-- não encontra NENHUM lançamento do veículo em NENHUM ciclo; um carro que
+-- voltou na troca e já tem lançamentos do ciclo 1 fechado, mas nenhum ainda
+-- no ciclo 2 aberto, aparece só com a linha do ciclo 1 — sem linha alguma
+-- para o ciclo_atual. Quem casa por (vehicle_id, ciclo_atual) — Tasks 5 e 6 —
+-- tem que tratar essa ausência, não assumir que ela sempre existe.
 --
 -- ciclo/ciclo_atual vão no FIM da lista de colunas, não depois de vehicle_id:
 -- `create or replace view` só permite ACRESCENTAR colunas no final (mudar a
