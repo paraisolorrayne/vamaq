@@ -208,13 +208,23 @@ os 4 em `draft` ficam ocultos até o Mateus mandar as fotos.
    `dodge-ram-2500-night-edition-2021`).
 2. Registre as imagens e publique via SQL (ajuste o slug):
    ```sql
-   -- registrar as fotos (repita por arquivo, position crescente, 1 primária):
-   insert into vehicle_images (vehicle_id, position, is_primary, url)
-   select id, 0, true, '/veiculos/porsche-718-boxster-2020/<arquivo>.jpg'
-   from vehicles where slug = 'porsche-718-boxster-2020';
+   -- registrar as fotos: elas vivem no jsonb `images` do próprio veículo
+   -- ({main, gallery} — ver db/schema.sql), não numa tabela à parte.
+   update vehicles set images = jsonb_build_object(
+     'main',    '/veiculos/porsche-718-boxster-2020/01.jpg',
+     'gallery', jsonb_build_array(
+       '/veiculos/porsche-718-boxster-2020/02.jpg',
+       '/veiculos/porsche-718-boxster-2020/03.jpg'
+     )
+   )
+   where slug = 'porsche-718-boxster-2020';
 
-   -- publicar:
-   update vehicles set status='published', published_at=now()
+   -- publicar no site: quem controla a vitrine é a coluna BOOLEANA `published`.
+   -- `status` é outra coisa — é o ciclo de vida do carro no pátio, e só aceita
+   -- 'disponivel' | 'reservado' | 'vendido' | 'inativo' (VEHICLE_STATUSES, em
+   -- src/lib/vehicleStore.js). Não existe status 'published', nem coluna
+   -- `published_at`.
+   update vehicles set published = true
    where slug = 'porsche-718-boxster-2020';
    ```
 3. `npm run build` + restart.
@@ -239,8 +249,23 @@ falha sem ninguém perceber na hora. Leia até o fim antes de rodar.
 > `ciclo`, e a consulta de margem — `getVehicleMargins` em
 > `src/lib/fin/repositories/finance.js`, que alimenta o `custoAquisicao` que
 > vira a **base do ICMS da nota de venda** em `src/lib/fiscal/notas.js` —
-> quebra com `column t.ciclo does not exist`. Isso só aparece na hora de
-> emitir uma nota, não num smoke check do site.
+> quebra com `column t.ciclo does not exist`.
+>
+> Onde isso aparece: **`/api/admin/financeiro/margens` responde 500**, e com
+> ele o card "Margem por veículo" do painel e a tela `/admin/financeiro/
+> margens` — a rota não tem `try/catch`. A **emissão de nota NÃO cai**: o
+> `try/catch` de `getDadosEmissao` (`src/lib/fiscal/notas.js`) degrada para
+> `custoOrigem = "ausente"` e a tela pede o valor de aquisição à operadora.
+> Degradar não é ficar certo: quem digitar o valor errado erra a base do ICMS
+> em nota autorizada, e ninguém vê erro nenhum na tela. Mesma coisa em
+> `/admin/estoque/entradas-saidas` e no placar de saúde financeira, os outros
+> dois consumidores com `catch`.
+
+> ⚠️ **Nunca re-aplique `db/fin-schema.sql` DEPOIS de `db/fin-ciclo.sql`.**
+> Os dois criam `fin.v_vehicle_margin`, e o de `fin-schema.sql` é a versão
+> **cega ao ciclo**: reaplicá-lo rebaixa a view em silêncio, sem erro nenhum.
+> A ordem correta é sempre `fin-schema.sql` e depois `fin-ciclo.sql`; se
+> precisar mexer no schema do `fin`, rode os dois, nessa ordem.
 
 ### Ordem exata
 
@@ -253,16 +278,24 @@ git pull origin main   # se falhar, ver "Se o git pull falhar" na Seção 1
 # arquivo e idempotente, então rodar de novo num banco já migrado não dói.
 ./db/aplicar-schemas.sh "$DATABASE_URL"
 # alternativa manual, só este arquivo (se já souber que os outros 8 estão em dia):
-# psql "$DATABASE_URL" -f db/estoque-ciclo.sql
+# psql "$DATABASE_URL" -v ON_ERROR_STOP=1 --single-transaction -f db/estoque-ciclo.sql
 
 # fin — fora do runner, outra conexão, outra role. Ver seção 4.
-psql "$DATABASE_URL_FIN" -f db/fin-ciclo.sql
+psql "$DATABASE_URL_FIN" -v ON_ERROR_STOP=1 --single-transaction -f db/fin-ciclo.sql
 
 npm install && npm run build
 pm2 restart vamaq
 
 git rev-parse --short HEAD   # única prova de qual commit ficou rodando — não pular
 ```
+
+**Os dois `-v ON_ERROR_STOP=1 --single-transaction` não são enfeite.** `psql
+-f` sem eles **continua depois de um erro e ainda sai com código 0**: o
+arquivo fica meio aplicado, o terminal despeja um `ERROR` no meio de dezenas
+de linhas e o passo "confirmou `ok`?" da seção *Se algo falhar no meio* fica
+sem sinal nenhum para ler. É o mesmo par de flags que `db/aplicar-schemas.sh`
+já usa em cada arquivo — a alternativa manual só está igualando o padrão da
+casa.
 
 Migration sempre antes do código: `ciclo` entrou no `SELECT_COLS` de
 `src/lib/vehicleStore.js`, que sustenta nove consultas — `readVehicles` e
@@ -306,13 +339,30 @@ psql "$DATABASE_URL" -c "select count(*) from vehicles where ciclo <> 1"
 # 3. a única prova do lado fin — o que o check 2 NÃO cobre
 psql "$DATABASE_URL_FIN" -c "select count(*) from fin.transactions where ciclo <> 1"
 # mesma lógica: erro alto se a coluna não existe, 0 é o esperado.
+
+# 4. os TRIGGERS existem? Os checks 2 e 3 passam com a coluna aplicada e o
+#    trigger não — e nesse meio-estado tudo parece verde (ninguém trocou de
+#    ciclo ainda, então `ciclo <> 1` devolve 0 dos dois lados), enquanto toda
+#    nota e todo lançamento novo nasce carimbado no ciclo 1 PARA SEMPRE. É a
+#    falha mais cara e a mais silenciosa desta migration.
+psql "$DATABASE_URL" -c \
+  "select tgname from pg_trigger where tgname = 'notas_fiscais_carimba_ciclo'"
+psql "$DATABASE_URL_FIN" -c \
+  "select tgname from pg_trigger where tgname = 'transactions_carimba_ciclo'"
+# cada um tem que devolver UMA linha com o nome. "(0 rows)" = trigger ausente:
+# o arquivo .sql rodou pela metade (veja se usou ON_ERROR_STOP) — reaplique-o
+# inteiro antes de seguir.
 ```
 
 O check 1 só prova que o site continua no ar — um operador cansado que vê
-carros no `/acervo` **não pode concluir daí que a migration entrou**. Só os
-checks 2 e 3 provam a migration de verdade, cada um a sua metade; o 3 é o
-único que pega uma falha do lado `fin`, porque `fin.transactions` sem `ciclo`
-só quebra na hora de emitir uma nota de venda, não num smoke check do site.
+carros no `/acervo` **não pode concluir daí que a migration entrou**. Os
+checks 2 e 3 provam as colunas, cada um a sua metade, e o 4 prova o carimbo,
+que é o que faz as colunas valerem alguma coisa. O 3 e o 4 são os únicos que
+pegam uma falha do lado `fin`: sem `fin.transactions.ciclo`,
+`/api/admin/financeiro/margens` responde 500 (o card de margem do painel e a
+tela `/admin/financeiro/margens` ficam vazios), enquanto a emissão de nota
+degrada calada para `custoOrigem = "ausente"` e pede o valor à operadora —
+nada disso aparece num smoke check do site.
 
 ### Se algo falhar no meio
 
@@ -335,6 +385,6 @@ confirmar `ok`.**
   normalmente; não deixe isso enganar sobre o estado da migration. Aplique
   o(s) `.sql` que faltou e só então repita `npm run build && pm2 restart
   vamaq`; reiniciar o pm2 sozinho não resolve.
-- **Só percebeu depois do deploy completo:** rode os três smoke checks acima
+- **Só percebeu depois do deploy completo:** rode os quatro smoke checks acima
   para descobrir qual conexão ficou pra trás antes de aplicar qualquer coisa
   de novo.

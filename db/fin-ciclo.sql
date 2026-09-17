@@ -19,11 +19,23 @@ create index if not exists tx_vehicle_ciclo_idx
 -- Mesmo carimbo por trigger das notas: vehicle_id aqui é OPCIONAL (despesa da
 -- loja não é de carro nenhum), por isso o `if not null` dentro da função.
 --
--- É um clone byte a byte de `carimba_ciclo_do_veiculo()` em public
--- (db/estoque-ciclo.sql), não uma chamada a ela: vamaq_fin não tem CREATE em
--- public (blindagem — db/fin-blindagem.sql), só é dona do schema fin. Duplicar
--- a função é o preço de manter essa blindagem; não "limpe" isto achando que é
+-- É uma função PRÓPRIA, não uma chamada a `carimba_ciclo_do_veiculo()` do
+-- public (db/estoque-ciclo.sql): vamaq_fin não tem CREATE em public
+-- (blindagem — db/fin-blindagem.sql), só é dona do schema fin. Duplicar a
+-- função é o preço de manter essa blindagem; não "limpe" isto achando que é
 -- código repetido por descuido.
+--
+-- ⚠️ AS DUAS NASCERAM IGUAIS E HOJE SÃO DIFERENTES, DE PROPÓSITO. A de public
+-- carimba `notas_fiscais` e é `before insert` só; esta carimba
+-- `fin.transactions` e é `before insert or update`, com o ramo de TG_OP
+-- abaixo. A divergência não é descuido nem drift: nota fiscal nasce já ligada
+-- ao veículo e nenhum código faz `update notas_fiscais set vehicle_id`,
+-- enquanto lançamento financeiro nasce solto e só depois é ligado ao carro
+-- (updateTransaction, em src/lib/fin/repositories/finance.js). NÃO
+-- re-sincronize uma pela outra: copiar a de public para cá devolve o
+-- lançamento ligado depois ao ciclo 1 default, e o custo da PRIMEIRA compra
+-- volta para a base do ICMS da SEGUNDA venda — que é exatamente o buraco que
+-- este arquivo existe para fechar.
 --
 -- BEFORE INSERT OR UPDATE, não só INSERT: o fluxo normal de lançar e só
 -- depois linkar o carro (updateTransaction em finance.js, que edita

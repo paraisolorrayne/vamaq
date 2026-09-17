@@ -80,7 +80,12 @@ test("aplicar o arquivo duas vezes não dói", async () => {
     `select column_default from information_schema.columns
       where table_name='vehicles' and column_name='ciclo'`
   );
-  assert.equal(rows.length, 1);
+  assert.equal(rows.length, 1, "a coluna tem que continuar existindo");
+  // A pergunta que importa: o `default 1` é o que torna a migration
+  // retrocompatível (todo carro antigo fica no ciclo 1 e as guardas comparam
+  // 1 = 1). Conferir só `rows.length` leria a coluna que importa e jogaria
+  // fora o valor dela.
+  assert.equal(rows[0].column_default, "1", "o default 1 tem que sobreviver à reaplicação");
 });
 
 test("o trigger carimba a nota com o ciclo do veículo", async () => {
