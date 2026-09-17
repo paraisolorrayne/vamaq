@@ -382,12 +382,20 @@ export async function totaisDoMes(ano, mes) {
  * filtro de ciclo e a tela ficou para trás, bloqueando a entrada do ciclo
  * novo com a nota autorizada do ciclo velho. Uma função só fecha essa
  * lacuna de vez, em vez de reabri-la na próxima cópia.
+ *
+ * O `order by created_at desc limit 1` iguala esta consulta às irmãs de
+ * getDadosEmissao e NÃO é enfeite: o índice de
+ * notas_fiscais(vehicle_id, operacao, ciclo) (db/estoque-ciclo.sql) é comum,
+ * não único — uma reemissão depois de timeout pode deixar duas linhas
+ * `processando` para o mesmo ciclo. Sem a ordenação, `rows[0]` é a que o
+ * Postgres devolver primeiro, e a mensagem de erro pode citar a nota errada.
  */
 export async function notaEntradaAtiva(vehicleId, ciclo) {
   const { rows } = await query(
     `select ref, status from notas_fiscais
       where vehicle_id=$1 and operacao='entrada' and ciclo=$2
-        and status in ('processando','autorizada')`,
+        and status in ('processando','autorizada')
+      order by created_at desc limit 1`,
     [vehicleId, ciclo]
   );
   return rows[0] || null;
