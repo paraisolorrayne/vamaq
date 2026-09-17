@@ -244,14 +244,20 @@ export async function getVehicleMargins({ onlyWithActivity = true } = {}) {
   // custo de aquisição = despesas na conta 4.1x (Custo de Aquisição de Veículos);
   // custo_total = todas as despesas do veículo (aquisição + preparação + etc.).
   const { rows } = await finQuery(
-    `select v.id as vehicle_id, v.brand, v.model, v.year, v.placa, v.status,
+    `select v.id as vehicle_id,
+            coalesce(t.ciclo, v.ciclo) as ciclo,
+            v.ciclo as ciclo_atual,
+            v.brand, v.model, v.year, v.placa, v.status,
             coalesce(sum(t.amount) filter (where t.type='revenue'), 0) as receita,
             coalesce(sum(t.amount) filter (where t.type='expense'), 0) as custo_total,
             coalesce(sum(t.amount) filter (where t.type='expense' and a.code like '4.1%'), 0) as custo_aquisicao
        from public.vehicles v
        left join fin.transactions t on t.vehicle_id = v.id and t.status in ('confirmed','reconciled')
        left join fin.chart_of_accounts a on a.id = t.account_id
-      group by v.id, v.brand, v.model, v.year, v.placa, v.status
+      -- Uma linha por (carro, ciclo): o carro que voltou na troca é uma nova
+      -- aquisição, com custo próprio. Somar os ciclos poria o custo da primeira
+      -- compra na base do ICMS da segunda venda (ver notas.js).
+      group by v.id, coalesce(t.ciclo, v.ciclo), v.ciclo, v.brand, v.model, v.year, v.placa, v.status
       ${onlyWithActivity ? "having coalesce(sum(t.amount),0) <> 0" : ""}
       order by (coalesce(sum(t.amount) filter (where t.type='revenue'),0) - coalesce(sum(t.amount) filter (where t.type='expense'),0)) desc`
   );
@@ -264,7 +270,8 @@ export async function getVehicleMargins({ onlyWithActivity = true } = {}) {
     const imp = impostosVeiculoUsado(receita, custo_aquisicao, paramsImposto);
     const impostos = round2(imp.icms + imp.pis + imp.cofins);
     return {
-      vehicle_id: r.vehicle_id, brand: r.brand, model: r.model, year: r.year,
+      vehicle_id: r.vehicle_id, ciclo: Number(r.ciclo), ciclo_atual: Number(r.ciclo_atual),
+      brand: r.brand, model: r.model, year: r.year,
       placa: r.placa, status: r.status,
       receita, custo_total, custo_aquisicao,
       resultado,
@@ -606,7 +613,12 @@ export async function getSaudeFinanceira(ano) {
   let comLucro = 0;
   try {
     const margens = await getVehicleMargins({ onlyWithActivity: true });
-    const vendidosComValor = margens.filter((m) => m.status === "vendido" && m.receita > 0);
+    // `status` é o do carro HOJE. Um carro que voltou na troca está
+    // `disponivel` no ciclo 2, e a venda do ciclo 1 sumiria da conta — mas todo
+    // ciclo já encerrado terminou numa venda, por definição.
+    const vendidosComValor = margens.filter(
+      (m) => (m.status === "vendido" || m.ciclo < m.ciclo_atual) && m.receita > 0
+    );
     vendidos = vendidosComValor.length;
     comLucro = vendidosComValor.filter((m) => m.resultado_liquido > 0).length;
   } catch (err) {

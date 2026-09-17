@@ -1,0 +1,57 @@
+-- ============================================================================
+-- VAMAQ MOTORS — o ciclo do veículo chega ao financeiro.
+--
+-- POR QUE ISTO NÃO É SÓ RELATÓRIO: getVehicleMargins (src/lib/fin/repositories/
+-- finance.js) alimenta src/lib/fiscal/notas.js, de onde sai o `custoAquisicao`
+-- que vira a BASE DO ICMS da nota de venda. Num carro que voltou na troca,
+-- somar os dois ciclos colocaria o custo da primeira compra na base do imposto
+-- da segunda venda — erro silencioso, em nota autorizada pela SEFAZ.
+--
+-- Aplicar:  psql "$DATABASE_URL_FIN" -f db/fin-ciclo.sql   (re-aplicável)
+-- Depende de: fin-schema.sql e db/estoque-ciclo.sql (vehicles.ciclo).
+-- ============================================================================
+
+alter table fin.transactions add column if not exists ciclo int not null default 1;
+
+create index if not exists tx_vehicle_ciclo_idx
+  on fin.transactions(vehicle_id, ciclo) where vehicle_id is not null;
+
+-- Mesmo carimbo por trigger das notas: vehicle_id aqui é OPCIONAL (despesa da
+-- loja não é de carro nenhum), por isso o `if not null` dentro da função.
+create or replace function fin.carimba_ciclo_do_veiculo() returns trigger as $$
+begin
+  if new.vehicle_id is not null then
+    select v.ciclo into new.ciclo from public.vehicles v where v.id = new.vehicle_id;
+  end if;
+  return new;
+end;
+$$ language plpgsql;
+
+drop trigger if exists transactions_carimba_ciclo on fin.transactions;
+create trigger transactions_carimba_ciclo
+  before insert on fin.transactions
+  for each row execute function fin.carimba_ciclo_do_veiculo();
+
+-- A view acompanha a agregação da função, para as duas não divergirem no dia
+-- em que alguém finalmente ler a view.
+--
+-- ciclo/ciclo_atual vão no FIM da lista de colunas, não depois de vehicle_id:
+-- `create or replace view` só permite ACRESCENTAR colunas no final (mudar a
+-- posição de uma coluna já existente é erro do Postgres — 42P16, "cannot
+-- change name of view column"). Mesma regra já registrada em fin-blindagem.sql
+-- para a `placa` de fin.v_vehicles.
+create or replace view fin.v_vehicle_margin as
+  select
+    v.id as vehicle_id,
+    v.brand, v.model, v.year, v.placa, v.status,
+    coalesce(sum(t.amount) filter (where t.type = 'revenue'), 0) as receita,
+    coalesce(sum(t.amount) filter (where t.type = 'expense'), 0) as custo_total,
+    coalesce(sum(t.amount) filter (where t.type = 'revenue'), 0)
+      - coalesce(sum(t.amount) filter (where t.type = 'expense'), 0) as resultado,
+    coalesce(t.ciclo, v.ciclo) as ciclo,
+    v.ciclo as ciclo_atual
+  from public.vehicles v
+  left join fin.transactions t
+    on t.vehicle_id = v.id and t.status in ('confirmed', 'reconciled')
+  group by v.id, v.brand, v.model, v.year, v.placa, v.status,
+           coalesce(t.ciclo, v.ciclo), v.ciclo;

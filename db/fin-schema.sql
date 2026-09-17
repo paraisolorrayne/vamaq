@@ -192,6 +192,10 @@ create trigger bills_set_updated_at before update on fin.bills_payable
 
 -- View de margem por veículo: junta lançamentos confirmados ao estoque.
 -- receita − custo (CMV, code 4x) = lucro bruto por carro. Só confirmados.
+--
+-- ATENÇÃO: a forma corrente desta view está em db/fin-ciclo.sql, que a recria
+-- agrupando TAMBÉM por ciclo. Mexeu aqui? Mexa lá — fin-ciclo.sql é aplicado
+-- depois e vence.
 create or replace view fin.v_vehicle_margin as
   select
     v.id as vehicle_id,
