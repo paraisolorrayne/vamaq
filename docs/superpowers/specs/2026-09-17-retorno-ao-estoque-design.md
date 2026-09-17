@@ -138,15 +138,38 @@ Sem o filtro por ciclo, a nota da segunda venda sairia autorizada citando a **co
 errada** — a de meses atrás, de outro vendedor. Erro silencioso, em documento fiscal
 já autorizado.
 
-## Margem e entradas e saídas
+## Margem — e por que ela é fiscal, não só financeira
 
-`fin.v_vehicle_margin` passa a agrupar por `(vehicle_id, coalesce(t.ciclo, v.ciclo))`
-— uma margem por negociação. O `coalesce` cobre o carro sem lançamento nenhum, que
-no `left join` traria `t.ciclo` nulo.
+**Correção ao levantamento inicial (17/09, durante o planejamento).** Eu havia
+registrado que a margem por veículo não tinha consumidor. Meia verdade, e a metade
+que falta é a perigosa:
 
-A view **ainda não tem consumidor** (só existe em `db/fin-schema.sql`; o financeiro
-parou no schema, faltando API e UI). Mudá-la agora não quebra nada e evita que a
-primeira tela do financeiro nasça mostrando duas negociações somadas.
+- a **view** `fin.v_vehicle_margin` de fato não é lida por ninguém;
+- mas a lógica está **duplicada** em `getVehicleMargins` (`finance.js:246-257`), com
+  a mesma agregação por `v.id`, e essa função tem três consumidores.
+
+O terceiro consumidor é `notas.js:51`. Ele tira dali o `custoAquisicao`, que vira a
+**base do ICMS da nota de venda** (`impostosVeiculoUsado`). Num carro em segundo
+ciclo, a soma traria junto o custo da primeira compra: **imposto calculado sobre
+base errada, em nota autorizada pela SEFAZ.** É o mesmo tipo de erro silencioso da
+nota de entrada citada errado, e vale a mesma prioridade.
+
+Então o ciclo tem que chegar às duas:
+
+- `getVehicleMargins` agrupa por `(v.id, coalesce(t.ciclo, v.ciclo))` e devolve
+  `ciclo` e `ciclo_atual` em cada linha;
+- `notas.js` e a tela de entradas e saídas passam a casar por **veículo + ciclo**,
+  não só por veículo;
+- a view acompanha a mesma agregação, para não nascer divergente da função no dia
+  em que alguém a usar.
+
+O `coalesce` cobre o carro sem lançamento nenhum, que no `left join` traria
+`t.ciclo` nulo.
+
+**Um efeito no placar de saúde financeira** (`finance.js:608`): ele conta vendidos
+por `status === "vendido"`, que é o status **atual** do carro. Um carro em ciclo 2
+está `disponivel`, e a venda do ciclo 1 sumiria da conta. Como todo ciclo encerrado
+terminou em venda, a regra passa a ser `status === "vendido" || ciclo < ciclo_atual`.
 
 O relatório de entradas e saídas passa a unir o ciclo corrente, de `vehicles`, com
 os encerrados, de `vehicle_ciclos`.
