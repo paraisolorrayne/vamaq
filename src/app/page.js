@@ -5,6 +5,7 @@ import Footer from "@/components/Footer";
 import HomeMotion from "@/components/HomeMotion";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
 import { getFeaturedVehicles, getAllVehicles } from "@/lib/repositories/vehicles";
+import { escolherVitrine } from "@/lib/home/vitrine";
 import { getWhatsAppGenericUrl } from "@/lib/whatsapp";
 import { anoVeiculo } from "@/lib/anoVeiculo";
 import styles from "./page.module.css";
@@ -55,22 +56,17 @@ function vehicleDifferentials(vehicle) {
     .slice(0, 2);
 }
 
-function newestFirst(vehicles) {
-  return [...vehicles].sort(
-    (a, b) => Date.parse(b.created_at || 0) - Date.parse(a.created_at || 0)
-  );
-}
-
 export default async function HomePage() {
   const [featuredVehicles, allVehicles] = await Promise.all([
     getFeaturedVehicles(4),
     getAllVehicles(),
   ]);
-  const heroVehicle = featuredVehicles[0] || allVehicles[0] || null;
-  const heroId = heroVehicle?.id;
-  const recentVehicles = newestFirst(allVehicles.filter((v) => v.id !== heroId));
-  const editorialVehicles = recentVehicles.slice(0, 6);
-  const narrativeVehicle = recentVehicles[0] || heroVehicle;
+  // Nenhum carro aparece em duas seções — ver src/lib/home/vitrine.js.
+  const {
+    hero: heroVehicle,
+    narrativa: narrativeVehicle,
+    recemChegados: editorialVehicles,
+  } = escolherVitrine(featuredVehicles, allVehicles);
 
   return (
     <>
