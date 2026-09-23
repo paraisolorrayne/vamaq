@@ -9,13 +9,30 @@ const nextConfig = {
     // O sharp já é dependência e o app roda `next start` na VPS, então o
     // otimizador funciona sem nada a mais. Ele transforma sob demanda e
     // guarda em .next/cache/images — a primeira requisição de cada tamanho
-    // custa CPU, as seguintes saem do cache.
+    // custa CPU, as seguintes saem do cache. Depois de cadastrar carro ou de
+    // mexer neste bloco, `node scripts/aquecer-fotos.mjs` paga esse custo no
+    // lugar do visitante.
 
-    // AVIF primeiro (comprime bem melhor que WebP em foto), WebP como queda
-    // para quem não suporta. A ordem importa: é o primeiro match do header
-    // Accept que vale. AVIF custa mais CPU para codificar — aceitável porque
-    // acontece uma vez por tamanho, não por visita.
-    formats: ["image/avif", "image/webp"],
+    // Só WebP. O AVIF saiu em 21/09/2026, medido ao vivo na VPS: a mesma foto,
+    // fria, em w=2048, levou 6,2 s em AVIF contra 2,4 s em WebP — para
+    // economizar 12% (180 kB x 205 kB). E isso sozinha: uma página de veículo
+    // dispara dezenas de tamanhos de uma vez, e com a CPU disputada uma única
+    // foto chegou a 20,7 s. O original já é WebP q90 (ver a rota de upload),
+    // então o ganho do AVIF aqui é pequeno e o custo cai no primeiro visitante
+    // de cada carro recém-cadastrado — justo quem a loja acabou de chamar.
+    formats: ["image/webp"],
+
+    // O padrão é 4 horas: vencido o prazo, a próxima visita recodifica a foto
+    // (X-Nextjs-Cache: STALE), para sempre, e essa CPU disputa com as fotos
+    // novas. Foto de veículo tem uuid no nome — o conteúdo daquele endereço
+    // nunca muda. 31 dias, e não 1 ano, por causa de /images/** fora de
+    // vehicles/: ali um arquivo pode ser trocado mantendo o nome, e o Next não
+    // tem como invalidar (só apagando .next/cache/images).
+    minimumCacheTTL: 2678400,
+
+    // O padrão vai até 3840. O upload limita o original a 2560 px, então 3840
+    // só gera mais uma variante fria para recodificar o mesmo 2560.
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],
 
     // No Next 16 este campo passou a ser restrito: sem allowlist, só 75 é
     // aceito e qualquer outro valor responde 400. Declarado explicitamente
