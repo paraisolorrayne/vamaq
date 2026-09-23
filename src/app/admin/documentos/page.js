@@ -6,7 +6,7 @@ import styles from "../admin.module.css";
 import { DEFAULT_TEMPLATES, camposEmBranco, camposVisiveis } from "@/lib/contractTemplates";
 import { clienteDoDocumento } from "@/lib/documentosCliente";
 import { generateContractPdf, buildContractDoc } from "@/lib/contractPdf";
-import { camposDoTemplate, prefixoDoTemplate } from "@/lib/clientes/prefill";
+import { camposDoTemplate, clienteDoContrato } from "@/lib/clientes/prefill";
 import { formataDoc } from "@/lib/clientes/doc";
 import { camposDoVeiculo } from "@/lib/estoque/prefillVeiculo";
 import { anoVeiculo } from "@/lib/anoVeiculo";
@@ -181,15 +181,13 @@ export default function DocumentosPage() {
   }
 
   async function salvarComoCliente() {
-    const p = prefixoDoTemplate(selectedTemplate.id);
-    const novo = {
-      nome: values[`${p}_nome`],
-      doc: values[`${p}_cpf`],
-      cnh: values[`${p}_cnh`],
-      cnh_categoria: values[`${p}_cnh_categoria`],
-      telefone: values[`${p}_telefone`],
-      email: values[`${p}_email`],
-    };
+    // Mesma função que a gravação do contrato usa no servidor — ver
+    // clienteDoContrato em src/lib/clientes/prefill.js.
+    const novo = clienteDoContrato(selectedTemplate.id, values);
+    if (!novo) {
+      setAvisoCliente({ tipo: "erro", texto: "Preencha o nome do cliente no contrato antes de salvar." });
+      return;
+    }
     setSalvandoCliente(true);
     setAvisoCliente(null);
     try {

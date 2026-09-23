@@ -8,8 +8,8 @@ import fs from "fs/promises";
 import path from "path";
 import { v4 as uuidv4 } from "uuid";
 import { query } from "@/lib/db";
-import { papelPorTemplate } from "@/lib/clientes/prefill";
-import { ligarVeiculo } from "@/lib/clientes/repo";
+import { papelPorTemplate, clienteDoContrato } from "@/lib/clientes/prefill";
+import { ligarVeiculo, acharOuCriarCliente } from "@/lib/clientes/repo";
 
 const DOCS_ROOT = path.join(process.cwd(), "data", "documentos");
 const MAX_BYTES = 20 * 1024 * 1024; // 20 MB — um contrato em PDF vetorial tem poucos KB
@@ -28,6 +28,24 @@ export async function salvarDocumento({
   const relativo = path.join(ano, `${uuidv4()}.pdf`);
   await fs.mkdir(path.join(DOCS_ROOT, ano), { recursive: true });
   await fs.writeFile(path.join(DOCS_ROOT, relativo), buffer);
+
+  // Ninguém escolheu um cliente no seletor: o cliente é quem está no contrato.
+  // Antes isso dependia do botão "Salvar como cliente", que fica ACIMA do
+  // formulário — e o contrato digitado à mão era gravado sem cliente, sem
+  // vínculo e sem aviso (21/09/2026). Como o vínculo logo abaixo, é efeito
+  // colateral desejável: falhar aqui não pode impedir o contrato de ser gravado.
+  if (!clienteId) {
+    try {
+      const doContrato = clienteDoContrato(tipo, dados);
+      if (doContrato) {
+        const res = await acharOuCriarCliente(doContrato);
+        if (res.error) console.error("Cliente do contrato não cadastrado:", res.error);
+        clienteId = res.cliente?.id || null;
+      }
+    } catch (err) {
+      console.error("Contrato segue, mas o cadastro do cliente falhou:", err);
+    }
+  }
 
   let rows;
   try {

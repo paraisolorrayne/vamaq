@@ -4,7 +4,7 @@
  * e devolve {error} em vez de lançar quando o erro é do operador.
  */
 import { query } from "@/lib/db";
-import { normalizaDoc } from "@/lib/clientes/doc";
+import { normalizaDoc, docValido } from "@/lib/clientes/doc";
 import { prepararCampos } from "@/lib/clientes/campos";
 import { clausulaBuscaNome, aplicarLimite } from "@/lib/clientes/busca";
 
@@ -208,6 +208,39 @@ export async function createCliente(data) {
     CAMPOS.map((c) => v[c])
   );
   return { cliente: rows[0] };
+}
+
+/**
+ * Acha o cliente pelo CPF/CNPJ ou cadastra um novo. Usado pela gravação do
+ * contrato (src/lib/documentos.js), que não pode depender de alguém lembrar
+ * de clicar em "Salvar como cliente".
+ *
+ * Sem documento válido devolve {cliente: null} e não cadastra: nome sozinho
+ * não identifica ninguém, e cada contrato viraria mais um homônimo na ficha.
+ * Quem já existe NÃO é atualizado com o que veio do contrato — a ficha é da
+ * secretaria, e um telefone digitado às pressas não pode passar por cima dela.
+ */
+export async function acharOuCriarCliente(data) {
+  const doc = normalizaDoc(data?.doc);
+  if (!doc || !docValido(doc)) return { cliente: null };
+
+  const porDoc = () => query(`select * from clientes where doc = $1`, [doc]);
+
+  const existente = await porDoc();
+  if (existente.rows.length) return { cliente: existente.rows[0], criado: false };
+
+  try {
+    const res = await createCliente(data);
+    if (res.error) return { error: res.error };
+    return { cliente: res.cliente, criado: true };
+  } catch (err) {
+    // Corrida: outra aba cadastrou o mesmo CPF entre o select e o insert.
+    if (err.code === "23505" && err.constraint === "clientes_doc_key") {
+      const { rows } = await porDoc();
+      if (rows.length) return { cliente: rows[0], criado: false };
+    }
+    throw err;
+  }
 }
 
 export async function updateCliente(id, data) {

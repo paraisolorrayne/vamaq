@@ -141,3 +141,37 @@ test("destinatarioDoCliente com cliente nulo devolve todos os campos vazios", ()
   assert.equal(d.nome, "");
   assert.equal(d.doc, "");
 });
+
+// O caminho inverso: do contrato digitado para o cadastro. Ver
+// tests/contrato-cadastra-cliente.test.mjs para o defeito que motivou.
+test("clienteDoContrato lê a ficha certa de cada modelo", async () => {
+  const { clienteDoContrato } = await import("../src/lib/clientes/prefill.js");
+  const c = clienteDoContrato("compra-venda", {
+    vendedor_nome: " Carlos Teste ",
+    vendedor_cpf: "123.456.789-00",
+    vendedor_endereco: "Rua A, 1",
+    comprador_nome: "Não é este",
+  });
+  assert.equal(c.nome, "Carlos Teste");
+  assert.equal(c.doc, "123.456.789-00");
+  assert.equal(c.obs, "Endereço informado no contrato: Rua A, 1");
+  assert.equal(c.logradouro, undefined);
+});
+
+test("clienteDoContrato: sem nome ou modelo desconhecido devolve null", async () => {
+  const { clienteDoContrato } = await import("../src/lib/clientes/prefill.js");
+  assert.equal(clienteDoContrato("venda", { comprador_cpf: "123" }), null);
+  assert.equal(clienteDoContrato("recibo", { comprador_nome: "X" }), null);
+  assert.equal(clienteDoContrato("venda", null), null);
+});
+
+test("clienteDoContrato leva o representante só no modelo de venda", async () => {
+  const { clienteDoContrato } = await import("../src/lib/clientes/prefill.js");
+  const c = clienteDoContrato("venda", {
+    comprador_nome: "Transportes Teste LTDA",
+    comprador_representante_nome: "Ana",
+    comprador_representante_cpf: "987.654.321-00",
+  });
+  assert.equal(c.representante_nome, "Ana");
+  assert.equal(clienteDoContrato("consignacao", { proprietario_nome: "Z" }).representante_nome, undefined);
+});

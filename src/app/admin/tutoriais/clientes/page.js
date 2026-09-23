@@ -125,16 +125,17 @@ export default function TutorialClientesPage() {
           </p>
           <div className={t.warning}>
             <span className={t.boxLabel}>
-              &quot;Salvar como cliente&quot; não leva o endereço
+              Cliente cadastrado pelo contrato vem sem o endereço separado
             </span>
             <p>
-              Dentro do gerador de contrato, o botão{" "}
-              <span className={t.uiButton}>Salvar como cliente</span> cadastra
-              quem foi digitado à mão — mas <strong>sem o endereço</strong>.
-              No contrato o endereço é uma linha só; separá-lo em partes na
-              adivinhação criaria um endereço errado na nota fiscal. Quem
-              cadastrou por ali completa o endereço depois, na ficha do
-              cliente.
+              Ao baixar o PDF de um contrato digitado à mão, o sistema cadastra
+              o cliente sozinho (pelo CPF/CNPJ — se já existe, só liga o
+              contrato a ele). O endereço vem como{" "}
+              <strong>uma linha na observação</strong>, não nos campos: no
+              contrato ele é uma linha só, e separá-lo em partes na adivinhação
+              criaria um endereço errado na nota fiscal. Complete o endereço
+              depois, na ficha do cliente. Contrato sem CPF/CNPJ não cadastra
+              ninguém.
             </p>
           </div>
         </div>

@@ -202,12 +202,14 @@ export default function TutorialDocumentosPage() {
           <div className={guia.tip}>
             <span className={guia.boxLabel}>Cliente não cadastrado?</span>
             <p>
-              O botão{" "}
+              Não precisa fazer nada: ao baixar o PDF, quem você digitou à
+              mão é cadastrado sozinho, pelo CPF/CNPJ, e ligado ao carro. (O
+              botão{" "}
               <span className={guia.uiButton}>Salvar como cliente</span>{" "}
-              cadastra quem você digitou à mão nos campos do contrato — mas{" "}
-              <strong>sem o endereço</strong>: no contrato ele é uma linha só,
-              e separar em partes na adivinhação criaria um endereço errado na
-              nota fiscal. Veja o{" "}
+              faz o mesmo antes da hora.) O endereço vai como{" "}
+              <strong>uma linha na observação</strong>: no contrato ele é uma
+              linha só, e separar em partes na adivinhação criaria um endereço
+              errado na nota fiscal. Veja o{" "}
               <Link href="/admin/tutoriais/clientes">
                 tutorial de Clientes
               </Link>{" "}

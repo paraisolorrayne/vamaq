@@ -60,6 +60,44 @@ export function camposDoTemplate(templateId, cliente) {
   return campos;
 }
 
+/**
+ * O caminho inverso do camposDoTemplate: do que foi digitado no contrato para
+ * o cadastro do cliente. Devolve null quando o contrato não tem nome.
+ *
+ * Fonte única — é usado pelo botão "Salvar como cliente" e pela gravação do
+ * contrato (src/lib/documentos.js), que cadastra o cliente sozinha.
+ *
+ * O endereço NÃO vai para logradouro/município/UF: no contrato ele é uma linha
+ * só, e a NF-e lê os campos separados (destinatarioDoCliente). Adivinhar a
+ * quebra estragaria a nota. A linha fica na observação, para a secretaria
+ * completar a ficha sem ter que reabrir o contrato.
+ */
+export function clienteDoContrato(templateId, values) {
+  const modelo = MODELOS[templateId];
+  if (!modelo || !values) return null;
+  const p = modelo.prefixo;
+
+  const nome = texto(values[`${p}_nome`]);
+  if (!nome) return null;
+
+  const endereco = texto(values[`${p}_endereco`]);
+  const cliente = {
+    nome,
+    doc: texto(values[`${p}_cpf`]),
+    cnh: texto(values[`${p}_cnh`]),
+    cnh_categoria: texto(values[`${p}_cnh_categoria`]),
+    telefone: texto(values[`${p}_telefone`]),
+    email: texto(values[`${p}_email`]),
+    obs: endereco ? `Endereço informado no contrato: ${endereco}` : "",
+  };
+
+  if (templateId === "venda") {
+    cliente.representante_nome = texto(values.comprador_representante_nome);
+    cliente.representante_cpf = texto(values.comprador_representante_cpf);
+  }
+  return cliente;
+}
+
 /** Destinatário da NF-e. Sempre com todas as chaves — a validação é na emissão. */
 export function destinatarioDoCliente(cliente) {
   const c = cliente || {};
