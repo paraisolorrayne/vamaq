@@ -1,5 +1,6 @@
 import { requireRole } from "@/lib/auth/dal";
 import { listNotas, focusEnabled, listConsignacoesAbertas } from "@/lib/fiscal/notas";
+import { veiculosSemEntrada } from "@/lib/fiscal/entradaPendente";
 import { readVehicles } from "@/lib/vehicleStore";
 import FiscalClient from "./FiscalClient";
 
@@ -19,13 +20,11 @@ export default async function FiscalPage() {
 
   // A de ENTRADA é o contrário: nasce da COMPRA, e é ela que destrava a venda
   // (o texto da nota de saída cita o número da entrada). Sai da lista o carro
-  // que já tem entrada viva — não existe segunda entrada para o mesmo veículo.
-  const comEntrada = new Set(
-    notas
-      .filter((n) => n.operacao === "entrada" && ["processando", "autorizada"].includes(n.status))
-      .map((n) => n.vehicle_id)
-  );
-  const semEntrada = veiculos.filter((v) => !comEntrada.has(v.id));
+  // que já tem entrada viva NO CICLO CORRENTE — um mesmo veículo tem uma
+  // entrada por ciclo, porque o carro que volta na troca é uma nova aquisição.
+  // Casar só por vehicle_id escondia esse carro do seletor para sempre, e o
+  // seletor é o único caminho da tela para /admin/fiscal/entrada/[id].
+  const semEntrada = veiculosSemEntrada(veiculos, notas);
 
   return (
     <FiscalClient

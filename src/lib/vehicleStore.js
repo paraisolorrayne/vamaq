@@ -8,11 +8,12 @@
  */
 import { getPool } from '@/lib/db';
 import { normalizaMarca, normalizaModelo } from '@/lib/marcaVeiculo';
+import { podeRetornarAoEstoque } from '@/lib/estoque/retornoVeiculo';
 
 const SELECT_COLS = `
   id, slug, brand, model, year, ano_modelo, price, quilometragem,
   fuel, transmission, power, color, body_type, featured, badge,
-  opcionais, blindagem, images, specs, description, published, status,
+  opcionais, blindagem, images, specs, description, published, status, ciclo,
   placa, chassi, documentos, renave,
   data_entrada, data_saida,
   created_at, updated_at
@@ -177,7 +178,13 @@ export async function deleteVehicle(id) {
 // Ciclo de vida por status (PR-C do ADR-002). Substitui a exclusão na UI:
 // 'vendido'/'inativo' também saem do site (published=false) na mesma operação,
 // preservando o histórico do veículo. Retorna o veículo atualizado ou null.
-export async function setVehicleStatus(id, status) {
+// `republicar` existe porque devolver um carro ao estoque não republicava: esta
+// função só mexia em `published` para TIRAR do ar, e "Reativar" devolvia o carro
+// ao estoque mas não ao site, sem avisar ninguém. Não vira automático em toda
+// volta para `disponivel` porque o cadastro tem uma caixa `published` própria
+// (estoque/novo/page.js) — "disponível e fora do site" é um estado que alguém
+// escolhe. Só as ações em que a pessoa declarou a intenção passam `true`.
+export async function setVehicleStatus(id, status, { republicar = false } = {}) {
   const pool = getPool();
   if (!pool) throw new Error('DATABASE_URL ausente');
   if (!VEHICLE_STATUSES.includes(status)) {
@@ -185,6 +192,8 @@ export async function setVehicleStatus(id, status) {
   }
   // vendido/inativo somem do site; disponível/reservado não mexem em published.
   const unpublish = status === 'vendido' || status === 'inativo';
+  // Sair do site vence o republicar: "marcar vendido" não pode pôr no ar.
+  const publicar = republicar && !unpublish;
   // Marcar vendido carimba a data de saída — é o momento em que ela é
   // conhecida, e pedir para a operadora digitar de novo o que o sistema acabou
   // de saber é como o campo ficaria sempre vazio. `coalesce` protege quem já
@@ -193,16 +202,109 @@ export async function setVehicleStatus(id, status) {
   const { rows } = await pool.query(
     `update vehicles
         set status = $2,
-            published = case when $3 then false else published end,
+            published = case
+              when $3 then false
+              when $4 then true
+              else published
+            end,
             data_saida = case
               when $2 = 'vendido' then coalesce(data_saida, current_date)
               else data_saida
             end
       where id = $1
       returning ${SELECT_COLS}`,
-    [id, status, unpublish]
+    [id, status, unpublish, publicar]
   );
   return rows.length ? rowToVehicle(rows[0]) : null;
+}
+
+/**
+ * O carro vendido volta ao estoque, abrindo um ciclo novo.
+ *
+ * É o caso do carro que a Vamaq vendeu e recebeu de VOLTA como parte do
+ * pagamento de outro (Mayra, 17/09/2026). Fiscalmente é uma nova aquisição:
+ * nota de entrada própria, custo próprio, e a próxima nota de venda cita ESSA
+ * entrada — por isso um ciclo novo, e não só um status trocado.
+ *
+ * Tudo numa transação com `for update`: o histórico e os quatro campos do
+ * veículo têm que cair juntos, e dois cliques simultâneos abririam dois ciclos.
+ * Por isso também não reusa setVehicleStatus, que abriria a própria transação.
+ */
+export async function retornarAoEstoque(id, userId) {
+  const pool = getPool();
+  if (!pool) throw new Error('DATABASE_URL ausente');
+
+  const client = await pool.connect();
+  try {
+    await client.query('begin');
+
+    const atual = await client.query(
+      `select id, status, ciclo, data_entrada, data_saida, price
+         from vehicles where id = $1 for update`,
+      [id]
+    );
+    if (!atual.rows.length) {
+      // .catch() aqui pela mesma razão do catch mais abaixo: numa conexão
+      // morta o rollback rejeitaria, e isso não pode impedir o retorno de
+      // { error } — a função continuaria "explodindo" pelo motivo errado.
+      await client.query('rollback').catch(() => {});
+      return { error: 'Veículo não encontrado.' };
+    }
+    // Mesma regra do botão na lista — reconferida aqui porque a rota é
+    // alcançável fora dela (link salvo, histórico do navegador).
+    if (!podeRetornarAoEstoque(atual.rows[0])) {
+      await client.query('rollback').catch(() => {});
+      return {
+        error: 'Só um veículo vendido volta ao estoque. Este está como ' +
+          `"${atual.rows[0].status}".`,
+      };
+    }
+
+    const v = atual.rows[0];
+    // O ciclo que fecha vai para o histórico ANTES de as colunas serem
+    // reescritas: data_entrada e data_saida são uma só de cada, e sem isto a
+    // compra original sumiria do relatório de entradas e saídas.
+    await client.query(
+      `insert into vehicle_ciclos
+         (vehicle_id, ciclo, data_entrada, data_saida, price, encerrado_por)
+       values ($1,$2,$3,$4,$5,$6)`,
+      [id, v.ciclo, v.data_entrada, v.data_saida, v.price, userId || null]
+    );
+
+    // A entrada é HOJE: é a data da nova aquisição, e é dela que a coluna
+    // "Qtd dias" da lista de estoque passa a contar. O preço fica como estava —
+    // é ponto de partida para reprecificar, não um número a adivinhar.
+    const { rows } = await client.query(
+      `update vehicles
+          set ciclo = ciclo + 1,
+              status = 'disponivel',
+              published = true,
+              data_entrada = current_date,
+              data_saida = null
+        where id = $1
+        returning ${SELECT_COLS}`,
+      [id]
+    );
+
+    await client.query('commit');
+    return { ok: true, vehicle: rowToVehicle(rows[0]) };
+  } catch (err) {
+    await client.query('rollback').catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+/** Os ciclos já encerrados de todos os carros — o passado do pátio. */
+export async function readCiclosEncerrados() {
+  const pool = getPool();
+  if (!pool) return [];
+  const { rows } = await pool.query(
+    `select vehicle_id, ciclo, data_entrada, data_saida, price
+       from vehicle_ciclos order by vehicle_id, ciclo`
+  );
+  return rows;
 }
 
 // --- Documentos do veículo (PR-Inventário) -------------------------------

@@ -5,9 +5,18 @@ import {
   updateVehicle,
   deleteVehicle,
   setVehicleStatus,
+  retornarAoEstoque,
 } from "@/lib/vehicleStore";
 import { requireApiRole } from "@/lib/auth/api";
 import { ligarVeiculo } from "@/lib/clientes/repo";
+
+// Mesmo padrão de src/lib/fiscal/notas.js (lá a constante não é exportada, e
+// esta rota não tem por que depender do módulo fiscal só por causa de uma
+// regex): id vem cru da URL, e um id malformado bate direto no banco dentro
+// de retornarAoEstoque como erro de sintaxe do Postgres — 500 pra quem só
+// digitou (ou colou) um id errado. Checando aqui, vira o mesmo 400 "não
+// encontrado" de um id bem-formado que não existe.
+const UUID_VALIDO = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function GET(_request, { params }) {
   const auth = await requireApiRole();
@@ -68,8 +77,24 @@ export async function PATCH(request, { params }) {
 
   try {
     const { id } = await params;
-    const { status, clienteId } = await request.json();
-    const updated = await setVehicleStatus(id, status);
+    const { status, clienteId, acao, republicar } = await request.json();
+
+    // Retorno ao estoque é ação própria, não um status: ela abre um ciclo novo
+    // e grava o anterior no histórico, o que `setVehicleStatus` não faz.
+    if (acao === "retornar-ao-estoque") {
+      if (!UUID_VALIDO.test(id)) {
+        return NextResponse.json({ error: "Veículo não encontrado." }, { status: 400 });
+      }
+      const r = await retornarAoEstoque(id, auth.user?.id || null);
+      if (r.error) return NextResponse.json({ error: r.error }, { status: 400 });
+
+      revalidatePath('/');
+      revalidatePath('/acervo');
+      if (r.vehicle.slug) revalidatePath(`/veiculo/${r.vehicle.slug}`);
+      return NextResponse.json(r.vehicle);
+    }
+
+    const updated = await setVehicleStatus(id, status, { republicar: Boolean(republicar) });
     if (!updated) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }

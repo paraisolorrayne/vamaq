@@ -39,17 +39,21 @@ export async function getFiscalConfig() {
  */
 export async function getDadosEmissao(vehicleId) {
   const v = await query(
-    `select id, brand, model, year, price, placa, chassi, status
+    `select id, brand, model, year, price, placa, chassi, status, ciclo
        from vehicles where id = $1`,
     [vehicleId]
   );
   if (!v.rows.length) return null;
+  const ciclo = v.rows[0].ciclo;
 
   let custoAquisicao = 0;
   let custoOrigem = "ausente";
   try {
     const margens = await getVehicleMargins({ onlyWithActivity: false });
-    const m = margens.find((x) => x.vehicle_id === vehicleId);
+    // Por veículo E ciclo: o carro que voltou na troca tem uma linha por
+    // negociação, e o custo da primeira compra não pode virar base do ICMS da
+    // segunda venda.
+    const m = margens.find((x) => x.vehicle_id === vehicleId && x.ciclo === ciclo);
     if (m && m.custo_aquisicao > 0) {
       custoAquisicao = m.custo_aquisicao;
       custoOrigem = "financeiro";
@@ -59,15 +63,22 @@ export async function getDadosEmissao(vehicleId) {
     custoOrigem = "ausente";
   }
 
+  // TODAS as consultas abaixo são do CICLO CORRENTE. Um carro que voltou na
+  // troca tem as notas do ciclo anterior ainda gravadas: sem o filtro, a
+  // guarda diria "este veículo já tem nota" e a segunda negociação travaria —
+  // e, pior, o número da entrada citado no texto obrigatório da nota de venda
+  // seria o da compra de meses atrás, de outro vendedor.
+
   // SÓ SAÍDA. Sem este filtro, a nota de ENTRADA do carro apareceria como
   // "este veículo já tem nota fiscal" na tela de venda — ou seja, emitir a
   // entrada (que é o passo obrigatório) travaria a venda do mesmo carro. Um
   // veículo tem as duas notas por definição.
   const { rows: notasAtivas } = await query(
     `select ref, status from notas_fiscais
-      where vehicle_id = $1 and operacao = 'saida' and status in ('processando','autorizada')
+      where vehicle_id = $1 and operacao = 'saida' and ciclo = $2
+        and status in ('processando','autorizada')
       order by created_at desc limit 1`,
-    [vehicleId]
+    [vehicleId, ciclo]
   );
 
   // O número da nota de ENTRADA emitida pelo próprio sistema. O texto
@@ -75,10 +86,10 @@ export async function getDadosEmissao(vehicleId) {
   // ligação entre as duas notas se perde por um dígito trocado.
   const { rows: entrada } = await query(
     `select numero from notas_fiscais
-      where vehicle_id = $1 and operacao = 'entrada' and status = 'autorizada'
-        and numero is not null
+      where vehicle_id = $1 and operacao = 'entrada' and ciclo = $2
+        and status = 'autorizada' and numero is not null
       order by created_at desc limit 1`,
-    [vehicleId]
+    [vehicleId, ciclo]
   );
 
   return {
@@ -135,10 +146,17 @@ export async function emitirNotaVeiculo(
   // Por OPERAÇÃO: um carro tem uma nota de entrada (quando comprado de pessoa
   // física) e uma de saída. Sem este filtro, a entrada recém-emitida bloquearia
   // a venda do mesmo carro.
+  //
+  // E POR CICLO: esta é a guarda que de fato BLOQUEIA a emissão (getDadosEmissao
+  // já trouxe `notaExistente` só para a tela mostrar). Sem o filtro aqui, a
+  // nota de saída do ciclo anterior — carro vendido e devolvido na troca —
+  // travaria a venda do ciclo novo, que é exatamente o caso que o retorno ao
+  // estoque (esta task) existe para destravar.
   const { rows: existentes } = await query(
     `select ref, status from notas_fiscais
-      where vehicle_id=$1 and operacao='saida' and status in ('processando','autorizada')`,
-    [vehicleId]
+      where vehicle_id=$1 and operacao='saida' and ciclo=$2
+        and status in ('processando','autorizada')`,
+    [vehicleId, dados.veiculo.ciclo]
   );
   if (existentes.length) {
     // Mesma distinção da tela: nota em processamento não se cancela (não tem
@@ -354,6 +372,36 @@ export async function totaisDoMes(ano, mes) {
 }
 
 /**
+ * A nota de ENTRADA ativa (processando ou autorizada) de um veículo, NO
+ * CICLO informado — não em qualquer ciclo do veículo.
+ *
+ * Compartilhada entre a guarda de `emitirNotaEntradaVeiculo` (abaixo) e a
+ * tela de entrada (src/app/admin/fiscal/entrada/[vehicleId]/page.js), que
+ * decide sozinha se mostra o formulário ou o aviso "já tem nota". As duas
+ * já foram cópias divergentes da mesma pergunta uma vez — a guarda ganhou o
+ * filtro de ciclo e a tela ficou para trás, bloqueando a entrada do ciclo
+ * novo com a nota autorizada do ciclo velho. Uma função só fecha essa
+ * lacuna de vez, em vez de reabri-la na próxima cópia.
+ *
+ * O `order by created_at desc limit 1` iguala esta consulta às irmãs de
+ * getDadosEmissao e NÃO é enfeite: o índice de
+ * notas_fiscais(vehicle_id, operacao, ciclo) (db/estoque-ciclo.sql) é comum,
+ * não único — uma reemissão depois de timeout pode deixar duas linhas
+ * `processando` para o mesmo ciclo. Sem a ordenação, `rows[0]` é a que o
+ * Postgres devolver primeiro, e a mensagem de erro pode citar a nota errada.
+ */
+export async function notaEntradaAtiva(vehicleId, ciclo) {
+  const { rows } = await query(
+    `select ref, status from notas_fiscais
+      where vehicle_id=$1 and operacao='entrada' and ciclo=$2
+        and status in ('processando','autorizada')
+      order by created_at desc limit 1`,
+    [vehicleId, ciclo]
+  );
+  return rows[0] || null;
+}
+
+/**
  * Emite a NF-e de ENTRADA de um veículo comprado de pessoa física.
  *
  * É o passo que hoje trava a operação: o texto obrigatório da nota de VENDA
@@ -375,15 +423,15 @@ export async function emitirNotaEntradaVeiculo(
 
   // Diferente da saída, a entrada NÃO exige veículo vendido — ela acontece na
   // compra, com o carro entrando no estoque.
-  const { rows: existentes } = await query(
-    `select ref, status from notas_fiscais
-      where vehicle_id=$1 and operacao='entrada' and status in ('processando','autorizada')`,
-    [vehicleId]
-  );
-  if (existentes.length) {
+  //
+  // POR CICLO: o carro que voltou na troca já tem uma entrada autorizada do
+  // ciclo anterior — sem o filtro, essa guarda bloquearia a entrada da
+  // recompra, e a segunda negociação nunca sairia do papel.
+  const existente = await notaEntradaAtiva(vehicleId, dados.veiculo.ciclo);
+  if (existente) {
     return {
       error:
-        existentes[0].status === "processando"
+        existente.status === "processando"
           ? "A nota de entrada deste veículo já foi enviada e está sendo autorizada pela SEFAZ. Aguarde alguns segundos — não emita de novo."
           : "Este veículo já tem nota de entrada autorizada. Cancele a atual antes de emitir outra.",
     };
@@ -453,9 +501,15 @@ export async function listConsignacoesAbertas() {
       where n.operacao = 'entrada'
         and n.status = 'autorizada'
         and n.cfop = any($1)
+        -- POR CICLO TAMBÉM, não só por veículo: sem d.ciclo = n.ciclo, a
+        -- devolução de uma consignação ANTIGA (ciclo 1) apaga da lista uma
+        -- consignação NOVA e de verdade aberta (ciclo 2) — a entrada nova
+        -- some da tela sem nenhum aviso, porque o NOT EXISTS já achava uma
+        -- devolução para aquele vehicle_id, de outro ciclo.
         and not exists (
           select 1 from notas_fiscais d
            where d.vehicle_id = n.vehicle_id
+             and d.ciclo = n.ciclo
              and d.operacao = 'devolucao'
              and d.status in ('processando','autorizada')
         )
@@ -479,12 +533,15 @@ export async function devolverConsignacaoVeiculo(vehicleId) {
   if (!dados) return { error: "Veículo não encontrado." };
   if (!dados.config) return { error: "Parâmetros fiscais não cadastrados. Peça ao contador." };
 
+  // POR CICLO: sem o filtro, a entrada de consignação de um ciclo anterior
+  // (carro que voltou na troca e virou uma negociação nova) autorizaria a
+  // devolução de uma consignação que já foi encerrada há muito tempo.
   const { rows: entradas } = await query(
     `select ref, valor, destinatario from notas_fiscais
       where vehicle_id=$1 and operacao='entrada' and status='autorizada'
-        and cfop = any($2)
+        and ciclo=$3 and cfop = any($2)
       order by created_at desc limit 1`,
-    [vehicleId, CFOP_CONSIGNACAO_RECEBIDA]
+    [vehicleId, CFOP_CONSIGNACAO_RECEBIDA, dados.veiculo.ciclo]
   );
   if (!entradas.length) {
     return {
@@ -493,11 +550,15 @@ export async function devolverConsignacaoVeiculo(vehicleId) {
     };
   }
 
+  // Mesma razão: "já devolvido" só vale DENTRO do ciclo corrente. Um carro
+  // devolvido no ciclo 1 pode voltar a entrar em consignação num ciclo novo, e
+  // essa devolução antiga não pode bloquear a de agora.
   const { rows: jaDevolvido } = await query(
     `select status from notas_fiscais
-      where vehicle_id=$1 and operacao='devolucao' and status in ('processando','autorizada')
+      where vehicle_id=$1 and operacao='devolucao' and ciclo=$2
+        and status in ('processando','autorizada')
       limit 1`,
-    [vehicleId]
+    [vehicleId, dados.veiculo.ciclo]
   );
   if (jaDevolvido.length) {
     return {

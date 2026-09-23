@@ -1,7 +1,8 @@
 import { requireRole } from "@/lib/auth/dal";
 import { canAccessPath } from "@/lib/auth/permissions";
-import { readVehicles } from "@/lib/vehicleStore";
+import { readVehicles, readCiclosEncerrados } from "@/lib/vehicleStore";
 import { getVehicleMargins } from "@/lib/fin/repositories/finance";
+import { linhasComCiclos } from "@/lib/estoque/ciclosDoVeiculo";
 import EntradasSaidasClient from "./EntradasSaidasClient";
 
 export const metadata = {
@@ -29,29 +30,19 @@ export default async function EntradasSaidasPage() {
     }
   }
 
-  const porVeiculo = new Map(margens.map((m) => [m.vehicle_id, m]));
-  const linhas = veiculos.map((v) => {
-    const m = porVeiculo.get(v.id);
-    return {
-      id: v.id,
-      brand: v.brand,
-      model: v.model,
-      year: v.year,
-      ano_modelo: v.ano_modelo,
-      placa: v.placa,
-      chassi: v.chassi,
-      status: v.status,
-      data_entrada: v.data_entrada ? String(v.data_entrada).slice(0, 10) : null,
-      data_saida: v.data_saida ? String(v.data_saida).slice(0, 10) : null,
-      // Zero NÃO é valor: getVehicleMargins devolve 0 para carro sem lançamento
-      // nenhum, e "R$ 0,00" na coluna Compra se lê como "comprado de graça".
-      // Ausência de lançamento tem que aparecer como ausência.
-      compra: m && m.custo_aquisicao > 0 ? m.custo_aquisicao : null,
-      venda: m && m.receita > 0 ? m.receita : null,
-      resultado:
-        m && (m.custo_aquisicao > 0 || m.receita > 0) ? m.resultado_liquido : null,
-    };
-  });
+  // Os ciclos encerrados: sem eles, a compra original do carro que voltou na
+  // troca some do relatório que existe justamente para registrar entradas e
+  // saídas do pátio.
+  let ciclos = [];
+  try {
+    ciclos = await readCiclosEncerrados();
+  } catch {
+    // Mesma postura do financeiro acima: a tela cai para o ciclo corrente, que
+    // é o que ela já mostrava antes de existir ciclo.
+    ciclos = [];
+  }
+
+  const linhas = linhasComCiclos({ veiculos, ciclos, margens });
 
   return <EntradasSaidasClient linhas={linhas} podeVerValores={podeVerValores} />;
 }

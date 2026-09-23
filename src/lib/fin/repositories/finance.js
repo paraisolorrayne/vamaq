@@ -244,14 +244,26 @@ export async function getVehicleMargins({ onlyWithActivity = true } = {}) {
   // custo de aquisição = despesas na conta 4.1x (Custo de Aquisição de Veículos);
   // custo_total = todas as despesas do veículo (aquisição + preparação + etc.).
   const { rows } = await finQuery(
-    `select v.id as vehicle_id, v.brand, v.model, v.year, v.placa, v.status,
+    `select v.id as vehicle_id,
+            coalesce(t.ciclo, v.ciclo) as ciclo,
+            v.ciclo as ciclo_atual,
+            v.brand, v.model, v.year, v.placa, v.status,
             coalesce(sum(t.amount) filter (where t.type='revenue'), 0) as receita,
             coalesce(sum(t.amount) filter (where t.type='expense'), 0) as custo_total,
             coalesce(sum(t.amount) filter (where t.type='expense' and a.code like '4.1%'), 0) as custo_aquisicao
        from public.vehicles v
        left join fin.transactions t on t.vehicle_id = v.id and t.status in ('confirmed','reconciled')
        left join fin.chart_of_accounts a on a.id = t.account_id
-      group by v.id, v.brand, v.model, v.year, v.placa, v.status
+      -- Uma linha por (carro, ciclo): o carro que voltou na troca é uma nova
+      -- aquisição, com custo próprio. Somar os ciclos poria o custo da primeira
+      -- compra na base do ICMS da segunda venda (ver notas.js).
+      --
+      -- CONTRATO para quem casa por (vehicle_id, ciclo_atual): um carro que já
+      -- voltou na troca (ciclo avançou) mas ainda não tem NENHUM lançamento no
+      -- ciclo novo só aparece com a linha do ciclo FECHADO anterior — não sai
+      -- uma linha vazia para o ciclo corrente. Ausência é o valor esperado
+      -- nesse caso, não um bug.
+      group by v.id, coalesce(t.ciclo, v.ciclo), v.ciclo, v.brand, v.model, v.year, v.placa, v.status
       ${onlyWithActivity ? "having coalesce(sum(t.amount),0) <> 0" : ""}
       order by (coalesce(sum(t.amount) filter (where t.type='revenue'),0) - coalesce(sum(t.amount) filter (where t.type='expense'),0)) desc`
   );
@@ -264,7 +276,8 @@ export async function getVehicleMargins({ onlyWithActivity = true } = {}) {
     const imp = impostosVeiculoUsado(receita, custo_aquisicao, paramsImposto);
     const impostos = round2(imp.icms + imp.pis + imp.cofins);
     return {
-      vehicle_id: r.vehicle_id, brand: r.brand, model: r.model, year: r.year,
+      vehicle_id: r.vehicle_id, ciclo: Number(r.ciclo), ciclo_atual: Number(r.ciclo_atual),
+      brand: r.brand, model: r.model, year: r.year,
       placa: r.placa, status: r.status,
       receita, custo_total, custo_aquisicao,
       resultado,
@@ -539,8 +552,15 @@ async function pendenciasDeVeiculos(from, to) {
           count(*) filter (where n.id is null)::int as vendidos_sem_nota,
           count(*)::int as vendidos
          from public.vehicles v
+         -- POR CICLO TAMBÉM: sem n.ciclo = v.ciclo, a nota de saída de um
+         -- ciclo ANTERIOR satisfaz o join e o carro vendido de novo no ciclo
+         -- atual — sem nota nenhuma emitida ainda — passa como "tem nota".
+         -- É exatamente o cenário que este checklist existe para pegar
+         -- ("vendido sem nota"), e o retorno ao estoque é quem o produz. Não
+         -- soma operacao ao join: essa folga é anterior a esta task.
          left join public.notas_fiscais n
-           on n.vehicle_id = v.id and n.status in ('processando','autorizada')
+           on n.vehicle_id = v.id and n.ciclo = v.ciclo
+          and n.status in ('processando','autorizada')
         where v.status = 'vendido'
           and v.data_saida >= $1 and v.data_saida <= $2`,
       [from, to]
@@ -606,7 +626,12 @@ export async function getSaudeFinanceira(ano) {
   let comLucro = 0;
   try {
     const margens = await getVehicleMargins({ onlyWithActivity: true });
-    const vendidosComValor = margens.filter((m) => m.status === "vendido" && m.receita > 0);
+    // `status` é o do carro HOJE. Um carro que voltou na troca está
+    // `disponivel` no ciclo 2, e a venda do ciclo 1 sumiria da conta — mas todo
+    // ciclo já encerrado terminou numa venda, por definição.
+    const vendidosComValor = margens.filter(
+      (m) => (m.status === "vendido" || m.ciclo < m.ciclo_atual) && m.receita > 0
+    );
     vendidos = vendidosComValor.length;
     comLucro = vendidosComValor.filter((m) => m.resultado_liquido > 0).length;
   } catch (err) {

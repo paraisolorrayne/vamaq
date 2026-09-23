@@ -59,12 +59,19 @@ before(async () => {
   const u = new URL(ADMIN_URL);
   const url = `${u.protocol}//${u.username || "postgres"}@${u.hostname}:${u.port || 5432}/${TEST_DB}`;
   pool = new pg.Pool({ connectionString: url });
+  // auth-schema.sql e estoque-ciclo.sql entraram aqui pela Task 5 (guardas
+  // fiscais por ciclo): notas.js agora lê vehicles.ciclo incondicionalmente
+  // em getDadosEmissao, e essa coluna só existe depois de estoque-ciclo.sql —
+  // que por sua vez referencia users(id) em vehicle_ciclos, daí auth-schema.sql
+  // (mesma ordem de db/aplicar-schemas.sh).
   for (const f of [
     "schema.sql",
+    "auth-schema.sql",
     "fiscal-schema.sql",
     "fiscal-entrada.sql",
     "fiscal-consignacao-devolucao.sql",
     "fiscal-natop-60.sql",
+    "estoque-ciclo.sql",
   ]) {
     await pool.query(await readFile(path.join(ROOT, "db", f), "utf8"));
   }

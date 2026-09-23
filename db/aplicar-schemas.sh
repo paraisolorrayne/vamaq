@@ -2,7 +2,7 @@
 # ============================================================================
 # Aplica os schemas do `public` NA ORDEM CERTA.
 #
-# POR QUE ISTO EXISTE: os sete arquivos têm dependências reais entre si, e
+# POR QUE ISTO EXISTE: os nove arquivos têm dependências reais entre si, e
 # aplicar fora de ordem falha. Isso não estava escrito em lugar nenhum — em
 # 09/08/2026 dois testes que já existiam quebraram por aplicarem
 # `crm-schema.sql` sem `clientes-schema.sql` antes. Num banco novo (restauração
@@ -18,6 +18,13 @@
 #   6. clientes-schema.sql       ALTERA documentos_gerados E notas_fiscais
 #                                (ou seja: precisa dos DOIS acima)
 #   7. crm-schema.sql            referencia clientes, users e vehicles
+#   8. fiscal-entrada.sql        ALTERA notas_fiscais (coluna operacao)
+#                                (ou seja: precisa de fiscal-schema.sql)
+#   9. estoque-ciclo.sql         ALTERA vehicles E notas_fiscais, referencia
+#                                users, e o índice do ciclo usa a coluna
+#                                `operacao` de fiscal-entrada.sql
+#                                (ou seja: precisa de schema, auth, fiscal e
+#                                fiscal-entrada)
 #
 # Todos são idempotentes: rodar de novo não dói e é o jeito normal de aplicar
 # uma mudança de schema em produção.
@@ -59,9 +66,11 @@ ARQUIVOS=(
   fiscal-schema.sql
   clientes-schema.sql
   crm-schema.sql
+  fiscal-entrada.sql
+  estoque-ciclo.sql
 )
 
-# Checa os sete ANTES de aplicar qualquer um. Checar dentro do laço de
+# Checa os nove ANTES de aplicar qualquer um. Checar dentro do laço de
 # aplicação (como era antes) deixa o banco pela metade quando um arquivo do
 # meio ou do fim falta — exatamente o que este script existe para evitar.
 for arquivo in "${ARQUIVOS[@]}"; do
@@ -96,4 +105,4 @@ for arquivo in "${ARQUIVOS[@]}"; do
 done
 
 echo
-echo "Sete schemas do public aplicados. O financeiro (fin-*.sql) é à parte — ver o cabeçalho deste script."
+echo "Nove schemas do public aplicados. O financeiro (fin-*.sql) é à parte — ver o cabeçalho deste script."

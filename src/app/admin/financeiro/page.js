@@ -118,14 +118,32 @@ export default function FinanceiroDashboard() {
                     <tr><th>Veículo</th><th>Receita</th><th>Custo</th><th>Resultado</th></tr>
                   </thead>
                   <tbody>
-                    {margens.slice(0, 8).map((m) => (
-                      <tr key={m.vehicle_id}>
-                        <td><strong>{m.brand} {m.model}</strong> {m.year}{m.placa ? ` · ${m.placa}` : ""}</td>
-                        <td>{money(m.receita)}</td>
-                        <td>{money(m.custo_total)}</td>
-                        <td style={{ color: m.resultado >= 0 ? "#15803d" : "#b91c1c", fontWeight: 600 }}>{money(m.resultado)}</td>
-                      </tr>
-                    ))}
+                    {margens.slice(0, 8).map((m) => {
+                      // Um carro que voltou na troca gera uma linha por ciclo.
+                      // A contagem é sobre `margens` inteira, não sobre o
+                      // slice: a segunda passagem pode estar fora do top 8, e
+                      // ainda assim a primeira precisa se identificar.
+                      const ciclosDoCarro = margens.filter((x) => x.vehicle_id === m.vehicle_id).length;
+                      return (
+                        <tr key={`${m.vehicle_id}|${m.ciclo}`}>
+                          <td>
+                            <strong>{m.brand} {m.model}</strong> {m.year}{m.placa ? ` · ${m.placa}` : ""}
+                            {ciclosDoCarro > 1 && (
+                              <span
+                                className={styles.badgeWarning}
+                                style={{ background: "#e0e7ff", color: "#3730a3", marginLeft: 6 }}
+                                title={`Este carro passou pela loja ${ciclosDoCarro} vezes — esta linha é a ${m.ciclo}ª`}
+                              >
+                                {m.ciclo}ª passagem
+                              </span>
+                            )}
+                          </td>
+                          <td>{money(m.receita)}</td>
+                          <td>{money(m.custo_total)}</td>
+                          <td style={{ color: m.resultado >= 0 ? "#15803d" : "#b91c1c", fontWeight: 600 }}>{money(m.resultado)}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

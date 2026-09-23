@@ -192,6 +192,20 @@ create trigger bills_set_updated_at before update on fin.bills_payable
 
 -- View de margem por veículo: junta lançamentos confirmados ao estoque.
 -- receita − custo (CMV, code 4x) = lucro bruto por carro. Só confirmados.
+--
+-- ATENÇÃO: a forma corrente desta view está em db/fin-ciclo.sql, que a recria
+-- agrupando TAMBÉM por ciclo. Mexeu aqui? Mexa lá — fin-ciclo.sql é aplicado
+-- depois e vence.
+--
+-- O DROP abaixo existe só para reaplicação: depois que fin-ciclo.sql acrescenta
+-- ciclo/ciclo_atual, rodar este arquivo de novo por cima dá "cannot drop
+-- columns from view" (o `create or replace` não tira coluna, só acrescenta no
+-- fim). Sem GRANT nenhum nesta view (conferido em todo o db/) — dropar e
+-- recriar é seguro, e os dois arquivos voltam a ser reaplicáveis sem erro.
+-- "Sem erro" não é "em qualquer ordem": reaplicar ESTE arquivo depois de
+-- fin-ciclo.sql rebaixa a view para a forma cega ao ciclo, em silêncio. Rodou
+-- fin-schema.sql? Rode fin-ciclo.sql logo em seguida.
+drop view if exists fin.v_vehicle_margin;
 create or replace view fin.v_vehicle_margin as
   select
     v.id as vehicle_id,
