@@ -113,10 +113,16 @@ async function novoVeiculo(slug) {
 }
 
 async function nota(vehicleId, { ref, operacao, numero, status = "autorizada" }) {
+  // Toda nota autorizada tem chave; a devolução (finalidade 4) referencia a da
+  // entrada, então a fixture grava uma no formato que a Focus devolve.
+  const n = String(numero ?? "0");
+  const chave = status === "autorizada"
+    ? `NFe3126084534846900015455002${n.padStart(9, "0")}1000000${n.padStart(3, "0")}`
+    : null;
   await pool.query(
-    `insert into notas_fiscais (ref, vehicle_id, status, valor, operacao, numero)
-     values ($1,$2,$3,200000,$4,$5)`,
-    [ref, vehicleId, status, operacao, numero]
+    `insert into notas_fiscais (ref, vehicle_id, status, valor, operacao, numero, chave)
+     values ($1,$2,$3,200000,$4,$5,$6)`,
+    [ref, vehicleId, status, operacao, numero, chave]
   );
 }
 

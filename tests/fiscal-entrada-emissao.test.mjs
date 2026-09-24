@@ -166,8 +166,9 @@ test("quem deixou o carro fica gravado na nota, para a devolução reusar", asyn
 
 test("a DEVOLUÇÃO também grava — mesmo insert, mesmo risco", async () => {
   await pool.query(
-    `insert into notas_fiscais (ref, vehicle_id, status, valor, destinatario, serie, operacao, cfop)
-     values ('vamaq-ent-x',$1,'autorizada',160000,$2::jsonb,'2','entrada','1917')`,
+    `insert into notas_fiscais (ref, vehicle_id, status, valor, destinatario, serie, operacao, cfop, chave)
+     values ('vamaq-ent-x',$1,'autorizada',160000,$2::jsonb,'2','entrada','1917',
+             'NFe31260845348469000154550020000000141000000149')`,
     [vehicleId, JSON.stringify(CONSIGNANTE)]
   );
   await notas.devolverConsignacaoVeiculo(vehicleId);

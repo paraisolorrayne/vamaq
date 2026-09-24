@@ -115,8 +115,8 @@ beforeEach(async () => {
 async function nota(status = "autorizada", extra = {}) {
   const { operacao = "saida", cfop = "5102", numero = "17" } = extra;
   await pool.query(
-    `insert into notas_fiscais (ref, vehicle_id, status, valor, serie, operacao, cfop, numero, destinatario)
-     values ('vamaq-r1',$1,$2,400000,'2',$3,$4,$5,$6::jsonb)`,
+    `insert into notas_fiscais (ref, vehicle_id, status, valor, serie, operacao, cfop, numero, destinatario, chave)
+     values ('vamaq-r1',$1,$2,400000,'2',$3,$4,$5,$6::jsonb,$7)`,
     [
       vehicleId, status, operacao, cfop, numero,
       // Consignante COMPLETO: é o que a entrada grava de verdade, e é dele
@@ -126,6 +126,9 @@ async function nota(status = "autorizada", extra = {}) {
         logradouro: "Rua Maria Esmeraldina da Silva", numero: "65",
         bairro: "Lago das Mansoes", municipio: "Catalão", uf: "GO",
       }),
+      // A chave como a Focus devolve (prefixo NFe): é o que salvarRetorno grava
+      // e o que a devolução precisa referenciar (finalidade 4).
+      "NFe31260845348469000154550020000000171000000178",
     ]
   );
   return "vamaq-r1";

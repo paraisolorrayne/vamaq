@@ -173,12 +173,16 @@ test("a descrição do item é a mesma da saída — o chassi liga as duas notas
 // Emitir a entrada sem poder devolver é meia funcionalidade: a Mayra recebe o
 // carro no sistema e fica sem como registrar a saída dele.
 
+// A chave da nota de entrada que a devolução referencia (finalidade 4).
+const CHAVE_ENTRADA = "31260845348469000154550020000000141000000149";
+
 function devolve(extra = {}) {
   return montarPayloadDevolucaoConsignacao({
     config: CONFIG,
     veiculo: VEICULO,
     consignante: PESSOA_FISICA,
     valor: 160000,
+    chaveNotaEntrada: CHAVE_ENTRADA,
     ...extra,
   });
 }
@@ -201,7 +205,7 @@ test("devolução também não destaca imposto — o carro nunca foi comprado", 
   }
 });
 
-test("entrada e devolução do mesmo carro diferem SÓ no sentido e no CFOP", () => {
+test("entrada e devolução do mesmo carro diferem SÓ no sentido, no CFOP e na finalidade", () => {
   const ida = montarPayloadEntrada({
     config: CONFIG, veiculo: VEICULO, remetente: PESSOA_FISICA,
     valorAquisicao: 160000, consignacao: true,
@@ -211,6 +215,8 @@ test("entrada e devolução do mesmo carro diferem SÓ no sentido e no CFOP", ()
   // O que TEM que mudar.
   assert.notEqual(ida.tipo_documento, volta.tipo_documento);
   assert.notEqual(ida.items[0].cfop, volta.items[0].cfop);
+  assert.equal(ida.finalidade_emissao, 1);
+  assert.equal(volta.finalidade_emissao, 4);
 
   // O que NÃO pode mudar: é o mesmo carro e a mesma pessoa. Endereço que muda
   // entre a ida e a volta é a SEFAZ vendo duas pessoas diferentes.
@@ -280,6 +286,7 @@ test("compra de outro estado usa 2102 e a natureza acompanha", () => {
 test("devolução para outro estado usa 6918", () => {
   const { payload } = montarPayloadDevolucaoConsignacao({
     config: CONFIG, veiculo: VEICULO, consignante: DE_GOIAS, valor: 400000,
+    chaveNotaEntrada: CHAVE_ENTRADA,
   });
   assert.equal(payload.items[0].cfop, "6918");
   assert.equal(payload.local_destino, 2);
@@ -304,4 +311,37 @@ test("a natureza da consignação serve aos dois estados e cabe em 60", () => {
     });
     assert.ok(payload.natureza_operacao.length <= 60);
   }
+});
+
+// ── Devolução é FINALIDADE 4 e referencia a entrada (24/09/2026) ────────────
+//
+// A SEFAZ recusou a devolução do BMW X6 (conv. Mayra, 24/09): "CFOP de
+// devolucao para NF-e que nao tem finalidade de devolucao". O CFOP 5918 é de
+// devolução, então a nota precisa ir com finalidade 4 — e, com finalidade 4,
+// a SEFAZ exige a nota original referenciada (rejeição 321). A chave é a da
+// nota de ENTRADA de consignação que o próprio sistema emitiu.
+
+test("a devolução vai com finalidade 4 e referencia a nota de entrada", () => {
+  const { payload, error } = devolve({ chaveNotaEntrada: CHAVE_ENTRADA });
+  assert.equal(error, undefined, error);
+  assert.equal(payload.finalidade_emissao, 4);
+  assert.deepEqual(payload.notas_referenciadas, [{ chave_nfe: CHAVE_ENTRADA }]);
+});
+
+test("a chave vem como a Focus devolve (prefixo NFe) e sai só com os 44 dígitos", () => {
+  const { payload } = devolve({ chaveNotaEntrada: `NFe${CHAVE_ENTRADA}` });
+  assert.deepEqual(payload.notas_referenciadas, [{ chave_nfe: CHAVE_ENTRADA }]);
+});
+
+test("sem a chave da entrada a devolução não sai — a SEFAZ recusaria", () => {
+  for (const chave of [undefined, null, "", "NFe123"]) {
+    const { error } = devolve({ chaveNotaEntrada: chave });
+    assert.match(error || "", /chave/i, `chave ${JSON.stringify(chave)} deveria barrar`);
+  }
+});
+
+test("a entrada continua finalidade 1 — só a devolução muda", () => {
+  const { payload } = monta({ consignacao: true });
+  assert.equal(payload.finalidade_emissao, 1);
+  assert.equal(payload.notas_referenciadas, undefined);
 });

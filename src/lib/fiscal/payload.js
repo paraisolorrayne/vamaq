@@ -467,13 +467,33 @@ function deOutroEstado(config, contraparte) {
  * tela não precisa pedir o endereço de novo: redigitar oito campos para
  * devolver um carro é a receita para o endereço sair diferente do que entrou.
  */
-export function montarPayloadDevolucaoConsignacao({ config, veiculo, consignante, valor }) {
+export function montarPayloadDevolucaoConsignacao({
+  config,
+  veiculo,
+  consignante,
+  valor,
+  chaveNotaEntrada,
+}) {
+  // A SEFAZ recusou a devolução do BMW X6 em 24/09/2026: "CFOP de devolucao
+  // para NF-e que nao tem finalidade de devolucao". O 5918 é CFOP de
+  // devolução, então a nota é finalidade 4 — e a finalidade 4 exige a nota
+  // original referenciada (rejeição 321). Sem a chave da entrada não há o que
+  // referenciar, e mandar assim mesmo só troca uma rejeição por outra.
+  const chave = so_digitos(chaveNotaEntrada);
+  if (chave.length !== 44) {
+    return {
+      error:
+        "A nota de entrada de consignação deste veículo não tem a chave de acesso registrada, e a devolução precisa citá-la. Abra a nota de entrada em Notas Fiscais e confira se está autorizada.",
+    };
+  }
   return montarPayloadSemImposto({
     config,
     veiculo,
     contraparte: consignante,
     valor,
     saida: true,
+    finalidade: 4,
+    notasReferenciadas: [{ chave_nfe: chave }],
     interestadual: deOutroEstado(config, consignante),
     papel: "O dono do carro",
     rotuloValor: "valor pelo qual o carro foi recebido",
@@ -507,6 +527,8 @@ function montarPayloadSemImposto({
   papel,
   rotuloValor,
   interestadual = false,
+  finalidade = 1,
+  notasReferenciadas,
 }) {
   const total = Number(valor) || 0;
   // A mensagem nomeia o valor e a pessoa. Generalizar para "a outra parte" e
@@ -547,7 +569,10 @@ function montarPayloadSemImposto({
       // 0 = entrada (a mercadoria entra no estabelecimento de quem emite),
       // 1 = saída. É só isto que separa receber o carro de devolvê-lo.
       tipo_documento: saida ? 1 : 0,
-      finalidade_emissao: 1,
+      // 1 = normal (entrada); 4 = devolução, que a SEFAZ exige junto com CFOP
+      // de devolução e com a nota original referenciada.
+      finalidade_emissao: finalidade,
+      ...(notasReferenciadas?.length ? { notas_referenciadas: notasReferenciadas } : {}),
       // idDest: 1 = operação interna, 2 = interestadual. Acompanha o CFOP.
       local_destino: interestadual ? 2 : 1,
       serie: String(config.serie),

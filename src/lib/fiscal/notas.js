@@ -537,7 +537,7 @@ export async function devolverConsignacaoVeiculo(vehicleId) {
   // (carro que voltou na troca e virou uma negociação nova) autorizaria a
   // devolução de uma consignação que já foi encerrada há muito tempo.
   const { rows: entradas } = await query(
-    `select ref, valor, destinatario from notas_fiscais
+    `select ref, valor, destinatario, chave from notas_fiscais
       where vehicle_id=$1 and operacao='entrada' and status='autorizada'
         and ciclo=$3 and cfop = any($2)
       order by created_at desc limit 1`,
@@ -575,6 +575,8 @@ export async function devolverConsignacaoVeiculo(vehicleId) {
     veiculo: dados.veiculo,
     consignante,
     valor: Number(entradas[0].valor) || 0,
+    // A devolução referencia a entrada pela chave de acesso (finalidade 4).
+    chaveNotaEntrada: entradas[0].chave,
   });
   if (montado.error) return { error: montado.error };
 
