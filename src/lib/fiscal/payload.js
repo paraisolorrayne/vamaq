@@ -596,16 +596,23 @@ function montarPayloadSemImposto({
       uf_destinatario: String(contraparte.uf).toUpperCase(),
       valor_total: total,
 
-      formas_pagamento: [
-        {
-          indicador_pagamento: String(config.indicador_pagamento ?? "1"),
-          forma_pagamento: String(config.forma_pagamento || "99"),
-          ...(String(config.forma_pagamento || "99") === "99"
-            ? { descricao_pagamento: String(config.descricao_pagamento || "A prazo") }
-            : {}),
-          valor_pagamento: total,
-        },
-      ],
+      // Devolução não tem pagamento — é o carro voltando ao dono. A SEFAZ
+      // recusou a segunda tentativa do BMW X6 (25/09/2026) por isto: "O campo
+      // Forma de Pagamento deve ser preenchido com a opcao 'Sem Pagamento'".
+      // tPag 90 vai com valor zero e sem a descrição, que só o 99 pede.
+      formas_pagamento:
+        finalidade === 4
+          ? [{ forma_pagamento: "90", valor_pagamento: 0 }]
+          : [
+              {
+                indicador_pagamento: String(config.indicador_pagamento ?? "1"),
+                forma_pagamento: String(config.forma_pagamento || "99"),
+                ...(String(config.forma_pagamento || "99") === "99"
+                  ? { descricao_pagamento: String(config.descricao_pagamento || "A prazo") }
+                  : {}),
+                valor_pagamento: total,
+              },
+            ],
 
       items: [
         {

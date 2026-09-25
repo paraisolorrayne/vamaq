@@ -345,3 +345,22 @@ test("a entrada continua finalidade 1 — só a devolução muda", () => {
   assert.equal(payload.finalidade_emissao, 1);
   assert.equal(payload.notas_referenciadas, undefined);
 });
+
+// ── Devolução é "Sem pagamento" (25/09/2026) ────────────────────────────────
+//
+// Segunda rejeição da SEFAZ no BMW X6, já com finalidade 4: "O campo Forma de
+// Pagamento deve ser preenchido com a opcao 'Sem Pagamento'". Nota de
+// devolução não tem pagamento — é o carro voltando ao dono. Vai tPag 90 com
+// valor zero, e sem a descrição que só o 99 ("Outros") pede.
+
+test("a devolução vai com forma de pagamento 90 (Sem pagamento) e valor zero", () => {
+  const { payload, error } = devolve();
+  assert.equal(error, undefined, error);
+  assert.deepEqual(payload.formas_pagamento, [{ forma_pagamento: "90", valor_pagamento: 0 }]);
+});
+
+test("a entrada continua com a forma de pagamento configurada — só a devolução muda", () => {
+  const { payload } = monta({ consignacao: true });
+  assert.equal(payload.formas_pagamento[0].forma_pagamento, "99");
+  assert.equal(payload.formas_pagamento[0].valor_pagamento, 160000);
+});
