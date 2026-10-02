@@ -21,6 +21,13 @@
 export const CFOP_CONSIGNACAO_RECEBIDA = ["1917", "2917"];
 
 /**
+ * Os CFOP da devolução de CONSIGNAÇÃO. Desde 02/10/2026 há outras devoluções
+ * (de venda e de compra, para corrigir valor), todas `operacao = 'devolucao'`:
+ * "este carro já foi devolvido ao dono" tem que olhar só estas.
+ */
+export const CFOP_DEVOLUCAO_CONSIGNACAO = ["5918", "6918"];
+
+/**
  * As notas de um mês para efeito de total. $1 = ano, $2 = mês.
  *
  * MESMA JANELA do pacote de XMLs (ver SQL_NOTAS_DO_MES em pacote.js): o recorte

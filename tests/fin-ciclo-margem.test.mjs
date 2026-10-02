@@ -94,7 +94,7 @@ before(async () => {
   // public.vehicles, que vamaq_fin não pode escrever). fiscal-entrada.sql vai
   // antes de estoque-ciclo.sql porque este último indexa notas_fiscais.operacao,
   // coluna que só fiscal-entrada.sql cria.
-  for (const file of ["schema.sql", "auth-schema.sql", "fiscal-schema.sql", "fiscal-entrada.sql", "fin-blindagem.sql", "estoque-ciclo.sql"]) {
+  for (const file of ["schema.sql", "auth-schema.sql", "fiscal-schema.sql", "fiscal-entrada.sql", "fin-blindagem.sql", "estoque-ciclo.sql", "fiscal-devolucao-nota.sql"]) {
     await suPool.query(await readFile(path.join(ROOT, "db", file), "utf8"));
   }
 

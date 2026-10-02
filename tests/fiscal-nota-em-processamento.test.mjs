@@ -59,7 +59,8 @@ before(async () => {
   // que por sua vez referencia users(id) em vehicle_ciclos, daí auth-schema.sql
   // (mesma ordem de db/aplicar-schemas.sh).
   for (const f of ["schema.sql", "auth-schema.sql", "fiscal-schema.sql", "fiscal-entrada.sql",
-    "fiscal-consignacao-devolucao.sql", "fiscal-natop-60.sql", "estoque-ciclo.sql"]) {
+    "fiscal-consignacao-devolucao.sql", "fiscal-natop-60.sql", "estoque-ciclo.sql",
+    "fiscal-devolucao-nota.sql"]) {
     await pool.query(await readFile(path.join(ROOT, "db", f), "utf8"));
   }
 

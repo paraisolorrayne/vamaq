@@ -9,6 +9,8 @@ import {
   emitirNotaVeiculo,
   emitirNotaEntradaVeiculo,
   devolverConsignacaoVeiculo,
+  devolverNota,
+  devolverNotaPorXml,
   emitirCartaCorrecao,
   registrarCancelamentoExterno,
 } from "@/lib/fiscal/notas";
@@ -67,6 +69,27 @@ export async function emitirNotaEntradaAction(vehicleId, { remetente, valorAquis
 export async function devolverConsignacaoAction(vehicleId) {
   await requireRole(["financeiro", "secretaria"]);
   const res = await devolverConsignacaoVeiculo(vehicleId);
+  if (res.error) return { error: res.error };
+  revalidatePath("/admin/fiscal");
+  return { ok: true };
+}
+
+/**
+ * Devolve uma nota do sistema (venda 1202 / compra 5202) — para corrigir valor
+ * de nota de mês já apurado, quando não cabe mais cancelar.
+ */
+export async function devolverNotaAction(ref) {
+  await requireRole(["financeiro", "secretaria"]);
+  const res = await devolverNota(ref);
+  if (res.error) return { error: res.error };
+  revalidatePath("/admin/fiscal");
+  return { ok: true };
+}
+
+/** Devolve a nota do escritório (série 1), a partir do XML que ele mandou. */
+export async function devolverNotaPorXmlAction(vehicleId, xml) {
+  await requireRole(["financeiro", "secretaria"]);
+  const res = await devolverNotaPorXml(vehicleId, xml);
   if (res.error) return { error: res.error };
   revalidatePath("/admin/fiscal");
   return { ok: true };

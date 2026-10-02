@@ -65,6 +65,7 @@ before(async () => {
     "fiscal-entrada.sql",
     "fiscal-consignacao-devolucao.sql",
     "estoque-ciclo.sql",
+    "fiscal-devolucao-nota.sql",
   ]) {
     await pool.query(await readFile(path.join(ROOT, "db", file), "utf8"));
   }

@@ -37,7 +37,14 @@ function chave(vehicleId, ciclo) {
 export function veiculosSemEntrada(veiculos, notas) {
   const comEntrada = new Set(
     (notas || [])
-      .filter((n) => n.operacao === "entrada" && STATUS_ATIVO.includes(n.status))
+      // Entrada com devolução autorizada (correção de valor) deixou de valer:
+      // o carro volta a precisar da entrada nova.
+      .filter(
+        (n) =>
+          n.operacao === "entrada" &&
+          STATUS_ATIVO.includes(n.status) &&
+          n.devolucao_status !== "autorizada"
+      )
       .map((n) => chave(n.vehicle_id, n.ciclo))
   );
   return (veiculos || []).filter((v) => !comEntrada.has(chave(v.id, v.ciclo)));

@@ -8,11 +8,18 @@ import {
   montarPayloadNfe,
   montarPayloadEntrada,
   montarPayloadDevolucaoConsignacao,
+  montarPayloadDevolucao,
 } from "@/lib/fiscal/payload";
 import { focusEnabled, emitirNfe, consultarNfe, cancelarNfe, cartaCorrecaoNfe, focusFileUrl, baixarArquivo } from "@/lib/fiscal/focus/client";
 import { criarZip } from "@/lib/fiscal/zip";
 import { SQL_NOTAS_DO_MES, nomeDoArquivo, nomeDoZip, relatorioDeFaltando } from "@/lib/fiscal/pacote";
-import { SQL_TOTAIS_DO_MES, resumirNotas, CFOP_CONSIGNACAO_RECEBIDA } from "@/lib/fiscal/fechamento";
+import {
+  SQL_TOTAIS_DO_MES,
+  resumirNotas,
+  CFOP_CONSIGNACAO_RECEBIDA,
+  CFOP_DEVOLUCAO_CONSIGNACAO,
+} from "@/lib/fiscal/fechamento";
+import { lerNotaXml } from "@/lib/fiscal/xmlNota";
 import { getVehicleMargins } from "@/lib/fin/repositories/finance";
 import { ligarVeiculo } from "@/lib/clientes/repo";
 
@@ -25,6 +32,20 @@ export { focusEnabled };
 const UUID_VALIDO = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ERRO_CLIENTE_REMOVIDO =
   "Cliente não encontrado — o cadastro pode ter sido removido. Desmarque o cliente e emita novamente.";
+
+/**
+ * "Esta nota ainda vale" — não tem devolução AUTORIZADA apontando para ela.
+ *
+ * Nota devolvida é como nota cancelada para as guardas de "o veículo já tem
+ * nota": é o que deixa emitir a nota nova com o valor certo. Só a devolução
+ * autorizada conta — a que está em processamento ainda pode ser recusada, e
+ * liberar antes deixaria o carro com duas notas válidas.
+ *
+ * Fragmento SQL, com a nota no alias `n`.
+ */
+const NAO_DEVOLVIDA = `not exists (
+  select 1 from notas_fiscais dv
+   where dv.ref_devolvida = n.ref and dv.status = 'autorizada')`;
 
 export async function getFiscalConfig() {
   const { rows } = await query(`select * from fiscal_config order by created_at limit 1`);
@@ -74,10 +95,11 @@ export async function getDadosEmissao(vehicleId) {
   // entrada (que é o passo obrigatório) travaria a venda do mesmo carro. Um
   // veículo tem as duas notas por definição.
   const { rows: notasAtivas } = await query(
-    `select ref, status from notas_fiscais
-      where vehicle_id = $1 and operacao = 'saida' and ciclo = $2
-        and status in ('processando','autorizada')
-      order by created_at desc limit 1`,
+    `select n.ref, n.status from notas_fiscais n
+      where n.vehicle_id = $1 and n.operacao = 'saida' and n.ciclo = $2
+        and n.status in ('processando','autorizada')
+        and ${NAO_DEVOLVIDA}
+      order by n.created_at desc limit 1`,
     [vehicleId, ciclo]
   );
 
@@ -85,10 +107,11 @@ export async function getDadosEmissao(vehicleId) {
   // obrigatório da nota de venda cita esse número, e digitá-lo à mão é onde a
   // ligação entre as duas notas se perde por um dígito trocado.
   const { rows: entrada } = await query(
-    `select numero from notas_fiscais
-      where vehicle_id = $1 and operacao = 'entrada' and ciclo = $2
-        and status = 'autorizada' and numero is not null
-      order by created_at desc limit 1`,
+    `select n.numero from notas_fiscais n
+      where n.vehicle_id = $1 and n.operacao = 'entrada' and n.ciclo = $2
+        and n.status = 'autorizada' and n.numero is not null
+        and ${NAO_DEVOLVIDA}
+      order by n.created_at desc limit 1`,
     [vehicleId, ciclo]
   );
 
@@ -153,9 +176,10 @@ export async function emitirNotaVeiculo(
   // travaria a venda do ciclo novo, que é exatamente o caso que o retorno ao
   // estoque (esta task) existe para destravar.
   const { rows: existentes } = await query(
-    `select ref, status from notas_fiscais
-      where vehicle_id=$1 and operacao='saida' and ciclo=$2
-        and status in ('processando','autorizada')`,
+    `select n.ref, n.status from notas_fiscais n
+      where n.vehicle_id=$1 and n.operacao='saida' and n.ciclo=$2
+        and n.status in ('processando','autorizada')
+        and ${NAO_DEVOLVIDA}`,
     [vehicleId, dados.veiculo.ciclo]
   );
   if (existentes.length) {
@@ -286,8 +310,13 @@ export async function cancelarNota(ref, justificativa) {
 }
 
 export async function listNotas() {
+  // `devolucao_status`: a devolução viva desta nota, se houver — a tela mostra
+  // "devolvida" e libera a nota nova só quando ela está autorizada.
   const { rows } = await query(
-    `select n.*, v.brand, v.model, v.year, v.placa
+    `select n.*, v.brand, v.model, v.year, v.placa,
+            (select dv.status from notas_fiscais dv
+              where dv.ref_devolvida = n.ref and dv.status in ('processando','autorizada')
+              order by dv.created_at desc limit 1) as devolucao_status
        from notas_fiscais n
        join vehicles v on v.id = n.vehicle_id
       order by n.created_at desc`
@@ -392,10 +421,11 @@ export async function totaisDoMes(ano, mes) {
  */
 export async function notaEntradaAtiva(vehicleId, ciclo) {
   const { rows } = await query(
-    `select ref, status from notas_fiscais
-      where vehicle_id=$1 and operacao='entrada' and ciclo=$2
-        and status in ('processando','autorizada')
-      order by created_at desc limit 1`,
+    `select n.ref, n.status from notas_fiscais n
+      where n.vehicle_id=$1 and n.operacao='entrada' and n.ciclo=$2
+        and n.status in ('processando','autorizada')
+        and ${NAO_DEVOLVIDA}
+      order by n.created_at desc limit 1`,
     [vehicleId, ciclo]
   );
   return rows[0] || null;
@@ -506,15 +536,19 @@ export async function listConsignacoesAbertas() {
         -- consignação NOVA e de verdade aberta (ciclo 2) — a entrada nova
         -- some da tela sem nenhum aviso, porque o NOT EXISTS já achava uma
         -- devolução para aquele vehicle_id, de outro ciclo.
+        -- Só devolução de CONSIGNAÇÃO fecha a consignação: a devolução de
+        -- uma venda (correção de valor) do mesmo carro não devolve nada ao dono.
+        -- CFOP nulo conta como consignação: era a única devolução que existia.
         and not exists (
           select 1 from notas_fiscais d
            where d.vehicle_id = n.vehicle_id
              and d.ciclo = n.ciclo
              and d.operacao = 'devolucao'
+             and (d.cfop is null or d.cfop = any($2))
              and d.status in ('processando','autorizada')
         )
       order by n.created_at desc`,
-    [CFOP_CONSIGNACAO_RECEBIDA]
+    [CFOP_CONSIGNACAO_RECEBIDA, CFOP_DEVOLUCAO_CONSIGNACAO]
   );
   return rows.map((r) => ({ ...r, valor: r.valor != null ? Number(r.valor) : 0 }));
 }
@@ -556,9 +590,10 @@ export async function devolverConsignacaoVeiculo(vehicleId) {
   const { rows: jaDevolvido } = await query(
     `select status from notas_fiscais
       where vehicle_id=$1 and operacao='devolucao' and ciclo=$2
+        and (cfop is null or cfop = any($3))
         and status in ('processando','autorizada')
       limit 1`,
-    [vehicleId, dados.veiculo.ciclo]
+    [vehicleId, dados.veiculo.ciclo, CFOP_DEVOLUCAO_CONSIGNACAO]
   );
   if (jaDevolvido.length) {
     return {
@@ -591,6 +626,115 @@ export async function devolverConsignacaoVeiculo(vehicleId) {
       JSON.stringify(consignante),
       String(dados.config.serie),
       montado.payload.items[0].cfop,
+    ]
+  );
+
+  try {
+    const retorno = await emitirNfe(ref, montado.payload);
+    return { nota: await salvarRetorno(ref, retorno) };
+  } catch (err) {
+    const { rows } = await query(
+      `update notas_fiscais set status='erro', mensagem=$2, raw=$3::jsonb where ref=$1 returning *`,
+      [ref, String(err.message), JSON.stringify(err.focus ?? {})]
+    );
+    return { nota: rows[0], error: err.message };
+  }
+}
+
+/**
+ * Devolve uma nota do SISTEMA — venda (1202) ou entrada de compra (5202).
+ *
+ * É o caminho para corrigir o valor de nota de mês já apurado, quando não cabe
+ * mais cancelar: devolve, e depois emite a nota nova com o valor certo. O XML
+ * da nota vem da Focus — é dele que saem os impostos que a devolução repete.
+ */
+export async function devolverNota(ref) {
+  if (!focusEnabled()) return { error: "Emissor fiscal não configurado." };
+  const { rows } = await query(
+    `select ref, vehicle_id, status, xml_url from notas_fiscais where ref = $1`,
+    [ref]
+  );
+  if (!rows.length) return { error: "Nota não encontrada." };
+  const nota = rows[0];
+  if (nota.status !== "autorizada") {
+    return { error: "Só nota autorizada pode ser devolvida." };
+  }
+  if (!nota.xml_url) {
+    return { error: "O XML desta nota ainda não chegou do emissor. Clique em Atualizar na nota e tente de novo." };
+  }
+
+  let xml;
+  try {
+    xml = (await baixarArquivo(nota.xml_url)).toString("utf8");
+  } catch (err) {
+    console.error(`Devolução: falha ao baixar o XML da nota ${ref}:`, err);
+    return { error: "Não foi possível baixar o XML desta nota no emissor. Tente de novo em instantes." };
+  }
+  return emitirDevolucao(nota.vehicle_id, xml);
+}
+
+/**
+ * Devolve uma nota pelo XML enviado — a nota do escritório (série 1), que não
+ * passou pelo sistema. Se o XML for de uma nota que está aqui, a devolução se
+ * liga a ela do mesmo jeito que pelo botão da lista.
+ */
+export async function devolverNotaPorXml(vehicleId, xml) {
+  if (!focusEnabled()) return { error: "Emissor fiscal não configurado." };
+  if (!UUID_VALIDO.test(String(vehicleId ?? ""))) return { error: "Escolha o veículo da nota." };
+  return emitirDevolucao(vehicleId, xml);
+}
+
+async function emitirDevolucao(vehicleId, xml) {
+  const original = lerNotaXml(xml);
+  if (original.error) return { error: original.error };
+
+  const dados = await getDadosEmissao(vehicleId);
+  if (!dados) return { error: "Veículo não encontrado." };
+  if (!dados.config) return { error: "Parâmetros fiscais não cadastrados. Peça ao contador." };
+
+  const montado = montarPayloadDevolucao({ config: dados.config, veiculo: dados.veiculo, original });
+  if (montado.error) return { error: montado.error };
+
+  // Pela CHAVE, não pela ref: a nota do escritório não tem ref aqui, e é a
+  // chave que a SEFAZ usa para dizer que ela já foi devolvida.
+  const { rows: jaDevolvida } = await query(
+    `select status from notas_fiscais
+      where operacao = 'devolucao' and chave_referenciada = $1
+        and status in ('processando','autorizada')
+      limit 1`,
+    [original.chave]
+  );
+  if (jaDevolvida.length) {
+    return {
+      error:
+        jaDevolvida[0].status === "processando"
+          ? "A devolução desta nota já foi enviada e está sendo autorizada pela SEFAZ. Aguarde alguns segundos — não emita de novo."
+          : "Esta nota já foi devolvida.",
+    };
+  }
+
+  // A Focus grava a chave com o prefixo "NFe"; comparar só os dígitos.
+  const { rows: noSistema } = await query(
+    `select ref from notas_fiscais
+      where regexp_replace(coalesce(chave, ''), '\\D', '', 'g') = $1
+        and operacao in ('saida','entrada')
+      limit 1`,
+    [original.chave]
+  );
+
+  const ref = `vamaq-dev-${randomUUID()}`;
+  await query(
+    `insert into notas_fiscais (ref, vehicle_id, status, valor, destinatario, serie, operacao, cfop, chave_referenciada, ref_devolvida)
+     values ($1,$2,'processando',$3,$4::jsonb,$5,'devolucao',$6,$7,$8)`,
+    [
+      ref,
+      vehicleId,
+      Number(montado.payload.valor_total) || 0,
+      JSON.stringify(original.contraparte),
+      String(dados.config.serie),
+      montado.payload.items[0].cfop,
+      original.chave,
+      noSistema[0]?.ref || null,
     ]
   );
 
@@ -748,18 +892,19 @@ export async function registrarCancelamentoExterno(
  * redigite oito campos de endereço é convidar a um erro novo, diferente do
  * primeiro.
  *
- * Só devolve para nota CANCELADA: reaproveitar de uma nota viva seria
- * duplicar, não refazer.
+ * Só devolve para nota CANCELADA ou DEVOLVIDA (devolução autorizada):
+ * reaproveitar de uma nota viva seria duplicar, não refazer.
  */
 export async function dadosParaRefazer(ref) {
   const { rows } = await query(
-    `select ref, vehicle_id, status, operacao, cfop, valor, destinatario, numero
-       from notas_fiscais where ref = $1`,
+    `select n.ref, n.vehicle_id, n.status, n.operacao, n.cfop, n.valor, n.destinatario, n.numero,
+            not ${NAO_DEVOLVIDA} as devolvida
+       from notas_fiscais n where n.ref = $1`,
     [ref]
   );
   if (!rows.length) return null;
   const n = rows[0];
-  if (n.status !== "cancelada") return null;
+  if (n.status !== "cancelada" && !n.devolvida) return null;
 
   return {
     ref: n.ref,

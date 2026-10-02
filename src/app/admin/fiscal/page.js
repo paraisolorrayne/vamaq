@@ -33,6 +33,7 @@ export default async function FiscalPage() {
       vendidos={vendidos}
       semEntrada={semEntrada}
       consignacoes={consignacoes}
+      veiculos={veiculos}
     />
   );
 }

@@ -15,6 +15,7 @@
  */
 import { round2 } from "../fin/calc.js";
 import { impostosVeiculoUsado } from "./impostos.js";
+import { CFOP_CONSIGNACAO_RECEBIDA } from "./fechamento.js";
 
 const so_digitos = (v) => String(v ?? "").replace(/\D/g, "");
 
@@ -505,6 +506,200 @@ export function montarPayloadDevolucaoConsignacao({
         "Devolucao de mercadoria em consignacao mercantil"
     ),
   });
+}
+
+/**
+ * Devolução de uma nota autorizada — o caminho para corrigir o VALOR de uma
+ * nota de mês já apurado (02/10/2026: o valor mudou na negociação, agosto já
+ * tinha imposto pago; o contador mandou devolver e emitir de novo).
+ *
+ * `original` é a nota lida do XML (ver xmlNota.js) — da própria Vamaq, seja a
+ * do sistema (série 2), seja a do escritório (série 1). O tipo da devolução
+ * sai do sentido da original:
+ *
+ *   - VENDA (saída)  → nota de ENTRADA 1202/2202, com os MESMOS impostos da
+ *     venda: é o destaque igual que estorna o débito. Recalcular pela config
+ *     de hoje daria outro número se a config mudou.
+ *   - COMPRA (entrada de pessoa física) → SAÍDA 5202/6202, sem imposto, igual
+ *     à entrada que ela desfaz.
+ *
+ * Consignação fica de fora de propósito: tem o botão próprio (5918), que lê a
+ * entrada do banco e não precisa de XML.
+ */
+export function montarPayloadDevolucao({ config, veiculo, original }) {
+  if (!config?.cnpj) return { error: "Parâmetro fiscal ausente: CNPJ do emitente. Peça ao contador." };
+  const chave = so_digitos(original?.chave);
+  if (chave.length !== 44) {
+    return { error: "O XML não traz a chave de acesso da nota (44 números). Confira se é o XML da nota autorizada." };
+  }
+  if (so_digitos(original.emitenteCnpj) !== so_digitos(config.cnpj)) {
+    return {
+      error: `Esta nota não foi emitida pela Vamaq (emitente ${formataCnpj(original.emitenteCnpj)}). Só dá para devolver nota que a própria Vamaq emitiu.`,
+    };
+  }
+  if (original.finalidade !== 1) {
+    return { error: "Esta nota já é uma devolução (ou complementar/ajuste) — não se devolve de novo." };
+  }
+  if (original.quantidadeItens !== 1) {
+    return {
+      error: `A nota tem ${original.quantidadeItens} itens, e a devolução daqui só cobre nota de um item (um veículo). Fale com o suporte.`,
+    };
+  }
+  // O XML pode ser de outro carro — arquivo errado escolhido na pasta. O
+  // chassi é o que a SEFAZ usa para ligar as notas do mesmo veículo.
+  if (original.chassi && veiculo?.chassi && original.chassi.toUpperCase() !== String(veiculo.chassi).toUpperCase()) {
+    return {
+      error: `O chassi da nota (${original.chassi}) não é o do veículo escolhido (${veiculo.chassi}). Confira se o XML é deste carro.`,
+    };
+  }
+
+  const cfopOriginal = String(original.item?.cfop || "");
+  const referencia = `DEVOLUCAO DA NF ${original.numero} SERIE ${original.serie}, CHAVE ${chave}.`;
+  const notasReferenciadas = [{ chave_nfe: chave }];
+
+  if (original.tipoDocumento === 0) {
+    if (CFOP_CONSIGNACAO_RECEBIDA.includes(cfopOriginal)) {
+      return {
+        error: "Esta é uma entrada de consignação. A devolução dela é pelo cartão \"Devolver carro consignado ao dono\", nesta mesma tela.",
+      };
+    }
+    if (!["1102", "2102"].includes(cfopOriginal)) {
+      return { error: `Devolução de entrada com CFOP ${cfopOriginal} não está prevista. Fale com o suporte.` };
+    }
+    const fora = cfopOriginal.startsWith("2");
+    const montado = montarPayloadSemImposto({
+      config,
+      veiculo,
+      contraparte: original.contraparte,
+      valor: original.valorTotal,
+      saida: true,
+      finalidade: 4,
+      notasReferenciadas,
+      interestadual: fora,
+      papel: "Quem vendeu o veículo",
+      rotuloValor: "valor da nota de entrada",
+      cfop: fora
+        ? String(config.cfop_devolucao_compra_interestadual || "6202")
+        : String(config.cfop_devolucao_compra || "5202"),
+      natureza: String(config.natureza_devolucao_compra || "Devolucao de compra para comercializacao"),
+    });
+    if (montado.error) return montado;
+    montado.payload.informacoes_adicionais_contribuinte = referencia;
+    return { payload: montado.payload, tipo: "compra" };
+  }
+
+  if (cfopOriginal.endsWith("918") || cfopOriginal.endsWith("202")) {
+    return { error: "Esta nota já é uma devolução — não se devolve de novo." };
+  }
+  return montarPayloadDevolucaoVenda({ config, original, chave, referencia, notasReferenciadas });
+}
+
+/** A devolução de venda propriamente: espelho da venda, no sentido contrário. */
+function montarPayloadDevolucaoVenda({ config, original, chave, referencia, notasReferenciadas }) {
+  const c = original.contraparte || {};
+  for (const [campo, rotulo] of CAMPOS_DESTINATARIO) {
+    if (!c[campo]) return { error: `O XML da venda está sem ${rotulo} do comprador.` };
+  }
+  const doc = so_digitos(c.doc);
+  const ehCnpj = doc.length === 14;
+  const ie = so_digitos(c.ie);
+  const it = original.item;
+  const total = Number(original.valorTotal) || 0;
+  if (total <= 0) return { error: "O XML da venda está sem o valor total da nota." };
+
+  const interestadual = String(it.cfop).startsWith("6");
+  const cfop = interestadual
+    ? String(config.cfop_devolucao_venda_interestadual || "2202")
+    : String(config.cfop_devolucao_venda || "1202");
+
+  // Campo que a venda não teve fica de fora (ICMS 41 não tem base, nota
+  // anterior à reforma não tem IBS/CBS): mandar zero onde não havia grupo é
+  // inventar informação que a SEFAZ vai conferir contra a original.
+  const se = (campo, valor) => (valor == null || valor === "" ? {} : { [campo]: valor });
+  const ibs = it.ibsCbs;
+
+  const payload = {
+    natureza_operacao: String(config.natureza_devolucao_venda || "Devolucao de venda de mercadoria"),
+    data_emissao: new Date().toISOString(),
+    tipo_documento: 0, // a mercadoria volta para a Vamaq
+    finalidade_emissao: 4,
+    notas_referenciadas: notasReferenciadas,
+    local_destino: interestadual ? 2 : 1,
+    serie: String(config.serie),
+    cnpj_emitente: so_digitos(config.cnpj),
+
+    modalidade_frete: String(config.modalidade_frete ?? "9"),
+    presenca_comprador: "1",
+    consumidor_final: String(config.consumidor_final ?? "1"),
+    ...(ie
+      ? { indicador_inscricao_estadual_destinatario: 1, inscricao_estadual_destinatario: ie }
+      : { indicador_inscricao_estadual_destinatario: 9 }),
+
+    nome_destinatario: c.nome,
+    [ehCnpj ? "cnpj_destinatario" : "cpf_destinatario"]: doc,
+    cep_destinatario: so_digitos(c.cep),
+    logradouro_destinatario: c.logradouro,
+    numero_destinatario: String(c.numero),
+    bairro_destinatario: c.bairro,
+    municipio_destinatario: c.municipio,
+    uf_destinatario: String(c.uf).toUpperCase(),
+    valor_total: total,
+
+    // Devolução não tem pagamento (rejeição 871 com a do BMW X6, 25/09/2026).
+    formas_pagamento: [{ forma_pagamento: "90", valor_pagamento: 0 }],
+
+    informacoes_adicionais_contribuinte: referencia,
+
+    items: [
+      {
+        numero_item: 1,
+        codigo_produto: it.codigo,
+        descricao: it.descricao,
+        codigo_ncm: it.ncm || String(config.ncm),
+        cfop,
+        unidade_comercial: "UN",
+        quantidade_comercial: 1,
+        valor_unitario_comercial: it.valor,
+        valor_bruto: it.valor,
+
+        icms_situacao_tributaria: it.icms.cst,
+        ...se("icms_origem", it.icms.origem),
+        ...se("icms_modalidade_base_calculo", it.icms.modalidadeBase),
+        ...se("icms_reducao_base_calculo", it.icms.reducaoBase),
+        ...se("icms_base_calculo", it.icms.baseCalculo),
+        ...se("icms_aliquota", it.icms.aliquota),
+        ...se("icms_valor", it.icms.valor),
+
+        pis_situacao_tributaria: it.pis.cst,
+        ...se("pis_base_calculo", it.pis.baseCalculo),
+        ...se("pis_aliquota_porcentual", it.pis.aliquota),
+        ...se("pis_valor", it.pis.valor),
+
+        cofins_situacao_tributaria: it.cofins.cst,
+        ...se("cofins_base_calculo", it.cofins.baseCalculo),
+        ...se("cofins_aliquota_porcentual", it.cofins.aliquota),
+        ...se("cofins_valor", it.cofins.valor),
+
+        ...(ibs
+          ? {
+              ibs_cbs_situacao_tributaria: ibs.cst,
+              ibs_cbs_classificacao_tributaria: ibs.classificacao,
+              ibs_cbs_base_calculo: ibs.baseCalculo,
+              ibs_uf_aliquota: ibs.ibsUfAliquota,
+              ibs_uf_valor: ibs.ibsUfValor,
+              ibs_mun_aliquota: ibs.ibsMunAliquota,
+              ibs_mun_valor: ibs.ibsMunValor,
+              cbs_aliquota: ibs.cbsAliquota,
+              cbs_valor: ibs.cbsValor,
+            }
+          : {}),
+      },
+    ],
+  };
+
+  const excedeu = validaLimites(payload);
+  if (excedeu) return excedeu;
+  return { payload, tipo: "venda" };
 }
 
 /**

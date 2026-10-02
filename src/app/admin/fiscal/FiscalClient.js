@@ -4,10 +4,13 @@ import { useState, useTransition, useEffect, useRef } from "react";
 import Link from "next/link";
 import styles from "../admin.module.css";
 import { orientacaoDoErro, DONO } from "@/lib/fiscal/orientacao";
+import { CFOP_CONSIGNACAO_RECEBIDA } from "@/lib/fiscal/fechamento";
 import {
   atualizarStatusAction,
   cancelarNotaAction,
   devolverConsignacaoAction,
+  devolverNotaAction,
+  devolverNotaPorXmlAction,
   cartaCorrecaoAction,
   registrarCancelamentoExternoAction,
 } from "./actions";
@@ -367,7 +370,7 @@ function FormularioBaixa({ baixa, setBaixa, salvar, salvando }) {
  * agora, posso emitir de novo? Preciso preencher tudo outra vez? Sem resposta
  * na tela, essa pergunta vira mensagem para quem construiu o sistema.
  */
-function LiberadoParaReemitir({ nota }) {
+function LiberadoParaReemitir({ nota, devolvida = false }) {
   const entrada = nota.operacao === "entrada";
   const destino = entrada
     ? `/admin/fiscal/entrada/${nota.vehicle_id}?refazer=${encodeURIComponent(nota.ref)}`
@@ -394,9 +397,10 @@ function LiberadoParaReemitir({ nota }) {
           fontWeight: 700,
         }}
       >
-        Liberado para emitir de novo
+        {devolvida ? "Devolvida · liberado para emitir de novo" : "Liberado para emitir de novo"}
       </div>
       <p style={{ fontSize: "0.82rem", color: "#374151", margin: "4px 0 0", lineHeight: 1.45 }}>
+        {devolvida && "A devolução desta nota foi autorizada. Agora emita a nota nova com o valor certo. "}
         {entrada
           ? "Não precisa começar do zero: o formulário abre preenchido com os dados desta nota. Confira o que estava errado, corrija e emita."
           : "O veículo voltou a aceitar nota de venda. Preencha a emissão normalmente."}
@@ -411,6 +415,151 @@ function LiberadoParaReemitir({ nota }) {
           {entrada ? "Emitir de novo com os mesmos dados" : "Emitir nota de venda"}
         </Link>
       </p>
+    </div>
+  );
+}
+
+/** Rótulo da devolução pela operação que ela desfaz — o CFOP gravado diz qual. */
+function rotuloDevolucao(cfop) {
+  const c = String(cfop || "");
+  if (c.endsWith("918")) return "Devolução · consignação";
+  if (c.endsWith("202") && (c.startsWith("1") || c.startsWith("2"))) return "Devolução · venda";
+  if (c.endsWith("202")) return "Devolução · compra";
+  return "Devolução";
+}
+
+/**
+ * Confirmação da devolução, aberta na própria linha da nota.
+ *
+ * Diz o que vai acontecer e o passo seguinte ANTES do clique: a devolução sozinha
+ * não corrige nada — é ela mais a nota nova com o valor certo.
+ */
+function PainelDevolucao({ nota, confirmar, fechar, enviando }) {
+  const venda = nota.operacao === "saida";
+  return (
+    <div
+      style={{
+        marginTop: 8,
+        padding: 12,
+        background: "#f7f8fa",
+        border: "1px solid #d8dce5",
+        borderRadius: 6,
+        maxWidth: 420,
+      }}
+    >
+      <strong style={{ fontSize: "0.85rem" }}>
+        Devolver a NF {nota.numero || "—"} ({venda ? "venda" : "compra"})
+      </strong>
+      <p style={{ fontSize: "0.8rem", color: "#4b5563", margin: "4px 0 0", lineHeight: 1.45 }}>
+        Use quando o valor mudou e já não dá para cancelar (mês apurado). Sai uma
+        nota de devolução com os mesmos dados e valores desta, de{" "}
+        {money(nota.valor)}. Quando ela for autorizada, o carro fica liberado para
+        a nota nova com o valor certo.
+      </p>
+      <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+        <button
+          type="button"
+          onClick={confirmar}
+          className={`${styles.btnPrimary} ${styles.btnSmall}`}
+          disabled={enviando}
+          style={{ minHeight: 44 }}
+        >
+          {enviando ? "Emitindo…" : "Emitir nota de devolução"}
+        </button>
+        <button
+          type="button"
+          onClick={fechar}
+          className={`${styles.btnSecondary} ${styles.btnSmall}`}
+          style={{ minHeight: 44 }}
+        >
+          Cancelar
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Devolução da nota que o ESCRITÓRIO emitiu (série 1). Ela não passou pelo
+ * sistema, então o XML vem da contabilidade — e é dele que saem a pessoa, o
+ * valor e a chave. Nada é digitado.
+ */
+function DevolucaoPorXml({ veiculos, setErr }) {
+  const [veiculo, setVeiculo] = useState("");
+  const [arquivo, setArquivo] = useState(null);
+  const [enviando, startEnvio] = useTransition();
+  const [feito, setFeito] = useState(false);
+
+  function enviar() {
+    setErr(null);
+    setFeito(false);
+    startEnvio(async () => {
+      const xml = await arquivo.text();
+      const r = await devolverNotaPorXmlAction(veiculo, xml);
+      if (r?.error) setErr(r.error);
+      else {
+        setFeito(true);
+        setArquivo(null);
+      }
+    });
+  }
+
+  return (
+    <div className={styles.card} style={{ marginBottom: 24 }}>
+      <h3 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: 4 }}>
+        Devolver nota emitida pela contabilidade
+      </h3>
+      <p style={{ fontSize: "0.85rem", color: "#666", margin: "0 0 12px" }}>
+        Para nota que o escritório emitiu (série 1) e precisa ser devolvida —
+        por exemplo, o valor mudou depois de o mês ser apurado. Peça o arquivo{" "}
+        <strong>.xml</strong> da nota à contabilidade. Nota emitida aqui pelo
+        sistema se devolve pelo botão na lista de notas, abaixo.
+      </p>
+      <div className={styles.formGrid}>
+        <div className={styles.formGroup}>
+          <label className={styles.formLabel}>Veículo da nota</label>
+          <select
+            className={styles.formSelect}
+            value={veiculo}
+            onChange={(e) => setVeiculo(e.target.value)}
+          >
+            <option value="">— escolha —</option>
+            {veiculos.map((v) => (
+              <option key={v.id} value={v.id}>
+                {v.brand} {v.model} {v.year}
+                {v.placa ? ` — ${v.placa}` : ""}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className={styles.formGroup}>
+          <label className={styles.formLabel}>XML da nota</label>
+          <input
+            type="file"
+            accept=".xml,text/xml,application/xml"
+            className={styles.formInput}
+            onChange={(e) => setArquivo(e.target.files?.[0] || null)}
+            style={{ minHeight: 48 }}
+          />
+        </div>
+        <div className={styles.formActions}>
+          <button
+            type="button"
+            onClick={enviar}
+            className={styles.btnPrimary}
+            disabled={!veiculo || !arquivo || enviando}
+            style={{ minHeight: 48 }}
+          >
+            {enviando ? "Emitindo…" : "Emitir nota de devolução"}
+          </button>
+        </div>
+      </div>
+      {feito && (
+        <p style={{ fontSize: "0.85rem", color: "#15803d", margin: "10px 0 0" }}>
+          Devolução enviada. Ela aparece na lista abaixo; quando estiver autorizada,
+          emita a nota nova com o valor certo.
+        </p>
+      )}
     </div>
   );
 }
@@ -513,6 +662,7 @@ export default function FiscalClient({
   vendidos,
   semEntrada = [],
   consignacoes = [],
+  veiculos = [],
 }) {
   const [isPending, startTransition] = useTransition();
   const [err, setErr] = useState(null);
@@ -521,6 +671,8 @@ export default function FiscalClient({
   const [entradaSel, setEntradaSel] = useState("");
   // Formulário de baixa de nota cancelada por fora, aberto na própria linha.
   const [baixa, setBaixa] = useState(null);
+  // Confirmação de devolução, aberta na própria linha (ref da nota).
+  const [devolucao, setDevolucao] = useState(null);
 
   // Notas que este carregamento da tela já foi consultar. Sem isto, cada
   // revalidação devolve `notas` novo, o efeito roda de novo e a consulta vira
@@ -576,6 +728,17 @@ export default function FiscalClient({
     startTransition(async () => {
       const r = await devolverConsignacaoAction(c.vehicle_id);
       if (r?.error) setErr(r.error);
+      setPendingRef(null);
+    });
+  }
+
+  function confirmarDevolucao(ref) {
+    setErr(null);
+    setPendingRef(ref);
+    startTransition(async () => {
+      const r = await devolverNotaAction(ref);
+      if (r?.error) setErr(r.error);
+      else setDevolucao(null);
       setPendingRef(null);
     });
   }
@@ -808,6 +971,8 @@ export default function FiscalClient({
         </div>
       )}
 
+      {ativo && <DevolucaoPorXml veiculos={veiculos} setErr={setErr} />}
+
       {!ativo && (
         <div
           className={styles.card}
@@ -875,7 +1040,7 @@ export default function FiscalClient({
                             marginTop: 2,
                           }}
                         >
-                          Devolução · consignação
+                          {rotuloDevolucao(n.cfop)}
                         </div>
                       )}
                       {n.operacao === "entrada" && (
@@ -920,6 +1085,22 @@ export default function FiscalClient({
                           em seguida. Na coluna do carro o bloco estourava a
                           largura e ficava longe da pergunta que ele responde. */}
                       {n.status === "cancelada" && <LiberadoParaReemitir nota={n} />}
+                      {n.devolucao_status === "autorizada" && (
+                        <LiberadoParaReemitir nota={n} devolvida />
+                      )}
+                      {n.devolucao_status === "processando" && (
+                        <div style={{ fontSize: "0.75rem", color: "#a16207", marginTop: 4 }}>
+                          Devolução enviada — aguardando a SEFAZ
+                        </div>
+                      )}
+                      {devolucao === n.ref && (
+                        <PainelDevolucao
+                          nota={n}
+                          confirmar={() => confirmarDevolucao(n.ref)}
+                          fechar={() => setDevolucao(null)}
+                          enviando={isPending && pendingRef === n.ref}
+                        />
+                      )}
                       {baixa?.ref === n.ref && (
                         <FormularioBaixa
                           baixa={baixa}
@@ -976,7 +1157,7 @@ export default function FiscalClient({
                           {isPending && pendingRef === n.ref ? "Atualizando…" : "Atualizar"}
                         </button>
                       )}
-                      {n.status === "autorizada" && (
+                      {n.status === "autorizada" && !n.devolucao_status && (
                         <button
                           onClick={() => handleCorrigir(n)}
                           className={`${styles.btnSecondary} ${styles.btnSmall}`}
@@ -991,7 +1172,7 @@ export default function FiscalClient({
                           não consegue fazer sozinha —, é aqui que a loja
                           registra e destrava a reemissão do veículo. Sem isto,
                           a única saída era chamar suporte técnico. */}
-                      {n.status === "autorizada" && (
+                      {n.status === "autorizada" && !n.devolucao_status && (
                         <button
                           onClick={() => abrirBaixa(n)}
                           className={`${styles.btnSecondary} ${styles.btnSmall}`}
@@ -1001,7 +1182,7 @@ export default function FiscalClient({
                           Já cancelada por fora
                         </button>
                       )}
-                      {n.status === "autorizada" && (
+                      {n.status === "autorizada" && !n.devolucao_status && (
                         <button
                           onClick={() => handleCancelar(n.ref)}
                           className={`${styles.btnSecondary} ${styles.btnSmall}`}
@@ -1010,6 +1191,26 @@ export default function FiscalClient({
                           {isPending && pendingRef === n.ref ? "Cancelando…" : "Cancelar"}
                         </button>
                       )}
+                      {/* Venda ou compra de mês já apurado cujo valor mudou:
+                          não cabe mais cancelar, devolve e emite de novo.
+                          Consignação tem o cartão próprio, lá em cima. */}
+                      {n.status === "autorizada" &&
+                        !n.devolucao_status &&
+                        (n.operacao === "saida" ||
+                          (n.operacao === "entrada" &&
+                            !CFOP_CONSIGNACAO_RECEBIDA.includes(String(n.cfop)))) && (
+                          <button
+                            onClick={() => {
+                              setErr(null);
+                              setDevolucao(n.ref);
+                            }}
+                            className={`${styles.btnSecondary} ${styles.btnSmall}`}
+                            disabled={isPending && pendingRef === n.ref}
+                            title="Para quando o valor mudou e já não dá para cancelar"
+                          >
+                            Devolver
+                          </button>
+                        )}
                     </td>
                   </tr>
                 ))}

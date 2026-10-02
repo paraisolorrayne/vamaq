@@ -67,6 +67,7 @@ before(async () => {
     // incondicionalmente em getDadosEmissao — sem esta coluna, toda chamada
     // à Focus falharia antes de sair, na leitura do veículo.
     "estoque-ciclo.sql",
+    "fiscal-devolucao-nota.sql",
   ]) {
     await pool.query(await readFile(path.join(ROOT, "db", f), "utf8"));
   }
