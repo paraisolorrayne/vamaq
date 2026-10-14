@@ -432,7 +432,8 @@ export async function notaEntradaAtiva(vehicleId, ciclo) {
 }
 
 /**
- * Emite a NF-e de ENTRADA de um veículo comprado de pessoa física.
+ * Emite a NF-e de ENTRADA de um veículo comprado de pessoa física ou de
+ * empresa sem inscrição estadual.
  *
  * É o passo que hoje trava a operação: o texto obrigatório da nota de VENDA
  * cita o número da nota de ENTRADA, então enquanto a entrada depender do

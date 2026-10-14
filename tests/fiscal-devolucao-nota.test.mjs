@@ -190,6 +190,19 @@ test("a nota do escritório (série 1) é devolvida pela série do sistema", () 
   assert.equal(payload.serie, "2");
 });
 
+test("compra de empresa SEM IE volta com o CNPJ — o XML sem IE é a confirmação", () => {
+  // A entrada para empresa sem IE só sai com a confirmação da operadora
+  // (14/10/2026). Na volta, quem confirma é a própria nota autorizada: ela não
+  // tem IE do destinatário. Pedir de novo travaria a devolução.
+  const { payload, error } = devolver(
+    xmlEntrada({ vendedor: { doc: "11222333000181", nome: "Locadora Ltda" } })
+  );
+  assert.equal(error, undefined, error);
+  assert.equal(payload.cnpj_destinatario, "11222333000181");
+  assert.equal(payload.cpf_destinatario, undefined);
+  assert.equal(payload.indicador_inscricao_estadual_destinatario, 9);
+});
+
 test("compra de outro estado (2102) volta como 6202", () => {
   const { payload } = devolver(
     xmlEntrada({ cfop: "2102", vendedor: { doc: "52998224725", nome: "Joao", uf: "GO", municipio: "Catalao" } })

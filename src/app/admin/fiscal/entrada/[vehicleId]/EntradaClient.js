@@ -6,16 +6,18 @@ import styles from "../../../admin.module.css";
 import { emitirNotaEntradaAction } from "../../actions";
 
 /**
- * Nota fiscal de ENTRADA — a que a Vamaq emite ao COMPRAR um veículo de
- * pessoa física.
+ * Nota fiscal de ENTRADA — a que a Vamaq emite ao COMPRAR (ou receber em
+ * consignação) um veículo de pessoa física ou de empresa sem inscrição
+ * estadual.
  *
  * É o passo que destrava a venda: o texto obrigatório da nota de saída cita o
  * número da nota de entrada do carro. Enquanto a entrada depender do
  * escritório, nenhuma venda sai.
  *
- * Comprando de EMPRESA não se emite nada aqui — a empresa é contribuinte e
- * emite a própria nota de venda. A tela diz isso antes de a pessoa preencher
- * tudo e levar o erro no fim.
+ * Empresa COM inscrição estadual emite a própria nota — a Vamaq não emite
+ * nada aqui. A tela não tem como consultar a IE: quando o documento digitado é
+ * CNPJ, ela mostra o aviso e pede a confirmação de que a empresa NÃO tem IE,
+ * antes de a pessoa levar o erro no fim.
  */
 const VAZIO = {
   nome: "",
@@ -26,7 +28,10 @@ const VAZIO = {
   bairro: "",
   municipio: "",
   uf: "MG",
+  semIe: false,
 };
+
+const ehCnpj = (doc) => String(doc ?? "").replace(/\D/g, "").length === 14;
 
 export default function EntradaClient({ veiculo, ativo, notaExistente, anterior }) {
   // Vindo de um cancelamento, o formulário nasce preenchido com o que já
@@ -53,7 +58,9 @@ export default function EntradaClient({ veiculo, ativo, notaExistente, anterior 
     setErro(null);
     startTransition(async () => {
       const r = await emitirNotaEntradaAction(veiculo.id, {
-        remetente,
+        // A confirmação só vale para CNPJ: quem digitou um CNPJ, marcou e
+        // depois trocou por CPF não pode levar o "sem IE" gravado junto.
+        remetente: { ...remetente, semIe: ehCnpj(remetente.doc) && remetente.semIe },
         valorAquisicao: Number(String(valor).replace(/\./g, "").replace(",", ".")) || 0,
         consignacao,
       });
@@ -112,11 +119,11 @@ export default function EntradaClient({ veiculo, ativo, notaExistente, anterior 
       </div>
 
       <div className={styles.card} style={{ marginBottom: 24, borderLeft: "4px solid #7f9ad6" }}>
-        <strong>Só para compra de pessoa física</strong>
+        <strong>Pessoa física ou empresa sem inscrição estadual</strong>
         <p style={{ fontSize: "0.9rem", color: "#333", margin: "6px 0 0" }}>
-          Se você comprou o carro de uma <strong>empresa</strong>, não emita nada aqui:
-          quem emite a nota é ela, e a Vamaq só recebe e guarda. Emitir também
-          colocaria duas notas na mesma compra.
+          Se o carro veio de uma <strong>empresa com inscrição estadual</strong>, não
+          emita nada aqui: quem emite a nota é ela, e a Vamaq só recebe e guarda.
+          Emitir também colocaria duas notas no mesmo carro.
         </p>
         <p style={{ fontSize: "0.9rem", color: "#333", margin: "6px 0 0" }}>
           Esta nota é o que <strong>destrava a venda</strong>: o texto da nota de venda
@@ -172,15 +179,35 @@ export default function EntradaClient({ veiculo, ativo, notaExistente, anterior 
         </h3>
         <div className={styles.formGrid}>
           <div className={`${styles.formGroup} ${styles.formGroupFull}`}>
-            <label className={styles.formLabel}>Nome completo *</label>
+            <label className={styles.formLabel}>Nome completo ou razão social *</label>
             <input className={styles.formInput} value={remetente.nome}
               onChange={(e) => set("nome", e.target.value)} required />
           </div>
           <div className={styles.formGroup}>
-            <label className={styles.formLabel}>CPF *</label>
+            <label className={styles.formLabel}>CPF ou CNPJ *</label>
             <input className={styles.formInput} value={remetente.doc}
               onChange={(e) => set("doc", e.target.value)} placeholder="000.000.000-00" required />
           </div>
+          {ehCnpj(remetente.doc) && (
+            <div className={`${styles.formGroup} ${styles.formGroupFull}`}
+              style={{ borderLeft: "4px solid #e8b84b", background: "#fff7e8", padding: 12, borderRadius: 4 }}>
+              <strong style={{ color: "#a8752e" }}>Empresa: precisa conferir a inscrição estadual</strong>
+              <p style={{ fontSize: "0.9rem", color: "#333", margin: "6px 0 0" }}>
+                Se a empresa <strong>tem inscrição estadual</strong>, não emita aqui: ela é
+                obrigada a emitir a própria nota (de consignação ou de venda) para a Vamaq.
+                Peça a nota a ela.
+              </p>
+              <p style={{ fontSize: "0.9rem", color: "#333", margin: "6px 0 0" }}>
+                Só emita aqui se ela <strong>não tiver</strong>. Para conferir, consulte o
+                CNPJ no <a href="http://www.sintegra.gov.br" target="_blank" rel="noreferrer">Sintegra</a>.
+              </p>
+              <label className={styles.toggleLabel} style={{ minHeight: 48, display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
+                <input type="checkbox" checked={Boolean(remetente.semIe)}
+                  onChange={(e) => set("semIe", e.target.checked)} required />
+                <span>Conferi: esta empresa <strong>não tem</strong> inscrição estadual</span>
+              </label>
+            </div>
+          )}
           <div className={styles.formGroup}>
             <label className={styles.formLabel}>CEP *</label>
             <input className={styles.formInput} value={remetente.cep}

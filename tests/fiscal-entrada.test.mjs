@@ -123,12 +123,47 @@ test("IBS/CBS NÃO sai na entrada enquanto o contador não confirmar", () => {
   );
 });
 
-test("comprando de EMPRESA a nota não sai — quem emite é ela", () => {
+// ── Empresa como contraparte ───────────────────────────────────────────────
+//
+// O QUE ACONTECEU (14/10/2026): a Mayra foi emitir a entrada de um carro
+// consignado por uma empresa e o sistema recusou todo CNPJ. A regra fiscal não
+// é CPF × CNPJ, é ter ou não Inscrição Estadual: empresa COM IE é obrigada a
+// emitir a própria nota (remessa em consignação, venda) — a Vamaq só recebe e
+// escritura; empresa SEM IE não emite nota de mercadoria, e quem recebe o carro
+// emite a entrada, igual faz com pessoa física.
+//
+// O sistema não tem como consultar a IE sozinho, então a operadora confirma na
+// tela (`semIe`). Sem a confirmação, o CNPJ continua barrado.
+
+const EMPRESA_SEM_IE = {
+  ...PESSOA_FISICA,
+  nome: "Locadora Exemplo Ltda",
+  doc: "11.222.333/0001-81",
+  semIe: true,
+};
+
+test("empresa COM inscrição estadual não sai — quem emite a nota é ela", () => {
   const { error, payload } = monta({
-    remetente: { ...PESSOA_FISICA, doc: "45.348.469/0001-54" },
+    remetente: { ...EMPRESA_SEM_IE, semIe: false },
   });
   assert.equal(payload, undefined);
-  assert.match(error, /pessoa física|só recebe/i);
+  assert.match(error, /Inscrição Estadual/);
+  assert.match(error, /só recebe/i);
+});
+
+test("empresa SEM inscrição estadual: a Vamaq emite a entrada com o CNPJ", () => {
+  const { payload, error } = monta({ remetente: EMPRESA_SEM_IE, consignacao: true });
+  assert.equal(error, undefined, error);
+  assert.equal(payload.cnpj_destinatario, "11222333000181");
+  assert.equal(payload.cpf_destinatario, undefined, "CPF e CNPJ não vão juntos");
+  // 9 = não contribuinte. É exatamente o que a operadora confirmou.
+  assert.equal(payload.indicador_inscricao_estadual_destinatario, 9);
+  assert.equal(payload.items[0].cfop, "1917");
+});
+
+test("documento que não é CPF nem CNPJ é recusado", () => {
+  const { error } = monta({ remetente: { ...PESSOA_FISICA, doc: "1234567" } });
+  assert.match(error, /CPF ou CNPJ/);
 });
 
 test("valor zerado é recusado antes de qualquer coisa", () => {
@@ -228,6 +263,20 @@ test("entrada e devolução do mesmo carro diferem SÓ no sentido, no CFOP e na 
     assert.equal(volta[campo], ida[campo], `${campo} mudou entre a entrada e a devolução`);
   }
   assert.equal(volta.items[0].descricao, ida.items[0].descricao);
+});
+
+test("a devolução para empresa sem IE volta com o mesmo CNPJ da entrada", () => {
+  // O consignante sai gravado da nota de entrada — com o `semIe` que a
+  // operadora confirmou lá. A volta não pode pedir a confirmação de novo.
+  const ida = montarPayloadEntrada({
+    config: CONFIG, veiculo: VEICULO, remetente: EMPRESA_SEM_IE,
+    valorAquisicao: 160000, consignacao: true,
+  }).payload;
+  const { payload: volta, error } = devolve({ consignante: EMPRESA_SEM_IE });
+  assert.equal(error, undefined, error);
+  assert.equal(volta.cnpj_destinatario, ida.cnpj_destinatario);
+  assert.equal(volta.indicador_inscricao_estadual_destinatario, 9);
+  assert.equal(volta.items[0].cfop, "5918");
 });
 
 test("a mensagem de erro diz QUEM está faltando, não 'a outra parte'", () => {

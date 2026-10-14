@@ -388,20 +388,21 @@ export function montarPayloadNfe({
 
 /**
  * Monta a NF-e de ENTRADA (modelo 55, tpNF = 0) — a nota que a Vamaq emite ao
- * COMPRAR um veículo de pessoa física.
+ * COMPRAR (ou receber em consignação) um veículo de pessoa física ou de
+ * empresa sem inscrição estadual.
  *
  * POR QUE ELA IMPORTA: o texto obrigatório da nota de VENDA cita o número da
  * nota de ENTRADA do veículo. Sem a entrada, a venda não sai. É a ordem que a
  * própria NF 12 impõe.
  *
- * SÓ PESSOA FÍSICA. Comprando de PJ quem emite é a PJ — ela é contribuinte e
- * emite a própria nota de venda; a Vamaq recebe e escritura. Emitir aqui
- * também poria duas notas na mesma compra, com o carro entrando duas vezes no
- * estoque fiscal.
+ * EMPRESA SÓ SEM INSCRIÇÃO ESTADUAL. A com IE é contribuinte e emite a própria
+ * nota; a Vamaq recebe e escritura. Emitir aqui também poria duas notas no
+ * mesmo carro, com ele entrando duas vezes no estoque fiscal. A empresa sem IE
+ * não emite nota de mercadoria, e aí quem recebe emite (14/10/2026).
  *
  * SEM IMPOSTO A DESTACAR: CST 041 (não tributada), ICMS, PIS e COFINS zerados
  * — é o que as notas 14 e 15 da Vamaq, autorizadas pela SEFAZ-MG, registram.
- * Quem vendeu é pessoa física e não destaca imposto nenhum.
+ * Quem vendeu não é contribuinte e não destaca imposto nenhum.
  *
  * `remetente` é quem VENDEU o carro para a Vamaq. Ele vai nos campos de
  * destinatário do layout: numa nota de entrada é o `tipo_documento: 0` que diz
@@ -570,7 +571,9 @@ export function montarPayloadDevolucao({ config, veiculo, original }) {
     const montado = montarPayloadSemImposto({
       config,
       veiculo,
-      contraparte: original.contraparte,
+      // Empresa na entrada só passou porque não tinha IE — e a nota autorizada
+      // é a prova: sem IE no destinatário, a confirmação já foi feita na ida.
+      contraparte: { ...original.contraparte, semIe: !so_digitos(original.contraparte?.ie) },
       valor: original.valorTotal,
       saida: true,
       finalidade: 4,
@@ -707,9 +710,10 @@ function montarPayloadDevolucaoVenda({ config, original, chave, referencia, nota
  * física, entrada de consignação e devolução de consignação.
  *
  * As três têm a mesma natureza fiscal — CST 041, ICMS/PIS/COFINS zerados,
- * contraparte pessoa física sem IE — e diferem só no CFOP, na natureza da
- * operação e no sentido (`tipo_documento`). Duplicar o corpo para cada uma
- * seria três lugares para corrigir quando a SEFAZ recusar um campo.
+ * contraparte sem IE (pessoa física ou empresa não contribuinte) — e diferem
+ * só no CFOP, na natureza da operação e no sentido (`tipo_documento`).
+ * Duplicar o corpo para cada uma seria três lugares para corrigir quando a
+ * SEFAZ recusar um campo.
  */
 function montarPayloadSemImposto({
   config,
@@ -745,11 +749,22 @@ function montarPayloadSemImposto({
     if (!contraparte?.[campo]) return { error: `${papel} está sem ${rotulo}.` };
   }
 
+  // A regra fiscal não é CPF × CNPJ, é ter ou não Inscrição Estadual (Mayra,
+  // 14/10/2026, carro consignado por empresa). Empresa COM IE é obrigada a
+  // emitir a própria nota — a Vamaq só recebe e escritura; emitir aqui poria
+  // duas notas no mesmo carro. Empresa SEM IE não emite nota de mercadoria, e
+  // quem recebe o carro emite, igual faz com pessoa física. O sistema não
+  // consulta a IE: a operadora confirma na tela e a confirmação fica gravada
+  // com a contraparte — é dela que a devolução lê.
   const doc = so_digitos(contraparte.doc);
-  if (doc.length !== 11) {
+  if (doc.length !== 11 && doc.length !== 14) {
+    return { error: `${papel} está com CPF ou CNPJ inválido.` };
+  }
+  const ehCnpj = doc.length === 14;
+  if (ehCnpj && contraparte.semIe !== true) {
     return {
       error:
-        "A nota de entrada é só para compra de pessoa física (CPF). Comprando de empresa, quem emite a nota é ela — a Vamaq só recebe e escritura.",
+        "Empresa com Inscrição Estadual emite a própria nota — peça a nota a ela; a Vamaq só recebe e escritura. Se a empresa NÃO tem Inscrição Estadual, marque essa opção na tela e emita de novo.",
     };
   }
 
@@ -778,11 +793,12 @@ function montarPayloadSemImposto({
       modalidade_frete: String(config.modalidade_frete_entrada ?? "1"),
       presenca_comprador: "1",
       consumidor_final: "1",
-      // Pessoa física não tem inscrição estadual.
+      // 9 = não contribuinte: pessoa física, ou empresa que a operadora
+      // confirmou não ter inscrição estadual (a com IE foi barrada acima).
       indicador_inscricao_estadual_destinatario: 9,
 
       nome_destinatario: contraparte.nome,
-      cpf_destinatario: doc,
+      [ehCnpj ? "cnpj_destinatario" : "cpf_destinatario"]: doc,
       cep_destinatario: so_digitos(contraparte.cep),
       logradouro_destinatario: contraparte.logradouro,
       numero_destinatario: String(contraparte.numero),

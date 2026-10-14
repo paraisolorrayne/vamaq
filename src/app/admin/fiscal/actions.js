@@ -45,7 +45,8 @@ export async function emitirNotaAction(
 }
 
 /**
- * Emite a nota de ENTRADA — compra de veículo de pessoa física.
+ * Emite a nota de ENTRADA — compra de veículo de pessoa física ou de empresa
+ * sem inscrição estadual.
  *
  * Ação separada da emissão de venda de propósito: são operações fiscais
  * diferentes (tpNF 0 × 1, CFOP 1102 × 5102, imposto zerado × destacado), e um

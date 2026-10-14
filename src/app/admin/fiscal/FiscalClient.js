@@ -867,7 +867,8 @@ export default function FiscalClient({
         </div>
       )}
 
-      {/* Nota de ENTRADA — a que a Vamaq emite ao COMPRAR de pessoa física.
+      {/* Nota de ENTRADA — a que a Vamaq emite ao COMPRAR de pessoa física
+          (ou de empresa sem inscrição estadual).
           Fica num cartão próprio, e não como opção dentro do de cima, porque é
           a operação inversa: uma nasce da venda, a outra da compra. Misturar as
           duas num seletor só seria convite a emitir a errada. */}
@@ -879,7 +880,7 @@ export default function FiscalClient({
           <p style={{ fontSize: "0.85rem", color: "#666", margin: "0 0 12px" }}>
             Ao <strong>comprar</strong> um carro de pessoa física. É esta nota que
             destrava a venda — o texto da nota de venda cita o número dela.
-            Comprando de empresa, quem emite é ela.
+            Comprando de empresa com inscrição estadual, quem emite é ela.
           </p>
           {semEntrada.length === 0 ? (
             <p style={{ fontSize: "0.9rem", color: "#666", margin: 0 }}>
