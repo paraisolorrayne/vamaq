@@ -87,6 +87,24 @@ test("defeito nosso é chamado de defeito nosso", () => {
   assert.match(o.oQueFazer, /nada foi emitido/i);
 });
 
+test("cadastro bloqueado na SEFAZ é da outra parte, não da nota", () => {
+  // Rejeição 305, 15/10/2026: entrada de um Velar comprado de empresa sem IE.
+  // O CNPJ está bloqueado no cadastro de contribuintes da UF — nenhuma nota
+  // com ele passa, e não há o que mudar no preenchimento nem no sistema. A
+  // tela genérica mandava à contabilidade decifrar.
+  for (const m of [
+    "Rejeicao: Destinatario bloqueado na UF",
+    "Rejeição 305: Destinatário bloqueado na UF",
+  ]) {
+    const o = orientacaoDoErro(m);
+    assert.equal(o.reconhecido, true, m);
+    assert.equal(o.dono, DONO.OPERACAO, m);
+    assert.match(o.oQueFazer, /SEFAZ/);
+    assert.match(o.oQueFazer, /emita de novo/i);
+    assert.doesNotMatch(o.oQueFazer, /suporte/i);
+  }
+});
+
 test("o texto original sempre volta — é dele que a contabilidade precisa", () => {
   const cru = "Rejeicao 999: mensagem tecnica qualquer";
   assert.equal(orientacaoDoErro(cru).mensagemOriginal, cru);

@@ -75,6 +75,16 @@ const CONHECIDOS = [
     dono: DONO.CONTABILIDADE,
   },
   {
+    // Rejeição 305: o documento consta bloqueado como destinatário no cadastro
+    // de contribuintes da UF. Nenhuma nota com ele passa, e não há campo a
+    // corrigir — quem resolve é a outra parte, com a SEFAZ (15/10/2026).
+    quando: /destinat[aá]rio bloqueado/i,
+    resumo: "A SEFAZ bloqueou o CPF ou CNPJ da outra parte desta nota.",
+    oQueFazer:
+      "Não é erro de preenchimento nem do sistema, e nenhum número de nota foi gasto. O cadastro de quem está na nota com a Vamaq — o comprador, ou quem vendeu o carro, na nota de entrada — está bloqueado na SEFAZ do estado, e nenhuma nota com esse documento passa até ele se regularizar. Consulte o documento no Sintegra, avise a pessoa ou a empresa para resolver com a SEFAZ e, depois, emita de novo.",
+    dono: DONO.OPERACAO,
+  },
+  {
     quando: /inscri[cç][aã]o estadual|ie.*(inv[aá]lid|incorret)|cadastro.*destinat[aá]rio/i,
     resumo: "Os dados de cadastro do cliente não foram aceitos.",
     oQueFazer:
