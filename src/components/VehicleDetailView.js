@@ -6,6 +6,7 @@ import Image from 'next/image';
 import VehicleCard from '@/components/VehicleCard';
 import { getWhatsAppUrl } from '@/lib/whatsapp';
 import { anoVeiculo } from '@/lib/anoVeiculo';
+import { letrasDaMaiorPalavra } from '@/lib/maiorPalavra';
 import styles from '@/app/veiculo/[slug]/veiculo.module.css';
 
 function resolveGalleryImages(vehicle) {
@@ -100,6 +101,7 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
   const version = vehicle.fuel
     ? `${vehicle.power || ''} ${vehicle.fuel} ${vehicle.transmission || ''}`.trim()
     : '';
+  const opcionais = vehicle.opcionais || [];
   const priceLabel = vehicle.price
     ? `R$ ${vehicle.price.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`
     : 'Sob consulta';
@@ -116,7 +118,12 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
         <div className={styles.heroInner}>
           <div className={styles.heroInfo}>
             <h5 className={styles.heroBrand}>{vehicle.brand}</h5>
-            <h1 className={styles.heroModel}>{vehicle.model}</h1>
+            <h1
+              className={styles.heroModel}
+              style={{ '--letras': letrasDaMaiorPalavra(vehicle.model) }}
+            >
+              {vehicle.model}
+            </h1>
             {version && <h2 className={styles.heroVersion}>{version}</h2>}
 
             <div className={styles.heroMeta}>
@@ -386,6 +393,21 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
                     <p className={styles.infoPanelText}>{vehicle.description}</p>
                   </div>
                 )}
+                {opcionais.length > 0 && (
+                  <div className={styles.infoPanelBlock}>
+                    <h4 className={styles.infoPanelTitle}>Opcionais</h4>
+                    <ul className={styles.opcionaisList}>
+                      {opcionais.map((item, i) => (
+                        <li key={`${item}-${i}`} className={styles.opcionaisItem}>
+                          <svg className={styles.opcionaisCheck} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
                 {vehicle.specs?.engine && (
                   <div className={styles.infoPanelBlock}>
                     <h4 className={styles.infoPanelTitle}>Performance</h4>
@@ -409,7 +431,7 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
                     </dl>
                   </div>
                 )}
-                {!vehicle.description && !vehicle.specs?.engine && (
+                {!vehicle.description && !vehicle.specs?.engine && !opcionais.length && (
                   <div className={styles.infoPanelBlock}>
                     <h4 className={styles.infoPanelTitle}>Detalhes</h4>
                     <p className={styles.infoPanelText}>

@@ -1,6 +1,6 @@
 /* ============================================
    ACERVO — Catálogo de veículos
-   Avantgarde-inspired filter sidebar + card grid
+   Grade de cards em largura total + painel de filtros
    ============================================ */
 
 .page {
@@ -139,13 +139,15 @@
   outline: none;
 }
 
-/* --- Sidebar (mobile = overlay) --- */
+/* --- Painel de filtros (overlay em todas as larguras) --- */
 
 .sidebar {
   display: none;
   position: fixed;
   inset: 0;
-  z-index: 200;
+  /* Acima do cabeçalho fixo (1000/1001) e do WhatsApp flutuante (900). Com
+     200, o logo e o menu cobriam o título "Filtros" e o botão de fechar. */
+  z-index: 1100;
   background: rgba(0, 0, 0, 0.4);
 }
 
@@ -409,52 +411,14 @@
   }
 }
 
+/* Desde 20/10/2026 o filtro é painel em TODAS as larguras (botão "Filtrar"
+   na barra). A coluna lateral fixa do desktop ocupava 288px e deixava a foto
+   do card com ~240px; sem ela a grade usa a largura toda e a foto passa de
+   380px. */
 @media (min-width: 1024px) {
-  .layout {
-    grid-template-columns: 288px 1fr;
-    gap: var(--space-2xl);
-  }
-
-  .sidebar {
-    display: block;
-    position: static;
-    background: none;
-  }
-
-  .sidebarInner {
-    position: sticky;
-    top: 108px;
-    width: auto;
-    max-width: none;
-    height: calc(100svh - 128px);
-    padding: var(--space-md);
-    overflow: auto;
-    box-shadow: none;
-    background: var(--bg-primary);
-    border: 1px solid var(--border-light);
-    border-radius: var(--radius-md);
-  }
-
-  .sidebarClose {
-    display: none;
-  }
-
-  .filterToggle {
-    display: none;
-  }
-
-  .sortWrap {
-    margin-left: auto;
-  }
-
-  .grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (min-width: 1280px) {
   .grid {
     grid-template-columns: repeat(3, 1fr);
+    gap: 40px 24px;
   }
 }
 

@@ -326,8 +326,10 @@ hora.
 ```bash
 # 1. checagem geral de "o deploy não derrubou o site" — NÃO prova a migration:
 #    ficaria com a mesma cara com ou sem db/estoque-ciclo.sql aplicado
-curl -s https://vamaqmotors.com.br/acervo | grep -o "Tenho Interesse" | wc -l
-# tem que voltar mais que zero. Use `grep -o | wc -l`, não `grep -c`: -c conta
+curl -s https://vamaqmotors.com.br/acervo | grep -o 'href="/veiculo/' | wc -l
+# tem que voltar mais que zero (um link por card). Até 20/10/2026 se contava
+# "Tenho Interesse", que saiu dos cards — contar o texto do botão dá zero com
+# a vitrine cheia. Use `grep -o | wc -l`, não `grep -c`: -c conta
 # LINHAS com ocorrência, e o HTML do Next varia de quebra de linha entre um
 # build e outro — dá pra ler uma queda que não existe.
 

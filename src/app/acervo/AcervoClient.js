@@ -51,6 +51,17 @@ function Acervo({ veiculos }) {
 
   const [drawerAberto, setDrawerAberto] = useState(false);
 
+  // No desktop o painel agora também é overlay, e lá a pessoa espera fechar
+  // com Esc — no celular era só o toque fora ou o ×.
+  useEffect(() => {
+    if (!drawerAberto) return;
+    const fecha = (e) => {
+      if (e.key === "Escape") setDrawerAberto(false);
+    };
+    document.addEventListener("keydown", fecha);
+    return () => document.removeEventListener("keydown", fecha);
+  }, [drawerAberto]);
+
   /**
    * Escreve os filtros na URL. `replace` e não `push`: cada clique num
    * checkbox não deve virar uma entrada no histórico — sair da página

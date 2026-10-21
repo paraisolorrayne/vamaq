@@ -12,9 +12,12 @@ const SELECT = `
   select id, slug, brand, model, year, ano_modelo, price, quilometragem,
          fuel, transmission, power, color, body_type, featured, badge,
          blindagem, created_at,
-         images, specs, description
+         images, specs, description, opcionais
   from vehicles
 `;
+// opcionais entrou em 20/10/2026: o admin já cadastrava a lista desde o
+// início, mas ela não saía daqui, então a página do carro mostrava "Consulte
+// a equipe" mesmo para carro com opcionais preenchidos.
 // blindagem e created_at entraram em 11/09/2026, pelos filtros do acervo:
 //   - o filtro de blindado comparava `badge === 'Blindado'`, e badge é rótulo
 //     de vitrine que alguém digita — carro blindado marcado como "Destaque"
@@ -51,6 +54,10 @@ function rowToVehicle(row) {
     transmission: row.transmission,
     power: row.power,
     description: row.description || '',
+    // Sempre uma lista de textos não vazios: o admin aceita digitação livre.
+    opcionais: Array.isArray(row.opcionais)
+      ? row.opcionais.filter((o) => typeof o === 'string' && o.trim())
+      : [],
     images: {
       main,
       gallery: main ? [main, ...gallery.filter((u) => u !== main)] : gallery,
