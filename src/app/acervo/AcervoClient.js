@@ -2,11 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useState, Suspense } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
 import VehicleCard from "@/components/VehicleCard";
+import RevelaAoRolar from "@/components/cinematica/RevelaAoRolar";
+import ParallaxFotos from "@/components/cinematica/ParallaxFotos";
 import {
   FAIXAS_KM,
   FAIXAS_PRECO,
@@ -50,6 +53,19 @@ function Acervo({ veiculos }) {
   const pagina = Math.max(1, Number(searchParams.get("pagina")) || 1);
 
   const [drawerAberto, setDrawerAberto] = useState(false);
+  const [mouseNaGrade, setMouseNaGrade] = useState(false);
+  const [faixaPronta, setFaixaPronta] = useState(false);
+
+  // No desktop o painel agora também é overlay, e lá a pessoa espera fechar
+  // com Esc — no celular era só o toque fora ou o ×.
+  useEffect(() => {
+    if (!drawerAberto) return;
+    const fecha = (e) => {
+      if (e.key === "Escape") setDrawerAberto(false);
+    };
+    document.addEventListener("keydown", fecha);
+    return () => document.removeEventListener("keydown", fecha);
+  }, [drawerAberto]);
 
   /**
    * Escreve os filtros na URL. `replace` e não `push`: cada clique num
@@ -122,6 +138,9 @@ function Acervo({ veiculos }) {
     (paginaAtual - 1) * POR_PAGINA,
     paginaAtual * POR_PAGINA
   );
+  // Muda quando página ou filtro trocam os cards: entrada e profundidade
+  // procuram de novo os cards novos.
+  const chaveDaPagina = daPagina.map((v) => v.id).join(",");
 
   const alternar = (campo, valor) => {
     const atuais = filtros[campo] || [];
@@ -380,8 +399,8 @@ function Acervo({ veiculos }) {
             <span>Showroom</span>
           </nav>
 
-          <header className={`${styles.header} revela-entrada`}>
-            <div>
+          <header className={styles.header}>
+            <div className="revela-entrada">
               <h1 className={styles.title}>Showroom</h1>
               <p className={styles.subtitle}>
                 {resultado.length === veiculos.length
@@ -389,6 +408,27 @@ function Acervo({ veiculos }) {
                   : `${resultado.length} de ${veiculos.length} veículo${veiculos.length !== 1 ? "s" : ""}`}
               </p>
             </div>
+
+            {/* A loja, ao lado do título: faixa panorâmica da fachada ao
+                anoitecer que abre como a cortina da /previa e desliza com a
+                rolagem (ParallaxFotos). A foto nunca escurece. */}
+            {/* A cortina só abre com a foto carregada (data-pronta): antes,
+                abria sobre um retângulo vazio. */}
+            <figure className={styles.faixa} data-pronta={faixaPronta ? "" : undefined}>
+              <div className={styles.faixaCamada} data-parallax="">
+                <Image
+                  src="/images/loja/fachada-anoitecer.webp"
+                  alt="Fachada da Vamaq Motors ao anoitecer, com o letreiro aceso"
+                  className={styles.faixaImg}
+                  fill
+                  sizes="(min-width: 900px) 55vw, 100vw"
+                  loading="eager"
+                  onLoad={() => setFaixaPronta(true)}
+                  // Se a foto falhar, a faixa não pode ficar fechada para sempre.
+                  onError={() => setFaixaPronta(true)}
+                />
+              </div>
+            </figure>
           </header>
 
           <div className={styles.layout}>
@@ -470,13 +510,27 @@ function Acervo({ veiculos }) {
               )}
 
               {daPagina.length > 0 ? (
-                <div className={`${styles.grid} revela-grupo`}>
+                // data-revela-grupo: cada card entra ao chegar na tela, em
+                // cascata por fileira (RevelaAoRolar). Substitui o
+                // .revela-grupo, que só animava em Chrome e Safari 26+.
+                <div
+                  className={styles.grid}
+                  data-revela-grupo=""
+                  // O segundo ângulo dos cards só é montado quando um MOUSE
+                  // passa pela grade: no celular (sem hover) ninguém baixa o
+                  // dobro de fotos à toa.
+                  onPointerMove={(e) => {
+                    if (e.pointerType === "mouse" && !mouseNaGrade) setMouseNaGrade(true);
+                  }}
+                >
                   {daPagina.map((veiculo, i) => (
                     <VehicleCard
                       key={veiculo.id}
                       vehicle={veiculo}
                       // Só o primeiro card: é o candidato a LCP da página.
                       prioridade={i === 0}
+                      profundidade
+                      outroAngulo={mouseNaGrade}
                     />
                   ))}
                 </div>
@@ -488,6 +542,11 @@ function Acervo({ veiculos }) {
                   </button>
                 </div>
               )}
+
+              {/* Os cards mudam com a página e com os filtros: a chave faz
+                  procurar de novo os que ainda não entraram. */}
+              <RevelaAoRolar chave={chaveDaPagina} />
+              <ParallaxFotos chave={chaveDaPagina} />
 
               {totalPaginas > 1 && (
                 <nav className={styles.pagination} aria-label="Paginação">

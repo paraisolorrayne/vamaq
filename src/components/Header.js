@@ -29,12 +29,16 @@ function WhatsAppIcon({ className }) {
   );
 }
 
-export default function Header() {
+// `escuro`: página toda sobre fundo escuro (experiência cinematográfica). No
+// topo fica transparente como na home; rolando, vira barra ESCURA em vez da
+// branca — uma faixa branca sobre a cena inteira escura parece um erro.
+export default function Header({ escuro = false }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
   const isHome = pathname === '/';
-  const transparent = isHome && !isScrolled && !isMenuOpen;
+  const transparent = (isHome || escuro) && !isScrolled && !isMenuOpen;
+  const dark = escuro && isScrolled && !isMenuOpen;
 
   const handleScroll = useCallback(() => {
     setIsScrolled(window.scrollY > 50);
@@ -76,6 +80,7 @@ export default function Header() {
     styles.header,
     isScrolled ? styles['header--scrolled'] : '',
     transparent ? styles['header--transparent'] : '',
+    dark ? styles['header--escuro'] : '',
   ]
     .filter(Boolean)
     .join(' ');
@@ -99,7 +104,7 @@ export default function Header() {
       <div className={styles.header__inner}>
         {/* Logo */}
         <Link href="/" className={styles.header__logo} aria-label="Vamaq Motors - Pagina inicial">
-          <LogoVamaq className={styles['header__logo-img']} variant={transparent ? 'dark' : 'light'} />
+          <LogoVamaq className={styles['header__logo-img']} variant={transparent || dark ? 'dark' : 'light'} />
         </Link>
 
         {/* Desktop nav */}

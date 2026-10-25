@@ -74,3 +74,11 @@
     height: 26px;
   }
 }
+
+/* No celular a ficha do carro já tem a barra fixa "Tenho Interesse" (que é
+   o mesmo WhatsApp): o flutuante ficava por cima dela. */
+@media (max-width: 639px) {
+  :global(body:has([data-cta-movel])) .float {
+    display: none;
+  }
+}

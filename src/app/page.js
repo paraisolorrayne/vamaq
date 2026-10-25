@@ -8,6 +8,7 @@ import { getFeaturedVehicles, getAllVehicles } from "@/lib/repositories/vehicles
 import { escolherVitrine } from "@/lib/home/vitrine";
 import { getWhatsAppGenericUrl } from "@/lib/whatsapp";
 import { anoVeiculo } from "@/lib/anoVeiculo";
+import { letrasDaMaiorPalavra } from "@/lib/maiorPalavra";
 import styles from "./page.module.css";
 
 // Render dinâmico: o hero/vitrine lê o estoque direto do Postgres, então o
@@ -98,7 +99,12 @@ export default async function HomePage() {
                   <p className={styles.heroKicker}>Vamaq Motors</p>
                   <p className={styles.heroContext}>Destaque do showroom</p>
                   <p className={styles.heroBrand}>{heroVehicle.brand}</p>
-                  <h1 className={styles.heroModel}>{heroVehicle.model}</h1>
+                  <h1
+                    className={styles.heroModel}
+                    style={{ "--letras": letrasDaMaiorPalavra(heroVehicle.model) }}
+                  >
+                    {heroVehicle.model}
+                  </h1>
 
                   <div className={styles.heroFacts} aria-label="Informações principais">
                     {heroFacts(heroVehicle).map((fact) => (

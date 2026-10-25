@@ -1,0 +1,213 @@
+/* ============================================
+   Cena 4 — Boutique
+
+   Sem movimento: as três fotos da loja em sequência, texto abaixo de cada
+   uma. Com movimento: palco fixo; a fachada "acende" (exposição sobe, ver
+   .img), corta pelo branco (`.veu`) para a frente com os faróis acesos,
+   corta de novo para o salão, onde ficam os botões.
+   ============================================ */
+
+/* Fundo branco, como o resto do site (24/10/2026). Parado, o texto fica
+   embaixo da foto (tinta sobre branco); com movimento ele fica sobre a foto
+   e vira branco (ver .legenda abaixo). */
+.cena {
+  --tinta: var(--color-ink);
+  --tinta-suave: var(--text-secondary);
+  --tinta-linha: var(--border-medium);
+  --laranja-texto: #C24E00;
+  position: relative;
+  background: var(--bg-primary);
+  color: var(--tinta);
+}
+
+.palco {
+  position: relative;
+}
+
+.batida {
+  position: relative;
+}
+
+.quadro {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  max-height: 84svh;
+  width: 100%;
+  overflow: hidden;
+}
+
+.img {
+  object-fit: cover;
+  object-position: var(--pos, 50% 50%);
+}
+
+.legenda {
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: var(--space-lg) var(--container-pad) var(--space-2xl);
+}
+
+.kicker {
+  margin-bottom: 12px;
+  font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
+  font-size: var(--text-xs);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--laranja-texto);
+}
+
+.titulo {
+  max-width: 16ch;
+  font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
+  font-size: clamp(2.2rem, 4.6vw, 4.4rem);
+  font-weight: var(--fw-bold);
+  line-height: 0.95;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+.texto {
+  max-width: 52ch;
+  margin-top: 16px;
+  color: var(--tinta-suave);
+  font-size: var(--text-md);
+  line-height: 1.6;
+}
+
+.acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.primario,
+.secundario {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 24px;
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-semibold);
+  transition: background-color var(--ease-fast), color var(--ease-fast), border-color var(--ease-fast);
+}
+
+/* Tinta sobre laranja pelo contraste — ver CenaReveal.module.css. */
+.primario {
+  background: var(--color-accent);
+  color: var(--color-ink);
+}
+
+.primario:hover {
+  background: var(--color-accent-hover);
+}
+
+.secundario {
+  border: 1px solid var(--tinta-linha);
+  color: var(--tinta);
+}
+
+.secundario:hover {
+  border-color: var(--tinta);
+}
+
+.veu {
+  display: none;
+}
+
+/* ============================================
+   Com movimento
+   ============================================ */
+
+:global(html[data-cine="on"]) .cena {
+  height: 380svh;
+}
+
+:global(html[data-cine="on"]) .palco {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow: hidden;
+}
+
+:global(html[data-cine="on"]) .batida {
+  position: absolute;
+  inset: 0;
+  /* Uma camada por batida (mesmo motivo da placa da vitrine). */
+  isolation: isolate;
+}
+
+/* Sombra para o texto: escurece o canto do texto, não o carro do meio. */
+:global(html[data-cine="on"]) .batida::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(0deg, rgba(10, 10, 10, 0.92) 0%, rgba(10, 10, 10, 0.5) 30%, rgba(10, 10, 10, 0) 58%),
+    linear-gradient(180deg, rgba(10, 10, 10, 0.55) 0%, rgba(10, 10, 10, 0) 20%);
+}
+
+:global(html[data-cine="on"]) .quadro {
+  position: absolute;
+  inset: 0;
+  aspect-ratio: auto;
+  max-height: none;
+}
+
+/* Mesma exposição da cena 1: só a primeira batida a usa (a loja "acende");
+   nas outras --exp fica em 1 e o filtro é neutro. */
+:global(html[data-cine="on"]) .img {
+  --exp: 1;
+  filter: contrast(calc(3 - 2 * var(--exp))) brightness(calc(0.3 + 0.7 * var(--exp)))
+    saturate(calc(0.4 + 0.6 * var(--exp)));
+}
+
+:global(html[data-cine="on"]) .legenda {
+  --tinta: #fff;
+  --tinta-suave: rgba(255, 255, 255, 0.8);
+  --tinta-linha: rgba(255, 255, 255, 0.42);
+  /* Sobre o degradê escuro da foto o laranja da marca já tem contraste. */
+  --laranja-texto: var(--color-accent);
+  color: var(--tinta);
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  padding-bottom: clamp(32px, 8svh, 72px);
+}
+
+:global(html[data-cine="on"]) .veu {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: block;
+  background: var(--bg-primary);
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (max-width: 899.98px) {
+  .quadro {
+    aspect-ratio: 4 / 3;
+  }
+
+  /* Só com movimento a foto cobre a tela em pé; parada ela é 4:3 inteira. */
+  :global(html[data-cine="on"]) .img {
+    object-position: var(--pos-movel, var(--pos, 50% 50%));
+  }
+
+  .texto {
+    font-size: var(--text-base);
+  }
+
+  /* Acima do botão de pausar e do WhatsApp flutuante. */
+  :global(html[data-cine="on"]) .legenda {
+    padding-bottom: 88px;
+  }
+}

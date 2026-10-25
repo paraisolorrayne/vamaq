@@ -1,43 +1,81 @@
+/* Sem moldura em volta: a foto é o card. Borda, padding e a linha de ícones
+   saíram em 20/10/2026 para a foto ganhar a largura que eles ocupavam. */
 .card {
   display: flex;
   flex-direction: column;
-  background: var(--bg-card);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-light);
-  padding: 10px;
-  overflow: hidden;
-  transition: transform var(--ease-base), box-shadow var(--ease-base), border-color var(--ease-base);
 }
 
-.card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-card-hover);
-  border-color: var(--color-ink);
+.link {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border-radius: var(--radius-md);
+}
+
+.link:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 4px;
 }
 
 .imageWrap {
   position: relative;
-  aspect-ratio: 16 / 10;
+  /* 4:3 é a proporção em que as fotos são tiradas (1920×1440). O 16:10 de
+     antes cortava teto e rodas. */
+  aspect-ratio: 4 / 3;
   overflow: hidden;
   background: var(--bg-cream);
-  border-radius: var(--radius-sm);
-  /* isolate mantém o multiply contido neste wrap */
-  isolation: isolate;
+  border-radius: var(--radius-md);
+  transition: box-shadow var(--ease-base);
 }
 
+/* As fotos têm o fundo real (fachada da loja). O `mix-blend-mode: multiply`
+   que existia aqui servia para fundir foto de estúdio com fundo branco ao
+   cream do card; em foto com fundo ele só tingia o carro. */
 .image {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
   transition: transform var(--ease-slow);
-  /* Funde o fundo branco da foto de estúdio com o cream do card,
-     eliminando o quadrado branco. */
-  mix-blend-mode: multiply;
 }
 
-.card:hover .image {
-  transform: scale(1.05);
+/* Camada da foto. Normal, é do tamanho da moldura; com `profundidade`
+   (acervo) sobra 4% em cima e embaixo para o deslize do ParallaxFotos não
+   mostrar a borda. */
+.camada {
+  position: absolute;
+  inset: 0;
+}
+
+.camadaProfunda {
+  inset: -4% 0;
+}
+
+/* Segundo ângulo (acervo, computador): fica recolhido à direita e abre por
+   cima da capa no hover. Cortina, não fusão — mesma regra da vitrine: a
+   segunda foto pode ser o interior, e fundida ela vira fantasma. */
+.outroAngulo {
+  clip-path: inset(0% 0% 0% 100%);
+  transition: clip-path 0.65s var(--mov-curva), transform var(--ease-slow);
+}
+
+.link:hover .outroAngulo,
+.link:focus-visible .outroAngulo {
+  clip-path: inset(0% 0% 0% 0%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .outroAngulo {
+    transition: none;
+  }
+}
+
+.link:hover .imageWrap {
+  box-shadow: var(--shadow-card-hover);
+}
+
+.link:hover .image {
+  transform: scale(1.04);
 }
 
 .placeholder {
@@ -47,11 +85,6 @@
   width: 100%;
   height: 100%;
   color: var(--text-tertiary);
-  transition: transform var(--ease-base);
-}
-
-.card:hover .placeholder {
-  transform: scale(1.03);
 }
 
 .placeholderIcon {
@@ -89,8 +122,9 @@
   color: #e0e0e0;
 }
 
+/* Ordem de leitura: nome → preço → ano · km · combustível. */
 .body {
-  padding: 18px 8px 8px;
+  padding: 16px 4px 4px;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -98,54 +132,18 @@
 
 .title {
   font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
-  font-size: clamp(1.25rem, 2.2vw, 1.55rem);
+  font-size: clamp(1.25rem, 2.2vw, 1.5rem);
   font-weight: var(--fw-bold);
   color: var(--color-ink);
-  line-height: 1.2;
+  line-height: 1.15;
   letter-spacing: -0.01em;
 }
 
-.meta {
-  font-size: var(--text-sm);
-  color: var(--text-tertiary);
+.link:hover .title {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 1px;
 }
-
-.specs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
-  padding: 12px 0;
-  border-top: 1px solid var(--border-light);
-  margin-top: 10px;
-}
-
-.spec {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: var(--text-xs);
-  color: var(--text-secondary);
-  letter-spacing: 0.02em;
-}
-
-.specIcon {
-  width: 14px;
-  height: 14px;
-  flex-shrink: 0;
-  color: var(--color-ink);
-}
-
-.priceRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-top: 4px;
-}
-.priceRow .cta { flex: 0 0 auto; }
-.priceRow .price,
-.priceRow .priceConsult { flex: 1 1 auto; }
 
 .price {
   font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
@@ -153,45 +151,20 @@
   font-weight: var(--fw-bold);
   color: var(--color-ink);
   letter-spacing: -0.01em;
-  line-height: 1;
-  transition: color var(--ease-fast);
-}
-
-.card:hover .price {
-  color: var(--color-accent);
+  line-height: 1.1;
 }
 
 .priceConsult {
   font-size: var(--text-sm);
   font-weight: var(--fw-semibold);
-  color: var(--color-accent);
+  color: var(--color-ink);
   letter-spacing: 0.02em;
-  line-height: 1;
+  line-height: 1.1;
 }
 
-.cta {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 10px 18px;
+/* secondary e não tertiary: o #888 dá 3,5:1 no branco, abaixo do mínimo
+   para texto deste tamanho. */
+.meta {
   font-size: var(--text-sm);
-  font-weight: var(--fw-semibold);
-  letter-spacing: 0.01em;
-  border-radius: var(--radius-sm);
-  border: none;
-  cursor: pointer;
-  line-height: 1;
-  background-color: var(--color-ink);
-  color: #FFFFFF;
-  transition: all var(--ease-fast);
-  text-align: center;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.cta:hover {
-  background-color: var(--color-accent);
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px var(--color-accent-glow);
+  color: var(--text-secondary);
 }

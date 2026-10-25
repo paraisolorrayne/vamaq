@@ -127,3 +127,16 @@ test("SELECT do site (repositories/vehicles.js) traz ano_modelo", async () => {
   assert.equal(rows.length, 1);
   assert.equal(rows[0].ano_modelo, 2022);
 });
+
+// Os opcionais existiam no admin desde o início mas não saíam no SELECT do
+// site: a página do carro mostrava "Consulte a equipe" para carro com a lista
+// preenchida, sem erro nenhum. Mesmo tipo de falha calada que o ano_modelo.
+test("SELECT do site (repositories/vehicles.js) traz opcionais", async () => {
+  const id = await novoVeiculo({ year: 2021 });
+  await pool.query(`update vehicles set opcionais = $2 where id = $1`, [
+    id,
+    JSON.stringify(["Teto solar", "Bancos em couro"]),
+  ]);
+  const { rows } = await pool.query(`${SELECT} where id = $1`, [id]);
+  assert.deepEqual(rows[0].opcionais, ["Teto solar", "Bancos em couro"]);
+});

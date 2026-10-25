@@ -51,6 +51,8 @@
   justify-content: center;
   max-width: 620px;
   padding: 0;
+  /* Referência de largura para o título do modelo (ver .heroModel). */
+  container-type: inline-size;
 }
 
 .hero::after {
@@ -75,7 +77,11 @@
 .heroModel {
   font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
   max-width: 680px;
-  font-size: clamp(2.65rem, 5vw, 5rem);
+  /* No desktop a coluna tem ~370px e o tamanho de sempre partia
+     "COMPETITIO / N". Fica o menor entre ele e o que faz a palavra mais
+     longa caber — `--letras` vem de lib/maiorPalavra.js; 0.6em é a largura
+     média de uma maiúscula da Rajdhani bold, com folga para o itálico. */
+  font-size: min(clamp(2.65rem, 5vw, 5rem), calc(100cqi / (var(--letras, 8) * 0.6)));
   font-weight: var(--fw-bold);
   text-transform: uppercase;
   letter-spacing: 0;
@@ -163,6 +169,29 @@
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+/* Leva para a apresentação cinematográfica (abertura + esta ficha). */
+.heroStoryLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  min-height: 44px;
+  margin-top: 10px;
+  color: var(--color-ink);
+  font-size: var(--text-xs);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+  border-bottom: 1px solid var(--color-accent);
+}
+
+.heroStoryLink::before {
+  content: "▶";
+  color: var(--color-accent);
+  font-size: 0.7em;
 }
 
 /* A caixa carrega a medida que a foto não tem: as fotos sobem com a
@@ -257,6 +286,7 @@
 .detailNav a:hover {
   color: var(--color-accent);
 }
+
 
 /* ===== GALLERY & INFO SECTION ===== */
 
@@ -615,6 +645,41 @@
 }
 
 .specsExtra {}
+
+/* Opcionais: grade de itens com check, em caixa normal — em maiúsculas,
+   como na Shift, 30 linhas cansam a leitura. Ficam na coluna da direita,
+   ao lado das especificações, que sem descrição cadastrada ficava vazia. */
+.opcionaisList {
+  list-style: none;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px 32px;
+}
+
+.opcionaisItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.opcionaisCheck {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  padding: 3px;
+  color: #fff;
+  background: var(--color-ink);
+  border-radius: 4px;
+}
+
+@media (min-width: 640px) {
+  .opcionaisList {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
 
 .specsSection .infoPanelBlock {
   margin-bottom: var(--space-xl);
