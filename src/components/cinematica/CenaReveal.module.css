@@ -1,0 +1,523 @@
+/* ============================================
+   Cena 1 — Reveal do destaque
+
+   Sem movimento (sem JS, movimento reduzido, botão desligado) é o herói de
+   sempre: foto cobrindo a tela no computador, foto inteira em cima e texto
+   embaixo no celular. Com movimento (`html[data-cine="on"]`, ver
+   MovimentoFlag) o palco fica fixo numa trilha alta, a abertura começa
+   sozinha ao entrar e a rolagem termina de revelar e mostra preço e botões.
+   Duas aberturas (ver CenaReveal.js): `.cortina` (padrão) e `.luz`.
+
+   Fundo branco, como o resto do site (pedido de 24/10/2026). As cores do
+   texto são variáveis porque dependem de onde ele cai: sobre o fundo é
+   tinta; sobre a foto (no computador a foto cobre o palco) é branco. A
+   `.luz` continua no escuro: o facho só existe contra o preto.
+   ============================================ */
+
+.cena {
+  --tinta: var(--color-ink);
+  --tinta-suave: var(--text-secondary);
+  --tinta-linha: var(--border-medium);
+  position: relative;
+  background: var(--bg-primary);
+  color: var(--tinta);
+}
+
+.luz {
+  --tinta: #fff;
+  --tinta-suave: rgba(255, 255, 255, 0.8);
+  --tinta-linha: rgba(255, 255, 255, 0.42);
+  background: var(--color-ink);
+}
+
+/* No computador tudo no palco fica sobre a foto. */
+@media (min-width: 900px) {
+  .palco {
+    --tinta: #fff;
+    --tinta-suave: rgba(255, 255, 255, 0.8);
+    --tinta-linha: rgba(255, 255, 255, 0.42);
+    color: var(--tinta);
+  }
+}
+
+.palco {
+  position: relative;
+  min-height: 100svh;
+  overflow: hidden;
+  isolation: isolate;
+  display: flex;
+  align-items: flex-end;
+}
+
+.foto {
+  position: absolute;
+  inset: 0;
+}
+
+.img {
+  object-fit: cover;
+  object-position: center 55%;
+}
+
+/* A mesma foto, desfocada, atrás da faixa nítida da cortina: em vez de
+   faixas lisas em cima e embaixo, o resto do carro aparece fora de foco
+   e "entra em foco" conforme a faixa abre. Só existe com movimento. */
+.desfoque {
+  display: none;
+}
+
+.desfoqueImg {
+  object-fit: cover;
+  object-position: center 55%;
+  filter: blur(18px) saturate(1.05);
+  /* Um pouco maior que a nítida: o desfoque clareia a borda da imagem, e a
+     sobra joga essa borda para fora do quadro. 4% não desalinha o carro. */
+  scale: 1.04;
+}
+
+.sombra {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(10, 10, 10, 0.8) 0%, rgba(10, 10, 10, 0.36) 45%, rgba(10, 10, 10, 0) 75%),
+    linear-gradient(180deg, rgba(10, 10, 10, 0.3) 0%, rgba(10, 10, 10, 0) 40%, rgba(10, 10, 10, 0.82) 100%);
+}
+
+.dica,
+.atalho {
+  display: none;
+}
+
+.info {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: 120px var(--container-pad) 48px;
+}
+
+.textos {
+  max-width: min(600px, 100%);
+  /* Referência de largura para o título (ver .modelo). */
+  container-type: inline-size;
+}
+
+.contexto,
+.marcaCarro {
+  font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
+  font-weight: var(--fw-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+}
+
+.contexto {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  /* Não laranja: sobre a foto o laranja some em carro amarelo ou vermelho
+     (o 911 da vitrine). Só o traço continua laranja. */
+  color: var(--tinta-suave);
+  font-size: var(--text-xs);
+}
+
+.contexto::before {
+  content: "";
+  width: 42px;
+  height: 1px;
+  background: var(--color-accent);
+}
+
+.marcaCarro {
+  margin-bottom: 6px;
+  color: var(--tinta-suave);
+  font-size: clamp(1rem, 1.5vw, 1.25rem);
+}
+
+.modelo {
+  font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
+  /* Mesma conta do herói da home (lib/maiorPalavra.js): o menor entre o
+     tamanho de sempre e o que faz a palavra mais longa caber na coluna. */
+  font-size: min(clamp(2.6rem, 6vw, 6rem), calc(100cqi / (var(--letras, 8) * 0.6)));
+  font-weight: var(--fw-bold);
+  line-height: 0.9;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+.fatos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin-top: 16px;
+  color: var(--tinta-suave);
+  font-size: var(--text-sm);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.fatos span:not(:last-child)::after {
+  content: "";
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  margin-left: 18px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  vertical-align: middle;
+}
+
+.preco {
+  margin-top: 12px;
+  font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
+  font-size: clamp(1.6rem, 2.6vw, 2.25rem);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.02em;
+}
+
+.acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.primario,
+.secundario {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 26px;
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-semibold);
+  transition: background-color var(--ease-fast), color var(--ease-fast), border-color var(--ease-fast);
+}
+
+/* Texto escuro sobre o laranja: branco sobre #FF6A00 dá 2,9:1 e não passa no
+   mínimo de contraste; tinta sobre laranja dá ~7:1. */
+.primario {
+  background: var(--color-accent);
+  color: var(--color-ink);
+}
+
+.primario:hover {
+  background: var(--color-accent-hover);
+}
+
+.secundario {
+  border: 1px solid var(--tinta-linha);
+  color: var(--tinta);
+}
+
+.secundario:hover {
+  border-color: var(--tinta);
+}
+
+/* Celular sem movimento: a foto inteira em cima, texto embaixo. Cobrindo a
+   tela em pé, a foto 4:3 mostrava só a porta do carro. */
+@media (max-width: 899.98px) {
+  .palco {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    padding-top: 80px;
+  }
+
+  .foto {
+    position: relative;
+    inset: auto;
+    aspect-ratio: 4 / 3;
+  }
+
+  .sombra {
+    display: none;
+  }
+
+  .info {
+    padding-top: 24px;
+  }
+
+  .acoes > * {
+    flex: 1 1 auto;
+  }
+}
+
+/* ============================================
+   Com movimento — o que vale para as duas aberturas
+   ============================================ */
+
+:global(html[data-cine="on"]) .cena {
+  height: 260svh;
+}
+
+:global(html[data-cine="on"]) .palco {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  min-height: 0;
+  padding-top: 0;
+  flex-direction: row;
+  align-items: flex-end;
+}
+
+:global(html[data-cine="on"]) .foto {
+  position: absolute;
+}
+
+/* No celular (cortina) não há sombra: o texto fica no fundo branco, e o
+   degradê escureceria o branco. */
+@media (min-width: 900px) {
+  :global(html[data-cine="on"]) .sombra {
+    display: block;
+  }
+}
+
+:global(html[data-cine="on"]) .luz .sombra {
+  display: block;
+}
+
+:global(html[data-cine="on"]) .dica {
+  position: absolute;
+  left: 50%;
+  bottom: 28px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  translate: -50% 0;
+  font-size: var(--text-xs);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  animation: dicaEntra 0.8s ease 1.2s both;
+}
+
+:global(html[data-cine="on"]) .dica {
+  color: var(--tinta-suave);
+}
+
+:global(html[data-cine="on"]) .dica::after {
+  content: "";
+  width: 1px;
+  height: 36px;
+  background: linear-gradient(180deg, var(--color-accent), transparent);
+}
+
+@keyframes dicaEntra {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Atalho sempre à mão: o briefing pede acesso rápido ao showroom sem
+   precisar passar pela animação. */
+:global(html[data-cine="on"]) .atalho {
+  position: absolute;
+  top: 108px;
+  right: var(--container-pad);
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--tinta-suave);
+  font-size: var(--text-xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--tinta-linha);
+}
+
+:global(html[data-cine="on"]) .atalho:hover {
+  color: var(--tinta);
+  border-color: var(--color-accent);
+}
+
+/* Sobre a foto (computador) o texto pequeno ganha sombra para não sumir
+   em parte clara da imagem. */
+@media (min-width: 900px) {
+  :global(html[data-cine="on"]) .atalho,
+  :global(html[data-cine="on"]) .dica {
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.7);
+  }
+}
+
+:global(html[data-cine="on"]) .info {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding-top: 0;
+  padding-bottom: clamp(28px, 6svh, 56px);
+}
+
+/* Antes do GSAP assumir, preço e botões ficam escondidos (é assim que a
+   cena começa); se o JS não chegar em 3,5 s, aparecem sozinhos. */
+:global(html[data-cine="on"]:not([data-cine-pronto])) .info {
+  opacity: 0;
+  animation: segurancaMostra 0.6s ease 3.5s forwards;
+}
+
+@keyframes segurancaMostra {
+  to {
+    opacity: 1;
+  }
+}
+
+/* ============================================
+   Abertura "cortina" (padrão)
+
+   A foto cobre o palco inteiro (no celular, a largura toda) e aparece por
+   uma faixa horizontal: `--fenda` é quanto fica cortado em cima e embaixo.
+   Ao entrar, a faixa abre sozinha de fechada até 32% (`--abre`, só CSS);
+   a rolagem leva de 32% a 0% (GSAP) enquanto a câmera recua (escala da
+   <img>). A foto nunca escurece nem esfuma: as bordas da faixa são retas.
+   ============================================ */
+
+/* Registrado para o navegador conseguir interpolar (variável comum só
+   pularia de um valor para o outro). */
+@property --abre {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 1;
+}
+
+/* Soma, não máximo: a entrada acrescenta os 18% que faltam para fechar e
+   some ao terminar (--abre = 1); daí em diante é só a rolagem. */
+:global(html[data-cine="on"]) .cortina .foto {
+  --fenda: 32%;
+  --corte: calc(var(--fenda) + 18% * (1 - var(--abre)));
+  inset: 0;
+  clip-path: inset(var(--corte) 0 var(--corte) 0);
+  animation: abre 1.6s cubic-bezier(0.65, 0, 0.35, 1) 0.25s both;
+}
+
+:global(html[data-cine="on"]) .cortina .desfoque {
+  position: absolute;
+  inset: 0;
+  display: block;
+  overflow: hidden;
+}
+
+@keyframes abre {
+  from {
+    --abre: 0;
+  }
+  to {
+    --abre: 1;
+  }
+}
+
+/* Só embaixo, onde fica o texto, e mais leve que a da luz. */
+:global(html[data-cine="on"]) .cortina .sombra {
+  background:
+    linear-gradient(90deg, rgba(10, 10, 10, 0.55) 0%, rgba(10, 10, 10, 0.15) 40%, rgba(10, 10, 10, 0) 60%),
+    linear-gradient(180deg, rgba(10, 10, 10, 0) 0%, rgba(10, 10, 10, 0) 55%, rgba(10, 10, 10, 0.6) 80%, rgba(10, 10, 10, 0.9) 100%);
+}
+
+/* ============================================
+   Abertura "luz" (primeira versão, para comparar)
+   ============================================ */
+
+/* `--acende` vai de 0 a 1 sozinho ao abrir a página: a luz aparece sobre o
+   carro antes de qualquer rolagem. */
+@property --acende {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 1;
+}
+
+/* A foto vira um quadro 4:3 no meio do palco com as bordas se perdendo no
+   preto. `--luz` é o tamanho do facho e `--exp` a exposição, os dois da
+   rolagem (GSAP). A entrada (`--acende`) só garante um piso, por isso o
+   max(): quando a rolagem passa do piso, manda ela, sem salto. */
+:global(html[data-cine="on"]) .luz .foto {
+  --luz: 120%;
+  --exp: 1;
+  --facho: max(var(--luz), calc(46% * var(--acende)));
+  inset: auto;
+  left: 50%;
+  top: 50%;
+  width: min(86vw, 112svh);
+  aspect-ratio: 4 / 3;
+  translate: -50% -50%;
+  -webkit-mask-image: radial-gradient(ellipse var(--facho) var(--facho) at 50% 52%, #000 58%, transparent 100%);
+  mask-image: radial-gradient(ellipse var(--facho) var(--facho) at 50% 52%, #000 58%, transparent 100%);
+  animation: acende 2.4s cubic-bezier(0.3, 0.6, 0.2, 1) 0.15s both;
+}
+
+@keyframes acende {
+  from {
+    --acende: 0;
+  }
+  to {
+    --acende: 1;
+  }
+}
+
+/* Exposição, não retoque: com --exp 0 só os brilhos que já estão na foto
+   aparecem; com 1 a foto é exatamente a do cadastro. */
+:global(html[data-cine="on"]) .luz .img {
+  --exposto: max(var(--exp), calc(0.24 * var(--acende)));
+  filter: contrast(calc(3 - 2 * var(--exposto))) brightness(calc(0.3 + 0.7 * var(--exposto)))
+    saturate(calc(0.4 + 0.6 * var(--exposto)));
+  animation: fotoEntra 1.8s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@keyframes fotoEntra {
+  from {
+    opacity: 0;
+    scale: 1.06;
+  }
+}
+
+:global(html[data-cine="on"]) .luz .sombra {
+  background:
+    linear-gradient(90deg, rgba(10, 10, 10, 0.72) 0%, rgba(10, 10, 10, 0.28) 38%, rgba(10, 10, 10, 0) 62%),
+    linear-gradient(180deg, rgba(10, 10, 10, 0.55) 0%, rgba(10, 10, 10, 0) 20%, rgba(10, 10, 10, 0) 50%, rgba(10, 10, 10, 0.7) 76%, rgba(10, 10, 10, 0.96) 100%);
+}
+
+/* Antes do GSAP assumir, a luz abre no quadro inicial — senão piscaria
+   acesa até o JS chegar. */
+:global(html[data-cine="on"]:not([data-cine-pronto])) .luz .foto {
+  --luz: 34%;
+  --exp: 0;
+}
+
+/* ============================================
+   Celular
+   ============================================ */
+
+/* A foto ocupa a largura toda e termina INTEIRA (aproximar mais cortava a
+   frente e a traseira do carro); o desfoque da cortina ocupa o mesmo quadro.
+   Em cima, o atalho; embaixo, o texto, acima da faixa do WhatsApp flutuante
+   e do botão de pausar. */
+@media (max-width: 899.98px) {
+  :global(html[data-cine="on"]) .cortina .foto,
+  :global(html[data-cine="on"]) .cortina .desfoque,
+  :global(html[data-cine="on"]) .luz .foto {
+    inset: auto;
+    left: 50%;
+    top: 36%;
+    width: 100vw;
+    aspect-ratio: 4 / 3;
+    translate: -50% -50%;
+  }
+
+  :global(html[data-cine="on"]) .atalho {
+    top: 92px;
+  }
+
+  :global(html[data-cine="on"]) .dica {
+    bottom: 96px;
+  }
+
+  :global(html[data-cine="on"]) .info {
+    padding-bottom: 88px;
+  }
+}

@@ -56,6 +56,92 @@
   max-width: 560px;
 }
 
+/* A loja ao lado do título (24/10/2026): faixa panorâmica da fachada ao
+   anoitecer. Abre como a cortina da /previa ao entrar e, com a rolagem, a
+   foto desliza dentro da faixa (ParallaxFotos — por isso a camada tem 4% de
+   sobra em cima e embaixo). Nunca escurece: sem degradê por cima. */
+.faixa {
+  position: relative;
+  flex: 0 0 auto;
+  width: 100%;
+  margin: 0;
+  aspect-ratio: 12 / 5;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  background: var(--bg-soft);
+}
+
+.faixaCamada {
+  position: absolute;
+  inset: -4% 0;
+}
+
+.faixaImg {
+  object-fit: cover;
+  /* O letreiro principal e os carros da frente. */
+  object-position: 58% 44%;
+}
+
+/* Fechada até a foto chegar; aí abre. Sem JS, com movimento reduzido ou
+   pausado, nada disso vale e a foto aparece direto. */
+@media (prefers-reduced-motion: no-preference) {
+  :global(html[data-cine="on"]) .faixa {
+    clip-path: inset(50% 0 50% 0);
+  }
+
+  :global(html[data-cine="on"]) .faixa[data-pronta] {
+    animation: faixaAbre 1.3s var(--mov-curva) both;
+  }
+}
+
+@keyframes faixaAbre {
+  from {
+    clip-path: inset(50% 0 50% 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* No celular a faixa é mais baixa e o espaço abaixo do título menor: o
+   primeiro carro precisa aparecer na primeira tela. */
+@media (max-width: 899.98px) {
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+  }
+
+  .faixa {
+    aspect-ratio: 16 / 5;
+  }
+}
+
+@media (min-width: 900px) {
+  .header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+    align-items: end;
+  }
+
+  .faixa {
+    aspect-ratio: 3 / 1;
+  }
+
+  /* A barra de busca, filtro e ordem acompanha a rolagem logo abaixo do
+     header fixo (90px, encostada: com folga, os cards apareciam pela
+     fresta). Só no computador: no celular ela tem três linhas e
+     grudada ocuparia um quinto da tela. Só funciona porque o body usa
+     `overflow-x: clip` (ver globals.css). */
+  .toolbar {
+    position: sticky;
+    top: 90px;
+    z-index: 30;
+    box-shadow: 0 8px 24px rgba(17, 17, 17, 0.05);
+  }
+}
+
 /* --- Layout --- */
 
 .layout {
@@ -593,5 +679,43 @@
   .busca {
     flex: 1 1 100%;
     order: -1;
+  }
+}
+
+/* Em 390px "Filtrar" + "Ordenar por" + a caixa não cabiam lado a lado e a
+   barra caía para três linhas, empurrando o primeiro carro para o fim da
+   tela. O rótulo some da vista, mas fica para leitor de tela (a caixa também
+   tem aria-label). */
+@media (max-width: 639.98px) {
+  /* "Filtrar" + vão + caixa davam 330px para 324px de barra (390px de
+     tela) e menos ainda em 360px: a caixa de ordem passa a ocupar o que
+     sobra ao lado do "Filtrar", em vez de ter largura própria. */
+  .toolbar {
+    gap: 10px;
+  }
+
+  .filterToggle {
+    flex: 0 0 auto;
+    padding-inline: 16px;
+  }
+
+  .sortWrap {
+    flex: 1 1 0;
+    min-width: 0;
+    margin-left: 0;
+  }
+
+  .sort {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .sortLabel {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 }

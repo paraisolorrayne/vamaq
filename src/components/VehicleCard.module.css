@@ -39,6 +39,37 @@
   transition: transform var(--ease-slow);
 }
 
+/* Camada da foto. Normal, é do tamanho da moldura; com `profundidade`
+   (acervo) sobra 4% em cima e embaixo para o deslize do ParallaxFotos não
+   mostrar a borda. */
+.camada {
+  position: absolute;
+  inset: 0;
+}
+
+.camadaProfunda {
+  inset: -4% 0;
+}
+
+/* Segundo ângulo (acervo, computador): fica recolhido à direita e abre por
+   cima da capa no hover. Cortina, não fusão — mesma regra da vitrine: a
+   segunda foto pode ser o interior, e fundida ela vira fantasma. */
+.outroAngulo {
+  clip-path: inset(0% 0% 0% 100%);
+  transition: clip-path 0.65s var(--mov-curva), transform var(--ease-slow);
+}
+
+.link:hover .outroAngulo,
+.link:focus-visible .outroAngulo {
+  clip-path: inset(0% 0% 0% 0%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .outroAngulo {
+    transition: none;
+  }
+}
+
 .link:hover .imageWrap {
   box-shadow: var(--shadow-card-hover);
 }

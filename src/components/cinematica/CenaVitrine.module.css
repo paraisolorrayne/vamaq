@@ -1,0 +1,324 @@
+/* ============================================
+   Cena 2 — Vitrine em camadas
+
+   Fundo branco, como o resto do site (24/10/2026).
+   Sem movimento: lista de carros, foto ao lado do texto. Com movimento: um
+   palco fixo onde cada carro é uma "placa" que cobre a anterior, com três
+   profundidades — nome da marca ao fundo (lento), foto principal no meio,
+   fotos menores na frente (rápidas).
+   ============================================ */
+
+.cena {
+  /* Laranja para texto pequeno sobre branco: o #FF6A00 da marca dá 2,9:1
+     ali; este passa no mínimo de contraste (sugestão de 20/10/2026). */
+  --laranja-texto: #C24E00;
+  position: relative;
+  background: var(--bg-primary);
+  color: var(--color-ink);
+}
+
+.palco {
+  position: relative;
+  padding: var(--space-2xl) var(--container-pad);
+}
+
+.topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 12px 24px;
+  max-width: var(--container-max);
+  margin: 0 auto var(--space-xl);
+}
+
+.titulo {
+  flex: 1 1 auto;
+  font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
+  font-size: var(--text-xs);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--laranja-texto);
+}
+
+.contador {
+  display: none;
+}
+
+.atalho {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 20px;
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  transition: border-color var(--ease-fast), background-color var(--ease-fast), color var(--ease-fast);
+}
+
+.atalho:hover {
+  background: var(--color-ink);
+  border-color: var(--color-ink);
+  color: #fff;
+}
+
+.placas {
+  display: grid;
+  gap: var(--space-2xl);
+  max-width: var(--container-max);
+  margin: 0 auto;
+}
+
+.placa {
+  position: relative;
+  display: grid;
+  gap: var(--space-md);
+}
+
+.fundo,
+.anguloB,
+.detalhe {
+  display: none;
+}
+
+.principal {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: var(--bg-soft);
+}
+
+.img {
+  object-fit: cover;
+}
+
+.texto {
+  /* Referência de largura para o título (ver .modelo). */
+  container-type: inline-size;
+}
+
+.marcaCarro {
+  font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.modelo {
+  margin-top: 4px;
+  font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
+  font-size: min(clamp(2.4rem, 4.4vw, 4.5rem), calc(100cqi / (var(--letras, 8) * 0.6)));
+  font-weight: var(--fw-bold);
+  line-height: 0.92;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+.fatos {
+  margin-top: 14px;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.preco {
+  margin-top: 6px;
+  font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
+  font-size: clamp(1.4rem, 2vw, 1.9rem);
+  font-weight: var(--fw-bold);
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  margin-top: 10px;
+  color: var(--color-ink);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-semibold);
+  border-bottom: 1px solid var(--color-accent);
+}
+
+.link::after {
+  content: "→";
+  color: var(--color-accent);
+  transition: transform var(--ease-fast);
+}
+
+.link:hover::after {
+  transform: translateX(4px);
+}
+
+@media (min-width: 900px) {
+  .placa {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    align-items: end;
+    gap: var(--space-xl);
+  }
+}
+
+/* ============================================
+   Com movimento
+   ============================================ */
+
+:global(html[data-cine="on"]) .cena {
+  /* ~90svh de rolagem por carro. */
+  height: calc(100svh + var(--placas, 1) * 90svh);
+}
+
+:global(html[data-cine="on"]) .palco {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  padding: 0;
+  overflow: hidden;
+}
+
+:global(html[data-cine="on"]) .topo {
+  position: absolute;
+  top: 104px;
+  left: var(--container-pad);
+  right: var(--container-pad);
+  z-index: 10;
+  margin: 0;
+  max-width: none;
+}
+
+:global(html[data-cine="on"]) .contador {
+  display: block;
+  font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.14em;
+  /* --text-tertiary (#888) não passa no contraste sobre branco. */
+  color: var(--text-secondary);
+}
+
+:global(html[data-cine="on"]) .contador span {
+  color: var(--color-ink);
+}
+
+:global(html[data-cine="on"]) .placas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  max-width: none;
+}
+
+/* Cada placa tem fundo próprio: a próxima cobre a anterior inteira.
+   `isolation` faz de cada placa uma camada só. Sem isso, a foto e o texto da
+   primeira (z-index 1 a 3) furavam a placa de cima — que vira camada própria
+   por causa do clip-path — e os nomes de dois carros saíam sobrepostos. */
+:global(html[data-cine="on"]) .placa {
+  position: absolute;
+  inset: 0;
+  display: block;
+  isolation: isolate;
+  background: var(--bg-primary);
+  overflow: hidden;
+}
+
+:global(html[data-cine="on"]) .fundo {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  z-index: 0;
+  display: block;
+  translate: 0 -50%;
+  white-space: nowrap;
+  font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
+  font-size: 24vw;
+  font-weight: var(--fw-bold);
+  line-height: 0.8;
+  text-transform: uppercase;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(10, 10, 10, 0.14);
+  pointer-events: none;
+}
+
+:global(html[data-cine="on"]) .principal {
+  position: absolute;
+  left: 6vw;
+  top: 54%;
+  z-index: 1;
+  width: min(58vw, 92svh);
+  translate: 0 -50%;
+}
+
+/* Começa recolhida à direita; o GSAP abre a cortina (ver montarVitrine). */
+:global(html[data-cine="on"]) .anguloB {
+  display: block;
+  clip-path: inset(0% 0% 0% 100%);
+}
+
+:global(html[data-cine="on"]) .detalhe {
+  position: absolute;
+  z-index: 2;
+  display: block;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: var(--bg-soft);
+  box-shadow: var(--shadow-elevated);
+}
+
+:global(html[data-cine="on"]) .detalhe1 {
+  top: 26svh;
+  right: 6vw;
+  width: 17vw;
+}
+
+:global(html[data-cine="on"]) .detalhe2 {
+  left: 3vw;
+  /* Alto o bastante para não passar por cima do botão de pausar. */
+  bottom: 18svh;
+  width: 13vw;
+}
+
+:global(html[data-cine="on"]) .texto {
+  position: absolute;
+  right: 6vw;
+  bottom: 10svh;
+  z-index: 3;
+  width: min(28vw, 420px);
+}
+
+@media (max-width: 899.98px) {
+  :global(html[data-cine="on"]) .topo {
+    top: 96px;
+  }
+
+  :global(html[data-cine="on"]) .titulo {
+    flex-basis: 100%;
+  }
+
+  :global(html[data-cine="on"]) .principal {
+    left: 0;
+    top: 200px;
+    width: 100vw;
+    translate: none;
+  }
+
+  /* No celular não há largura para três profundidades: a marca ao fundo
+     vazava atrás do contador, e as fotos menores cobriam o texto. Fica a
+     foto principal com a troca de ângulo e a placa entrando por cima. */
+  :global(html[data-cine="on"]) .fundo,
+  :global(html[data-cine="on"]) .detalhe {
+    display: none;
+  }
+
+  /* 84px: acima do botão de pausar e do WhatsApp flutuante. */
+  :global(html[data-cine="on"]) .texto {
+    left: var(--container-pad);
+    right: var(--container-pad);
+    bottom: 84px;
+    width: auto;
+  }
+}

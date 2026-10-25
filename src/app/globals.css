@@ -14,7 +14,9 @@ html {
   font-size: 100%;
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
+  /* `clip`, com `hidden` antes para navegador antigo. Ver o body. */
   overflow-x: hidden;
+  overflow-x: clip;
   max-width: 100%;
 }
 
@@ -28,7 +30,15 @@ body {
   font-weight: var(--fw-regular);
   color: var(--text-primary);
   background-color: var(--bg-primary);
+  /* `clip`, não só `hidden`: `overflow-x: hidden` no body o transforma num
+     contêiner de rolagem, e todo `position: sticky` da página passa a valer
+     dentro do body — que nunca rola —, então nada gruda. Era por isso que a
+     barra "Imagens / Especificações / Detalhes" da ficha rolava junto com a
+     página (medido no site no ar em 24/10/2026), e o palco das cenas da
+     /previa subia. `clip` corta o excesso lateral do mesmo jeito, sem criar
+     contêiner. O `hidden` antes fica para navegador sem `clip` (Safari < 16). */
   overflow-x: hidden;
+  overflow-x: clip;
 }
 
 img, picture, video, canvas, svg {
@@ -374,6 +384,32 @@ p { overflow-wrap: break-word; }
     .revela-entrada-2 { animation: revela-sobe 0.7s var(--mov-curva) 0.08s both; }
     .revela-entrada-3 { animation: revela-sobe 0.7s var(--mov-curva) 0.16s both; }
     .revela-entrada-4 { animation: revela-sobe 0.7s var(--mov-curva) 0.24s both; }
+  }
+}
+
+/* Entrada por IntersectionObserver (components/cinematica/RevelaAoRolar),
+   usada no acervo e na apresentação do carro. Mesma regra de segurança de
+   cima: sem o JS marcar "espera", nada fica escondido. Mais presente que o
+   .revela (40px e a foto recuando), mas com a mesma curva.
+   `--revela-i` é a posição na cascata de quem entrou junto. */
+@media (prefers-reduced-motion: no-preference) {
+  [data-revela="espera"] {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+
+  [data-revela="espera"] img {
+    scale: 1.1;
+  }
+
+  [data-revela="visivel"] {
+    transition:
+      opacity 0.7s var(--mov-curva) calc(var(--revela-i, 0) * 90ms),
+      transform 0.9s var(--mov-curva) calc(var(--revela-i, 0) * 90ms);
+  }
+
+  [data-revela="visivel"] img {
+    transition: scale 1.4s var(--mov-curva) calc(var(--revela-i, 0) * 90ms);
   }
 }
 

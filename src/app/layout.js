@@ -52,7 +52,11 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="pt-BR" className={`${inter.variable} ${rajdhani.variable}`}>
+    // suppressHydrationWarning: nas páginas da experiência cinematográfica um
+    // script inline marca `data-cine` no <html> antes da hidratação (ver
+    // components/cinematica/MovimentoFlag.js). Só vale para os atributos
+    // deste elemento — os filhos continuam conferidos normalmente.
+    <html lang="pt-BR" className={`${inter.variable} ${rajdhani.variable}`} suppressHydrationWarning>
       <body style={{ fontFamily: "var(--font-primary)" }}>
         <ScrollToTop />
         <a href="#main-content" className="skip-link">

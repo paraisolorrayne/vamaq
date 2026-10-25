@@ -14,6 +14,7 @@
 
 import { getAllVehicles } from "@/lib/repositories/vehicles";
 import AcervoClient from "./AcervoClient";
+import MovimentoFlag from "@/components/cinematica/MovimentoFlag";
 
 // Render dinâmico: a lista lê o estoque direto do Postgres (não via fetch),
 // então o Next não consegue auto-invalidar o cache quando o admin cria/edita
@@ -29,5 +30,12 @@ export const metadata = {
 export default async function AcervoPage() {
   const veiculos = await getAllVehicles();
 
-  return <AcervoClient veiculos={veiculos} />;
+  // MovimentoFlag: a abertura da faixa da fachada e a profundidade dos cards
+  // respeitam o "Pausar animações" escolhido em outra página.
+  return (
+    <>
+      <MovimentoFlag />
+      <AcervoClient veiculos={veiculos} />
+    </>
+  );
 }

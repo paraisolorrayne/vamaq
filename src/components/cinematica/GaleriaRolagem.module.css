@@ -1,0 +1,213 @@
+/* ============================================
+   Galeria da apresentação — fotos que andam com a rolagem
+
+   Mesma linguagem da ficha (fundo claro, tinta, laranja nos detalhes).
+   Sem movimento: faixa rolável de lado, como a galeria de sempre. Com
+   movimento: palco fixo numa trilha cuja altura cresce com o número de
+   fotos (~30svh de rolagem por foto).
+   ============================================ */
+
+.galeria {
+  /* Largura de cada foto; com movimento, também o recuo que centraliza a
+     primeira e a última (ver .fila abaixo). */
+  --item: min(86vw, 900px);
+  /* Rolagem vertical por foto, com movimento. */
+  --passo: 30svh;
+  position: relative;
+  background: #fff;
+  color: var(--color-ink);
+  border-top: 1px solid var(--border-light);
+}
+
+.palco {
+  padding: var(--space-xl) 0 var(--space-lg);
+}
+
+.topo {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  max-width: var(--container-max);
+  margin: 0 auto var(--space-md);
+  padding: 0 var(--container-pad);
+}
+
+.marca {
+  margin-bottom: 4px;
+  font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
+  font-size: var(--text-xs);
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.titulo {
+  font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
+  font-size: clamp(1.5rem, 3vw, 2.4rem);
+  font-weight: var(--fw-bold);
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.titulo span {
+  color: var(--text-tertiary);
+  font-size: 0.55em;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.fila {
+  display: flex;
+  gap: 12px;
+  padding: 0 var(--container-pad);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: var(--container-pad);
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+
+.fila::-webkit-scrollbar {
+  display: none;
+}
+
+.fila:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 4px;
+}
+
+.item {
+  flex: 0 0 var(--item);
+  scroll-snap-align: start;
+}
+
+.quadro {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  background: var(--bg-soft);
+  cursor: zoom-in;
+}
+
+.quadro:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
+
+.img {
+  object-fit: cover;
+}
+
+.controles {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  max-width: var(--container-max);
+  margin: var(--space-md) auto 0;
+  padding: 0 var(--container-pad);
+}
+
+.contador {
+  min-width: 64px;
+  font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.contador span {
+  color: var(--color-ink);
+}
+
+.progresso {
+  flex: 1;
+  height: 2px;
+  background: var(--border-light);
+  overflow: hidden;
+}
+
+.barra {
+  display: block;
+  height: 100%;
+  background: var(--color-accent);
+  transform-origin: left center;
+  transition: transform 0.3s ease;
+}
+
+.setas {
+  display: flex;
+  gap: 8px;
+}
+
+.seta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1.5px solid var(--border-light);
+  background: #fff;
+  color: var(--color-ink);
+  transition: border-color var(--ease-fast);
+}
+
+.seta:hover {
+  border-color: var(--color-ink);
+}
+
+@media (min-width: 900px) {
+  /* Quadro que cabe na altura junto com header, barra de seções, título e
+     controles: 82svh de largura → 61svh de altura. Foto maior anda mais
+     de lado por passo, então o passo também cresce. */
+  .galeria {
+    --item: min(62vw, 82svh);
+    --passo: 38svh;
+  }
+}
+
+/* ============================================
+   Com movimento
+   ============================================ */
+
+:global(html[data-cine="on"]) .galeria {
+  height: calc(100svh + (var(--fotos, 1) - 1) * var(--passo));
+}
+
+/* 140px no topo: header fixo + barra de seções da ficha, que é sticky. */
+:global(html[data-cine="on"]) .palco {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100svh;
+  padding: 140px 0 24px;
+  overflow: hidden;
+}
+
+/* Recuo de meia tela dos dois lados: a primeira foto começa no meio e a
+   última termina no meio, e a foto i fica no centro exatamente na posição
+   i/(n−1) da rolagem — a conta que as setas usam. */
+:global(html[data-cine="on"]) .fila {
+  padding-inline: calc((100vw - var(--item)) / 2);
+  overflow: visible;
+  scroll-snap-type: none;
+}
+
+:global(html[data-cine="on"]) .barra {
+  transition: none;
+}
+
+/* Embaixo, no celular, fica a barra fixa "Tenho Interesse" da ficha. */
+@media (max-width: 639.98px) {
+  :global(html[data-cine="on"]) .palco {
+    padding-bottom: 88px;
+  }
+}

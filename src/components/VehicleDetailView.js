@@ -7,6 +7,9 @@ import VehicleCard from '@/components/VehicleCard';
 import { getWhatsAppUrl } from '@/lib/whatsapp';
 import { anoVeiculo } from '@/lib/anoVeiculo';
 import { letrasDaMaiorPalavra } from '@/lib/maiorPalavra';
+import { temApresentacao } from '@/lib/home/cinematica';
+import GaleriaRolagem from '@/components/cinematica/GaleriaRolagem';
+import RevelaAoRolar from '@/components/cinematica/RevelaAoRolar';
 import styles from '@/app/veiculo/[slug]/veiculo.module.css';
 
 function resolveGalleryImages(vehicle) {
@@ -43,7 +46,10 @@ function WhatsAppIcon() {
   );
 }
 
-export default function VehicleDetailView({ vehicle, related = [], isPreview = false }) {
+// `naApresentacao`: esta é a apresentação (/veiculo/[slug]/apresentacao) — a
+// galeria vira a que anda com a rolagem, e o link "Ver apresentação" some,
+// porque apontaria para a própria página.
+export default function VehicleDetailView({ vehicle, related = [], isPreview = false, naApresentacao = false }) {
   const whatsappUrl = getWhatsAppUrl(vehicle);
   const galleryImages = resolveGalleryImages(vehicle);
   const count = galleryImages.length;
@@ -102,6 +108,13 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
     ? `${vehicle.power || ''} ${vehicle.fuel} ${vehicle.transmission || ''}`.trim()
     : '';
   const opcionais = vehicle.opcionais || [];
+  // Na apresentação as seções entram por RevelaAoRolar (funciona em todo
+  // navegador e é mais visível) em vez do `.revela` de CSS de rolagem, que só
+  // anima em Chrome e Safari 26+. Os dois juntos animariam duas vezes.
+  const revela = naApresentacao ? '' : ' revela';
+  const alvo = naApresentacao ? { 'data-revela': '' } : {};
+  const grupo = naApresentacao ? { 'data-revela-grupo': '' } : {};
+
   const priceLabel = vehicle.price
     ? `R$ ${vehicle.price.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`
     : 'Sob consulta';
@@ -109,13 +122,18 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
   return (
     <main id="main-content" className={styles.page}>
       {/* ===== HERO SECTION ===== */}
-      <section className={`${styles.hero} revela-entrada`}>
+      <section
+        className={`${styles.hero} revela-entrada`}
+        // Na apresentação o conteúdo do topo recua de leve quando a galeria
+        // chega (CinematicaMotion, montarSaidaHero).
+        data-secao={naApresentacao ? 'hero' : undefined}
+      >
         {/* SVG decorativo continua em <img> de propósito: o otimizador do
             Next não processa SVG sem ligar dangerouslyAllowSVG, e um vetor
             de gradiente já é menor que qualquer raster que sairia dele. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img className={styles.heroBgImg} src="/images/bg-gradient.svg" alt="" aria-hidden="true" />
-        <div className={styles.heroInner}>
+        <div className={styles.heroInner} data-secao-conteudo>
           <div className={styles.heroInfo}>
             <h5 className={styles.heroBrand}>{vehicle.brand}</h5>
             <h1
@@ -165,6 +183,14 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
                 </svg>
               </span>
             </a>
+
+            {/* Aqui e não na barra de seções: com um quarto item ela não
+                cabia no celular e quebrava. */}
+            {!isPreview && !naApresentacao && temApresentacao(vehicle) && (
+              <Link href={`/veiculo/${vehicle.slug}/apresentacao`} className={styles.heroStoryLink}>
+                Ver apresentação
+              </Link>
+            )}
           </div>
 
           <div className={styles.heroImage}>
@@ -206,73 +232,87 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
         <a href="#detalhes">Detalhes</a>
       </nav>
 
-      {/* ===== GALLERY & INFO SECTION ===== */}
-      <section id="imagens" className={`${styles.gallerySection} revela`}>
-        <div className={styles.gallerySidebar}>
-          <h5 className={styles.galleryBrand}>{vehicle.brand}</h5>
-          <h2 className={styles.galleryModel}>{vehicle.model}</h2>
-          {version && <h3 className={styles.galleryVersion}>{version}</h3>}
-        </div>
+      {/* ===== GALLERY & INFO SECTION =====
+          Na apresentação (/veiculo/[slug]/apresentacao) a galeria é a que
+          anda com a rolagem; o resto da ficha é o mesmo. */}
+      {naApresentacao && galleryImages.length > 1 ? (
+        <GaleriaRolagem
+          fotos={galleryImages}
+          vehicle={vehicle}
+          ano={anoVeiculo(vehicle)}
+          onAbrir={(i) => {
+            setIndex(i);
+            setLightboxOpen(true);
+          }}
+        />
+      ) : (
+        <section id="imagens" className={`${styles.gallerySection} revela`}>
+          <div className={styles.gallerySidebar}>
+            <h5 className={styles.galleryBrand}>{vehicle.brand}</h5>
+            <h2 className={styles.galleryModel}>{vehicle.model}</h2>
+            {version && <h3 className={styles.galleryVersion}>{version}</h3>}
+          </div>
 
-        <div className={styles.galleryMain}>
-          {galleryImages.length > 0 ? (
-            <>
-              <div className={styles.galleryTrack} ref={trackRef}>
-                {galleryImages.map((src, i) => (
-                  <div
-                    key={`${src}-${i}`}
-                    className={`${styles.galleryImage} ${i === index ? styles.galleryImageActive : ''}`}
-                    onClick={() => {
-                      setIndex(i);
-                      setLightboxOpen(true);
-                    }}
-                  >
-                    <Image
-                      src={src}
-                      alt={`${vehicle.brand} ${vehicle.model} — foto ${i + 1}`}
-                      fill
-                      // A tira mostra uma foto por vez ocupando ~70% da
-                      // largura; pedir a imagem inteira para cada uma era o
-                      // que fazia a página baixar o acervo de fotos do carro.
-                      sizes="(max-width: 900px) 80vw, 600px"
-                      // Só a PRIMEIRA sai na frente. As outras esperam entrar
-                      // na tela — num carro com 15 fotos, adiantar três já
-                      // significa ~1,2 MB antes de o visitante rolar.
-                      loading={i < 3 ? 'eager' : 'lazy'}
-                      fetchPriority={i < 3 ? 'high' : 'auto'}
-                      unoptimized
-                      draggable={false}
-                    />
-                  </div>
-                ))}
-              </div>
-              {count > 1 && (
-                <div className={styles.galleryControls}>
-                  <span className={styles.galleryCounter}>{index + 1}/{count}</span>
-                  <div className={styles.galleryProgress}>
+          <div className={styles.galleryMain}>
+            {galleryImages.length > 0 ? (
+              <>
+                <div className={styles.galleryTrack} ref={trackRef}>
+                  {galleryImages.map((src, i) => (
                     <div
-                      className={styles.galleryProgressBar}
-                      style={{ width: `${((index + 1) / count) * 100}%` }}
-                    />
-                  </div>
-                  <div className={styles.galleryNav}>
-                    <button type="button" className={styles.galleryNavBtn} onClick={prev} aria-label="Anterior">
-                      <ArrowIcon direction="left" />
-                    </button>
-                    <button type="button" className={styles.galleryNavBtn} onClick={next} aria-label="Próxima">
-                      <ArrowIcon direction="right" />
-                    </button>
-                  </div>
+                      key={`${src}-${i}`}
+                      className={`${styles.galleryImage} ${i === index ? styles.galleryImageActive : ''}`}
+                      onClick={() => {
+                        setIndex(i);
+                        setLightboxOpen(true);
+                      }}
+                    >
+                      <Image
+                        src={src}
+                        alt={`${vehicle.brand} ${vehicle.model} — foto ${i + 1}`}
+                        fill
+                        // A tira mostra uma foto por vez ocupando ~70% da
+                        // largura; pedir a imagem inteira para cada uma era o
+                        // que fazia a página baixar o acervo de fotos do carro.
+                        sizes="(max-width: 900px) 80vw, 600px"
+                        // Só a PRIMEIRA sai na frente. As outras esperam entrar
+                        // na tela — num carro com 15 fotos, adiantar três já
+                        // significa ~1,2 MB antes de o visitante rolar.
+                        loading={i < 3 ? 'eager' : 'lazy'}
+                        fetchPriority={i < 3 ? 'high' : 'auto'}
+                        unoptimized
+                        draggable={false}
+                      />
+                    </div>
+                  ))}
                 </div>
-              )}
-            </>
-          ) : (
-            <div className={styles.galleryEmpty}>
-              <p>Nenhuma imagem disponível</p>
-            </div>
-          )}
-        </div>
-      </section>
+                {count > 1 && (
+                  <div className={styles.galleryControls}>
+                    <span className={styles.galleryCounter}>{index + 1}/{count}</span>
+                    <div className={styles.galleryProgress}>
+                      <div
+                        className={styles.galleryProgressBar}
+                        style={{ width: `${((index + 1) / count) * 100}%` }}
+                      />
+                    </div>
+                    <div className={styles.galleryNav}>
+                      <button type="button" className={styles.galleryNavBtn} onClick={prev} aria-label="Anterior">
+                        <ArrowIcon direction="left" />
+                      </button>
+                      <button type="button" className={styles.galleryNavBtn} onClick={next} aria-label="Próxima">
+                        <ArrowIcon direction="right" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className={styles.galleryEmpty}>
+                <p>Nenhuma imagem disponível</p>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* ===== LIGHTBOX — foto em tela cheia sem sair do site ===== */}
       {lightboxOpen && galleryImages[index] && (
@@ -342,14 +382,14 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
       )}
 
       {/* ===== INFORMAÇÕES PRINCIPAIS — always visible below gallery ===== */}
-      <section id="especificacoes" className={`${styles.specsSection} revela`}>
+      <section id="especificacoes" className={`${styles.specsSection}${revela}`}>
         <div className="container">
-          <div className={styles.specsHeading}>
+          <div className={styles.specsHeading} {...alvo}>
             <span>Especificações</span>
             <h2 className={styles.specsSectionTitle}>Informações principais</h2>
           </div>
           <div className={styles.specsGrid}>
-            <ul className={styles.specsList}>
+            <ul className={styles.specsList} {...grupo}>
               <li className={styles.specItem}>
                 <span className={styles.specLabel}>Quilometragem</span>
                 <span className={styles.specValue}>
@@ -386,7 +426,7 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
               )}
             </ul>
 
-            <div id="detalhes" className={styles.specsExtra}>
+            <div id="detalhes" className={styles.specsExtra} {...alvo}>
                 {vehicle.description && (
                   <div className={styles.infoPanelBlock}>
                     <h4 className={styles.infoPanelTitle}>Sobre este veículo</h4>
@@ -445,8 +485,8 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
       </section>
 
       {/* ===== CTA SECTION ===== */}
-      <section className={`${styles.ctaSection} revela`}>
-        <div className={styles.ctaInner}>
+      <section className={`${styles.ctaSection}${revela}`}>
+        <div className={styles.ctaInner} {...alvo}>
           <h3 className={styles.ctaEyebrow}>Expanda seu horizonte</h3>
           <p className={styles.ctaTitle}>
             Escolha o modelo para se adequar ao seu modo de vida.
@@ -469,15 +509,15 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
 
       {/* ===== RELATED VEHICLES ===== */}
       {related.length > 0 && (
-        <section className={`${styles.relatedSection} revela`}>
+        <section className={`${styles.relatedSection}${revela}`}>
           <div className="container">
-            <div className={styles.relatedHeader}>
+            <div className={styles.relatedHeader} {...alvo}>
               <h2 className={styles.sectionTitle}>Você também pode gostar</h2>
               <Link href="/acervo" className={styles.relatedLink}>
                 Ver showroom completo →
               </Link>
             </div>
-            <div className={`${styles.relatedGrid} revela-grupo`}>
+            <div className={`${styles.relatedGrid}${naApresentacao ? '' : ' revela-grupo'}`} {...grupo}>
               {related.map((v) => (
                 <VehicleCard key={v.id} vehicle={v} />
               ))}
@@ -488,7 +528,9 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
 
       {/* ===== MOBILE CTA ===== */}
       {!isPreview && (
-        <div className={styles.mobileCta}>
+        // data-cta-movel: o WhatsApp flutuante se esconde no celular quando
+        // esta barra existe (ver WhatsAppFloat.module.css).
+        <div className={styles.mobileCta} data-cta-movel>
           <a
             href={whatsappUrl}
             className="btn btn--primary btn--lg btn--full"
@@ -500,6 +542,7 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
           </a>
         </div>
       )}
+      {naApresentacao && <RevelaAoRolar />}
     </main>
   );
 }
