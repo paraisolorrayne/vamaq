@@ -35,7 +35,7 @@ body {
      dentro do body — que nunca rola —, então nada gruda. Era por isso que a
      barra "Imagens / Especificações / Detalhes" da ficha rolava junto com a
      página (medido no site no ar em 24/10/2026), e o palco das cenas da
-     /previa subia. `clip` corta o excesso lateral do mesmo jeito, sem criar
+     home subia. `clip` corta o excesso lateral do mesmo jeito, sem criar
      contêiner. O `hidden` antes fica para navegador sem `clip` (Safari < 16). */
   overflow-x: hidden;
   overflow-x: clip;
@@ -388,7 +388,7 @@ p { overflow-wrap: break-word; }
 }
 
 /* Entrada por IntersectionObserver (components/cinematica/RevelaAoRolar),
-   usada no acervo e na apresentação do carro. Mesma regra de segurança de
+   usada no acervo e na ficha do carro. Mesma regra de segurança de
    cima: sem o JS marcar "espera", nada fica escondido. Mais presente que o
    .revela (40px e a foto recuando), mas com a mesma curva.
    `--revela-i` é a posição na cascata de quem entrou junto. */

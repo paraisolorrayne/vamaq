@@ -66,51 +66,26 @@ const trilha = (trigger, extra = {}) => ({
 });
 const entrada = { autoAlpha: 1, y: 0, duration: 0.28, ease: 'power2.out' };
 
-// Cena 1. As duas aberturas começam sozinhas ao entrar (CSS) e a rolagem
-// continua de onde a entrada parou; por último entram preço e botões.
-//  - cortina: a faixa abre até a tela cheia e a câmera recua — só recorte e
-//    escala, a foto fica nítida o tempo todo;
-//  - luz: o facho cresce, a exposição sobe e a câmera se aproxima.
-function montarReveal(gsap, largo) {
+// Cena 1. A cortina começa a abrir sozinha ao entrar (CSS) e a rolagem
+// continua de onde a entrada parou: a faixa abre até a tela cheia e a câmera
+// recua — só recorte e escala, a foto fica nítida o tempo todo. Por último
+// entram preço e botões.
+function montarReveal(gsap) {
   const cena = document.querySelector('[data-cena="reveal"]');
   if (!cena) return;
   const um = (s) => cena.querySelector(s);
-  const foto = um('[data-r="foto"]');
-  const tl = gsap
+  // A escala vai na <img>, não no quadro: o quadro carrega o recorte (e, no
+  // celular, a centralização do CSS, que o GSAP não deve tocar). A foto
+  // desfocada de trás recua junto, para o carro fora de foco continuar
+  // alinhado com o da faixa nítida.
+  const camadas = [um('[data-r="img"]'), um('[data-r="desfoque"]')].filter(Boolean);
+
+  gsap
     .timeline({ defaults: { ease: 'none' }, scrollTrigger: trilha(cena) })
-    .fromTo(um('[data-r="dica"]'), { autoAlpha: 1 }, { autoAlpha: 0, duration: 0.08 }, 0);
-
-  if (cena.dataset.efeito === 'luz') {
-    tl.fromTo(foto, { '--luz': '34%' }, { '--luz': '120%', duration: 0.5, ease: 'power1.inOut' }, 0)
-      .fromTo(foto, { '--exp': 0 }, { '--exp': 1, duration: 0.5 }, 0.04)
-      // xPercent/yPercent explícitos: o GSAP absorve o `translate` do CSS no
-      // próprio transform e, no celular, perdia o -50% vertical — a foto
-      // descia meia altura e caía em cima do texto. No computador a foto
-      // termina nas bordas da tela; no celular para na largura da tela.
-      .fromTo(
-        foto,
-        { xPercent: -50, yPercent: -50, scale: largo ? 0.84 : 0.82, y: 0 },
-        {
-          xPercent: -50,
-          yPercent: -50,
-          scale: () => (largo ? Math.max(1.08, (innerWidth / foto.offsetWidth) * 1.02) : 1),
-          y: () => (largo ? -innerHeight * 0.06 : 0),
-          duration: 0.72,
-          ease: 'power1.inOut',
-        },
-        0
-      );
-  } else {
-    // A escala vai na <img>, não no quadro: o quadro carrega o recorte (e,
-    // no celular, a centralização do CSS, que o GSAP não deve tocar).
-    // A foto desfocada de trás recua junto, para o carro fora de foco
-    // continuar alinhado com o da faixa nítida.
-    const camadas = [um('[data-r="img"]'), um('[data-r="desfoque"]')].filter(Boolean);
-    tl.fromTo(foto, { '--fenda': '32%' }, { '--fenda': '0%', duration: 0.55, ease: 'power2.inOut' }, 0)
-      .fromTo(camadas, { scale: 1.16 }, { scale: 1, duration: 0.72, ease: 'power1.out' }, 0);
-  }
-
-  tl.fromTo(um('[data-r="info"]'), { autoAlpha: 0, y: 48 }, { ...entrada, duration: 0.18 }, 0.56)
+    .fromTo(um('[data-r="dica"]'), { autoAlpha: 1 }, { autoAlpha: 0, duration: 0.08 }, 0)
+    .fromTo(um('[data-r="foto"]'), { '--fenda': '32%' }, { '--fenda': '0%', duration: 0.55, ease: 'power2.inOut' }, 0)
+    .fromTo(camadas, { scale: 1.16 }, { scale: 1, duration: 0.72, ease: 'power1.out' }, 0)
+    .fromTo(um('[data-r="info"]'), { autoAlpha: 0, y: 48 }, { ...entrada, duration: 0.18 }, 0.56)
     // Segura o quadro final antes de a página seguir.
     .to({}, { duration: 0.2 });
 }
@@ -192,7 +167,7 @@ function montarVitrine(gsap, largo) {
   });
 }
 
-// Apresentação: a transição do topo da ficha para a galeria. Enquanto a
+// Ficha: a transição do topo para a galeria. Enquanto a
 // galeria sobe, o conteúdo do topo desce mais devagar que a página e encolhe
 // um pouco — profundidade, sem apagar nada (foto esmaecida é o "desfoque"
 // que a Lorrayne vetou).
@@ -216,7 +191,7 @@ function montarSaidaHero(gsap) {
   );
 }
 
-// Galeria da apresentação: a rolagem vertical leva a faixa para o lado. Cada
+// Galeria da ficha: a rolagem vertical leva a faixa para o lado. Cada
 // foto cresce ao passar pelo meio e a imagem desliza dentro do quadro mais
 // devagar que a faixa (profundidade). Nenhum filtro: a foto fica sempre
 // nítida e com a cor do cadastro.
@@ -303,7 +278,7 @@ function montarBoutique(gsap) {
 }
 
 // `emLinha`: o botão entra no fluxo do bloco em vez de fixo na tela — para
-// páginas em que só um trecho anima (a galeria da apresentação do carro);
+// páginas em que só um trecho anima (a galeria da ficha do carro);
 // fixo, ele seguiria a ficha inteira sem ter o que pausar.
 export default function CinematicaMotion({ emLinha = false }) {
   const preferencia = useSyncExternalStore(assinar, lerPreferencia, () => 'ligado');
@@ -324,7 +299,7 @@ export default function CinematicaMotion({ emLinha = false }) {
       const mm = gsap.matchMedia();
       mm.add({ largo: '(min-width: 900px)', estreito: '(max-width: 899.98px)' }, (ctx) => {
         const { largo } = ctx.conditions;
-        montarReveal(gsap, largo);
+        montarReveal(gsap);
         montarVitrine(gsap, largo);
         montarBoutique(gsap, largo);
         montarGaleria(gsap);

@@ -16,7 +16,7 @@ function Seta({ lado }) {
 }
 
 /**
- * As fotos da ficha andando com a rolagem (apresentação do carro). O topo da
+ * As fotos da ficha do carro andando com a rolagem. O topo da
  * ficha fica como sempre; só esta faixa muda: com movimento, a página para
  * aqui e a rolagem para baixo passa as fotos para o lado — cada uma cresce
  * ao chegar no meio e a imagem desliza dentro do quadro (CinematicaMotion,

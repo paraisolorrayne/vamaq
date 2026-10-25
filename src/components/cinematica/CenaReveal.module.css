@@ -6,12 +6,10 @@
    embaixo no celular. Com movimento (`html[data-cine="on"]`, ver
    MovimentoFlag) o palco fica fixo numa trilha alta, a abertura começa
    sozinha ao entrar e a rolagem termina de revelar e mostra preço e botões.
-   Duas aberturas (ver CenaReveal.js): `.cortina` (padrão) e `.luz`.
 
    Fundo branco, como o resto do site (pedido de 24/10/2026). As cores do
    texto são variáveis porque dependem de onde ele cai: sobre o fundo é
-   tinta; sobre a foto (no computador a foto cobre o palco) é branco. A
-   `.luz` continua no escuro: o facho só existe contra o preto.
+   tinta; sobre a foto (no computador a foto cobre o palco) é branco.
    ============================================ */
 
 .cena {
@@ -21,13 +19,6 @@
   position: relative;
   background: var(--bg-primary);
   color: var(--tinta);
-}
-
-.luz {
-  --tinta: #fff;
-  --tinta-suave: rgba(255, 255, 255, 0.8);
-  --tinta-linha: rgba(255, 255, 255, 0.42);
-  background: var(--color-ink);
 }
 
 /* No computador tudo no palco fica sobre a foto. */
@@ -248,7 +239,7 @@
 }
 
 /* ============================================
-   Com movimento — o que vale para as duas aberturas
+   Com movimento
    ============================================ */
 
 :global(html[data-cine="on"]) .cena {
@@ -265,20 +256,12 @@
   align-items: flex-end;
 }
 
-:global(html[data-cine="on"]) .foto {
-  position: absolute;
-}
-
-/* No celular (cortina) não há sombra: o texto fica no fundo branco, e o
-   degradê escureceria o branco. */
+/* No celular não há sombra: o texto fica no fundo branco, e o degradê
+   escureceria o branco. */
 @media (min-width: 900px) {
   :global(html[data-cine="on"]) .sombra {
     display: block;
   }
-}
-
-:global(html[data-cine="on"]) .luz .sombra {
-  display: block;
 }
 
 :global(html[data-cine="on"]) .dica {
@@ -295,11 +278,8 @@
   letter-spacing: 0.2em;
   text-transform: uppercase;
   white-space: nowrap;
-  animation: dicaEntra 0.8s ease 1.2s both;
-}
-
-:global(html[data-cine="on"]) .dica {
   color: var(--tinta-suave);
+  animation: dicaEntra 0.8s ease 1.2s both;
 }
 
 :global(html[data-cine="on"]) .dica::after {
@@ -370,7 +350,7 @@
 }
 
 /* ============================================
-   Abertura "cortina" (padrão)
+   Abertura em cortina
 
    A foto cobre o palco inteiro (no celular, a largura toda) e aparece por
    uma faixa horizontal: `--fenda` é quanto fica cortado em cima e embaixo.
@@ -389,15 +369,16 @@
 
 /* Soma, não máximo: a entrada acrescenta os 18% que faltam para fechar e
    some ao terminar (--abre = 1); daí em diante é só a rolagem. */
-:global(html[data-cine="on"]) .cortina .foto {
+:global(html[data-cine="on"]) .foto {
   --fenda: 32%;
   --corte: calc(var(--fenda) + 18% * (1 - var(--abre)));
+  position: absolute;
   inset: 0;
   clip-path: inset(var(--corte) 0 var(--corte) 0);
   animation: abre 1.6s cubic-bezier(0.65, 0, 0.35, 1) 0.25s both;
 }
 
-:global(html[data-cine="on"]) .cortina .desfoque {
+:global(html[data-cine="on"]) .desfoque {
   position: absolute;
   inset: 0;
   display: block;
@@ -413,80 +394,11 @@
   }
 }
 
-/* Só embaixo, onde fica o texto, e mais leve que a da luz. */
-:global(html[data-cine="on"]) .cortina .sombra {
+/* Só embaixo e à esquerda, onde fica o texto. */
+:global(html[data-cine="on"]) .sombra {
   background:
     linear-gradient(90deg, rgba(10, 10, 10, 0.55) 0%, rgba(10, 10, 10, 0.15) 40%, rgba(10, 10, 10, 0) 60%),
     linear-gradient(180deg, rgba(10, 10, 10, 0) 0%, rgba(10, 10, 10, 0) 55%, rgba(10, 10, 10, 0.6) 80%, rgba(10, 10, 10, 0.9) 100%);
-}
-
-/* ============================================
-   Abertura "luz" (primeira versão, para comparar)
-   ============================================ */
-
-/* `--acende` vai de 0 a 1 sozinho ao abrir a página: a luz aparece sobre o
-   carro antes de qualquer rolagem. */
-@property --acende {
-  syntax: "<number>";
-  inherits: true;
-  initial-value: 1;
-}
-
-/* A foto vira um quadro 4:3 no meio do palco com as bordas se perdendo no
-   preto. `--luz` é o tamanho do facho e `--exp` a exposição, os dois da
-   rolagem (GSAP). A entrada (`--acende`) só garante um piso, por isso o
-   max(): quando a rolagem passa do piso, manda ela, sem salto. */
-:global(html[data-cine="on"]) .luz .foto {
-  --luz: 120%;
-  --exp: 1;
-  --facho: max(var(--luz), calc(46% * var(--acende)));
-  inset: auto;
-  left: 50%;
-  top: 50%;
-  width: min(86vw, 112svh);
-  aspect-ratio: 4 / 3;
-  translate: -50% -50%;
-  -webkit-mask-image: radial-gradient(ellipse var(--facho) var(--facho) at 50% 52%, #000 58%, transparent 100%);
-  mask-image: radial-gradient(ellipse var(--facho) var(--facho) at 50% 52%, #000 58%, transparent 100%);
-  animation: acende 2.4s cubic-bezier(0.3, 0.6, 0.2, 1) 0.15s both;
-}
-
-@keyframes acende {
-  from {
-    --acende: 0;
-  }
-  to {
-    --acende: 1;
-  }
-}
-
-/* Exposição, não retoque: com --exp 0 só os brilhos que já estão na foto
-   aparecem; com 1 a foto é exatamente a do cadastro. */
-:global(html[data-cine="on"]) .luz .img {
-  --exposto: max(var(--exp), calc(0.24 * var(--acende)));
-  filter: contrast(calc(3 - 2 * var(--exposto))) brightness(calc(0.3 + 0.7 * var(--exposto)))
-    saturate(calc(0.4 + 0.6 * var(--exposto)));
-  animation: fotoEntra 1.8s cubic-bezier(0.2, 0.7, 0.2, 1) both;
-}
-
-@keyframes fotoEntra {
-  from {
-    opacity: 0;
-    scale: 1.06;
-  }
-}
-
-:global(html[data-cine="on"]) .luz .sombra {
-  background:
-    linear-gradient(90deg, rgba(10, 10, 10, 0.72) 0%, rgba(10, 10, 10, 0.28) 38%, rgba(10, 10, 10, 0) 62%),
-    linear-gradient(180deg, rgba(10, 10, 10, 0.55) 0%, rgba(10, 10, 10, 0) 20%, rgba(10, 10, 10, 0) 50%, rgba(10, 10, 10, 0.7) 76%, rgba(10, 10, 10, 0.96) 100%);
-}
-
-/* Antes do GSAP assumir, a luz abre no quadro inicial — senão piscaria
-   acesa até o JS chegar. */
-:global(html[data-cine="on"]:not([data-cine-pronto])) .luz .foto {
-  --luz: 34%;
-  --exp: 0;
 }
 
 /* ============================================
@@ -498,9 +410,8 @@
    Em cima, o atalho; embaixo, o texto, acima da faixa do WhatsApp flutuante
    e do botão de pausar. */
 @media (max-width: 899.98px) {
-  :global(html[data-cine="on"]) .cortina .foto,
-  :global(html[data-cine="on"]) .cortina .desfoque,
-  :global(html[data-cine="on"]) .luz .foto {
+  :global(html[data-cine="on"]) .foto,
+  :global(html[data-cine="on"]) .desfoque {
     inset: auto;
     left: 50%;
     top: 36%;
