@@ -3,6 +3,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
 import VehicleDetailView from "@/components/VehicleDetailView";
+import MovimentoFlag from "@/components/cinematica/MovimentoFlag";
 import {
   getVehicleBySlug,
   getRelatedVehicles,
@@ -35,8 +36,11 @@ export default async function VeiculoPage({ params }) {
 
   const related = await getRelatedVehicles(vehicle, 3);
 
+  // MovimentoFlag: a galeria fixa na rolagem precisa saber, antes da
+  // primeira pintura, se há movimento (ver components/cinematica).
   return (
     <>
+      <MovimentoFlag />
       <Header />
       <VehicleDetailView vehicle={vehicle} related={related} />
       <Footer />

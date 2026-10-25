@@ -1,5 +1,5 @@
 /**
- * O que entra em cada cena da experiência cinematográfica
+ * O que entra em cada cena da home cinematográfica
  * (src/lib/home/cinematica.js).
  *
  * As garantias que importam para o briefing: nenhum carro em duas cenas e
@@ -7,7 +7,7 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { escolherCenas, formatarPreco, temApresentacao } from "../src/lib/home/cinematica.js";
+import { escolherCenas, formatarPreco } from "../src/lib/home/cinematica.js";
 
 const fotos = (n, id) => ({
   main: `/images/vehicles/${id}-1.webp`,
@@ -38,13 +38,6 @@ test("carro sem foto não vira herói nem entra na vitrine", () => {
   const { hero, vitrine } = escolherCenas([semFoto], estoque);
   assert.equal(hero.id, "a");
   assert.ok(!vitrine.some((v) => v.id === "x"));
-});
-
-test("apresentação existe a partir de duas fotos (a galeria precisa ter o que passar)", () => {
-  assert.equal(temApresentacao(carro("a", 1, 2)), true);
-  assert.equal(temApresentacao(carro("a", 1, 1)), false);
-  assert.equal(temApresentacao({ images: { main: "", gallery: [] } }), false);
-  assert.equal(temApresentacao({}), false);
 });
 
 test("preço vazio vira Sob consulta", () => {

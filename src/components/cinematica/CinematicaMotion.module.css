@@ -75,7 +75,7 @@
   }
 }
 
-/* No fluxo do bloco (galeria da apresentação, sobre fundo claro). Vem por
+/* No fluxo do bloco (galeria da ficha, sobre fundo claro). Vem por
    último para valer sobre as posições fixas acima. */
 .emLinha {
   position: static;

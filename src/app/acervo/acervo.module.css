@@ -57,7 +57,7 @@
 }
 
 /* A loja ao lado do título (24/10/2026): faixa panorâmica da fachada ao
-   anoitecer. Abre como a cortina da /previa ao entrar e, com a rolagem, a
+   anoitecer. Abre como a cortina da home ao entrar e, com a rolagem, a
    foto desliza dentro da faixa (ParallaxFotos — por isso a camada tem 4% de
    sobra em cima e embaixo). Nunca escurece: sem degradê por cima. */
 .faixa {

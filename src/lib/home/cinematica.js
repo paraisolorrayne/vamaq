@@ -1,6 +1,5 @@
 /**
- * O que entra em cada cena da experiência cinematográfica (prévia em /previa
- * e galeria de /veiculo/[slug]/apresentacao). Puro — sem I/O e sem
+ * O que entra em cada cena da home cinematográfica. Puro — sem I/O e sem
  * imports —, para rodar em `node --test`.
  *
  * A regra de todas as cenas: só sai o que está no cadastro. As fotos não têm
@@ -20,12 +19,6 @@ export function fotosDoVeiculo(veiculo) {
     if (url && !lista.includes(url)) lista.push(url);
   }
   return lista;
-}
-
-// A apresentação é a ficha com a galeria andando com a rolagem: precisa de
-// pelo menos duas fotos para haver o que passar.
-export function temApresentacao(veiculo) {
-  return fotosDoVeiculo(veiculo).length > 1;
 }
 
 export function formatarPreco(veiculo) {

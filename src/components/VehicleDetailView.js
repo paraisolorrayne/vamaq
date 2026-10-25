@@ -7,7 +7,6 @@ import VehicleCard from '@/components/VehicleCard';
 import { getWhatsAppUrl } from '@/lib/whatsapp';
 import { anoVeiculo } from '@/lib/anoVeiculo';
 import { letrasDaMaiorPalavra } from '@/lib/maiorPalavra';
-import { temApresentacao } from '@/lib/home/cinematica';
 import GaleriaRolagem from '@/components/cinematica/GaleriaRolagem';
 import RevelaAoRolar from '@/components/cinematica/RevelaAoRolar';
 import styles from '@/app/veiculo/[slug]/veiculo.module.css';
@@ -46,10 +45,10 @@ function WhatsAppIcon() {
   );
 }
 
-// `naApresentacao`: esta é a apresentação (/veiculo/[slug]/apresentacao) — a
-// galeria vira a que anda com a rolagem, e o link "Ver apresentação" some,
-// porque apontaria para a própria página.
-export default function VehicleDetailView({ vehicle, related = [], isPreview = false, naApresentacao = false }) {
+// No site, a ficha tem a galeria que anda com a rolagem e as seções entrando
+// ao chegar (25/10/2026 — antes isso morava numa rota de apresentação à
+// parte). `isPreview` (pré-visualização sem links) fica com a ficha parada.
+export default function VehicleDetailView({ vehicle, related = [], isPreview = false }) {
   const whatsappUrl = getWhatsAppUrl(vehicle);
   const galleryImages = resolveGalleryImages(vehicle);
   const count = galleryImages.length;
@@ -108,12 +107,13 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
     ? `${vehicle.power || ''} ${vehicle.fuel} ${vehicle.transmission || ''}`.trim()
     : '';
   const opcionais = vehicle.opcionais || [];
-  // Na apresentação as seções entram por RevelaAoRolar (funciona em todo
-  // navegador e é mais visível) em vez do `.revela` de CSS de rolagem, que só
-  // anima em Chrome e Safari 26+. Os dois juntos animariam duas vezes.
-  const revela = naApresentacao ? '' : ' revela';
-  const alvo = naApresentacao ? { 'data-revela': '' } : {};
-  const grupo = naApresentacao ? { 'data-revela-grupo': '' } : {};
+  // As seções entram por RevelaAoRolar (funciona em todo navegador e é mais
+  // visível) em vez do `.revela` de CSS de rolagem, que só anima em Chrome e
+  // Safari 26+. Os dois juntos animariam duas vezes.
+  const animada = !isPreview;
+  const revela = animada ? '' : ' revela';
+  const alvo = animada ? { 'data-revela': '' } : {};
+  const grupo = animada ? { 'data-revela-grupo': '' } : {};
 
   const priceLabel = vehicle.price
     ? `R$ ${vehicle.price.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`
@@ -124,9 +124,9 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
       {/* ===== HERO SECTION ===== */}
       <section
         className={`${styles.hero} revela-entrada`}
-        // Na apresentação o conteúdo do topo recua de leve quando a galeria
-        // chega (CinematicaMotion, montarSaidaHero).
-        data-secao={naApresentacao ? 'hero' : undefined}
+        // O conteúdo do topo recua de leve quando a galeria chega
+        // (CinematicaMotion, montarSaidaHero).
+        data-secao={animada ? 'hero' : undefined}
       >
         {/* SVG decorativo continua em <img> de propósito: o otimizador do
             Next não processa SVG sem ligar dangerouslyAllowSVG, e um vetor
@@ -183,14 +183,6 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
                 </svg>
               </span>
             </a>
-
-            {/* Aqui e não na barra de seções: com um quarto item ela não
-                cabia no celular e quebrava. */}
-            {!isPreview && !naApresentacao && temApresentacao(vehicle) && (
-              <Link href={`/veiculo/${vehicle.slug}/apresentacao`} className={styles.heroStoryLink}>
-                Ver apresentação
-              </Link>
-            )}
           </div>
 
           <div className={styles.heroImage}>
@@ -233,9 +225,9 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
       </nav>
 
       {/* ===== GALLERY & INFO SECTION =====
-          Na apresentação (/veiculo/[slug]/apresentacao) a galeria é a que
-          anda com a rolagem; o resto da ficha é o mesmo. */}
-      {naApresentacao && galleryImages.length > 1 ? (
+          A galeria anda com a rolagem (GaleriaRolagem). A faixa com setas de
+          antes fica para a pré-visualização e para carro com uma foto só. */}
+      {animada && galleryImages.length > 1 ? (
         <GaleriaRolagem
           fotos={galleryImages}
           vehicle={vehicle}
@@ -517,7 +509,7 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
                 Ver showroom completo →
               </Link>
             </div>
-            <div className={`${styles.relatedGrid}${naApresentacao ? '' : ' revela-grupo'}`} {...grupo}>
+            <div className={`${styles.relatedGrid}${animada ? '' : ' revela-grupo'}`} {...grupo}>
               {related.map((v) => (
                 <VehicleCard key={v.id} vehicle={v} />
               ))}
@@ -542,7 +534,7 @@ export default function VehicleDetailView({ vehicle, related = [], isPreview = f
           </a>
         </div>
       )}
-      {naApresentacao && <RevelaAoRolar />}
+      {animada && <RevelaAoRolar />}
     </main>
   );
 }

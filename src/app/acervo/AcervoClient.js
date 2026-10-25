@@ -410,7 +410,7 @@ function Acervo({ veiculos }) {
             </div>
 
             {/* A loja, ao lado do título: faixa panorâmica da fachada ao
-                anoitecer que abre como a cortina da /previa e desliza com a
+                anoitecer que abre como a cortina da home e desliza com a
                 rolagem (ParallaxFotos). A foto nunca escurece. */}
             {/* A cortina só abre com a foto carregada (data-pronta): antes,
                 abria sobre um retângulo vazio. */}

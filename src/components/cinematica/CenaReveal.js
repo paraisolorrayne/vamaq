@@ -10,45 +10,35 @@ import styles from "./CenaReveal.module.css";
  * retoque. O movimento mora no CinematicaMotion; aqui é só o HTML, que já é
  * a versão estática.
  *
- * Duas aberturas para comparar (`efeito`, vem de ?abertura= na /previa):
- *  - "cortina" (padrão): a foto aparece NÍTIDA por uma faixa de cinema que
- *    abre — sozinha ao entrar e até a tela cheia com a rolagem — enquanto a
- *    câmera recua. Fora da faixa, a mesma foto desfocada (pedido de
- *    24/10/2026, no lugar das faixas lisas): o carro "entra em foco".
- *  - "luz": a primeira versão — facho de luz com borda esfumada e exposição
- *    subindo. Em 24/10/2026 a Lorrayne achou que o esfumado "mata o site";
- *    ficou só para comparação.
+ * Abertura em cortina: a foto aparece NÍTIDA por uma faixa de cinema que
+ * abre — sozinha ao entrar e até a tela cheia com a rolagem — enquanto a
+ * câmera recua. Fora da faixa, a mesma foto desfocada: o carro "entra em
+ * foco". (Houve uma primeira versão com facho de luz e borda esfumada sobre
+ * fundo preto; saiu em 25/10/2026 — o esfumado "matava o site".)
  */
-export default function CenaReveal({ vehicle, efeito = "cortina" }) {
+export default function CenaReveal({ vehicle }) {
   if (!vehicle?.images?.main) return null;
   const ano = anoVeiculo(vehicle);
 
   return (
-    <section
-      className={`${styles.cena} ${efeito === "luz" ? styles.luz : styles.cortina}`}
-      data-cena="reveal"
-      data-efeito={efeito}
-      aria-labelledby="reveal-modelo"
-    >
+    <section className={styles.cena} data-cena="reveal" aria-labelledby="reveal-modelo">
       <div className={styles.palco}>
-        {efeito !== "luz" && (
-          <div className={styles.desfoque} aria-hidden="true">
-            {/* Foto pequena de propósito: desfocada, 384 px bastam. Mas é
-                ELA o maior elemento ao abrir (a nítida está recortada na
-                faixa), então é o LCP: sai na frente, não adiada — adiada,
-                o LCP do celular foi de 2,0 s para 2,6 s. */}
-            <Image
-              src={vehicle.images.main}
-              alt=""
-              className={styles.desfoqueImg}
-              data-r="desfoque"
-              fill
-              sizes="25vw"
-              loading="eager"
-              fetchPriority="high"
-            />
-          </div>
-        )}
+        <div className={styles.desfoque} aria-hidden="true">
+          {/* Foto pequena de propósito: desfocada, 384 px bastam. Mas é
+              ELA o maior elemento ao abrir (a nítida está recortada na
+              faixa), então é o LCP: sai na frente, não adiada — adiada,
+              o LCP do celular foi de 2,0 s para 2,6 s. */}
+          <Image
+            src={vehicle.images.main}
+            alt=""
+            className={styles.desfoqueImg}
+            data-r="desfoque"
+            fill
+            sizes="25vw"
+            loading="eager"
+            fetchPriority="high"
+          />
+        </div>
         <div className={styles.foto} data-r="foto">
           <Image
             src={vehicle.images.main}
@@ -56,8 +46,8 @@ export default function CenaReveal({ vehicle, efeito = "cortina" }) {
             className={styles.img}
             data-r="img"
             fill
-            // Mesmo pedido da home (100vw): pedir a foto maior que a tela
-            // custava ~0,4 s de LCP no celular.
+            // 100vw: pedir a foto maior que a tela custava ~0,4 s de LCP no
+            // celular.
             sizes="100vw"
             loading="eager"
             fetchPriority="high"
