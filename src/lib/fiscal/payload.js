@@ -108,6 +108,31 @@ export function textoInformacoesComplementares({ config, custoAquisicao, numeroN
   return partes.join(" ");
 }
 
+/**
+ * Deixa um texto digitado à mão dentro do que o schema da NF-e aceita.
+ *
+ * Os campos de texto da NF-e 4.00 são `TString`: só caracteres de U+0020 a
+ * U+00FF, sem espaço nas pontas. Quebra de linha, travessão, aspas curvas e
+ * reticências — que o teclado do Mac e do iPhone põem sozinho — ficam de fora,
+ * e a recusa volta como "Erro na validação do Schema XML", que ninguém na loja
+ * consegue ler. Aqui eles viram o equivalente aceito; o resto fora da faixa
+ * (emoji) sai do texto.
+ *
+ * NFC primeiro: o macOS às vezes manda "ã" como "a" + til combinante, e o til
+ * solto está fora da faixa — sem recompor, o acento sumiria.
+ */
+export function textoParaNota(texto) {
+  return String(texto ?? "")
+    .normalize("NFC")
+    .replace(/[\u2018\u2019\u201A\u2032]/g, "'")
+    .replace(/[\u201C\u201D\u201E\u2033]/g, '"')
+    .replace(/[\u2013\u2014\u2212]/g, "-")
+    .replace(/\u2026/g, "...")
+    .replace(/[^\x20-\xFF\s]/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 
 /**
  * Tamanho máximo de cada campo de texto da NF-e 4.00, com o nome que a
@@ -192,6 +217,10 @@ export function montarPayloadNfe({
   custoAquisicao,
   numeroNotaEntrada,
   vendaPresencial = true,
+  // Texto livre da operadora. Ausente (undefined/null) = ela não mexeu, sai o padrão do
+  // contador; string = é o que vai na nota, mesmo que tire o "usado" e o valor
+  // de aquisição (carro 0 km financiado — Mayra, 11/11/2026).
+  informacoesComplementares,
 }) {
   const venda = Number(valorVenda) || 0;
   if (venda <= 0) return { error: "Informe o valor da venda." };
@@ -228,6 +257,14 @@ export function montarPayloadNfe({
       error:
         "Informe o número da nota de entrada deste veículo — ela é obrigatória nas informações complementares da nota de venda.",
     };
+  }
+
+  // Apagar o texto inteiro não volta ao padrão: o padrão diz "VEICULO USADO", e
+  // quem apagou foi justamente para isso não sair. Sem texto, a nota não sai.
+  const textoLivre =
+    informacoesComplementares == null ? null : textoParaNota(informacoesComplementares);
+  if (textoLivre === "") {
+    return { error: "Escreva as informações complementares da nota — a nota de venda não sai com elas em branco." };
   }
 
   const imp = impostosVeiculoUsado(venda, custoAquisicao, config);
@@ -311,12 +348,15 @@ export function montarPayloadNfe({
       },
     ],
 
-    // infCpl — a nota autorizada carrega a origem do veículo aqui.
-    informacoes_adicionais_contribuinte: textoInformacoesComplementares({
-      config,
-      custoAquisicao,
-      numeroNotaEntrada,
-    }),
+    // infCpl — a nota autorizada carrega a origem do veículo aqui, a menos que
+    // a operadora tenha escrito o próprio texto na tela.
+    informacoes_adicionais_contribuinte:
+      textoLivre ??
+      textoInformacoesComplementares({
+        config,
+        custoAquisicao,
+        numeroNotaEntrada,
+      }),
 
     items: [
       {
