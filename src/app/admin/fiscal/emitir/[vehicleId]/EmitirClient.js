@@ -5,7 +5,7 @@ import Link from "next/link";
 import styles from "../../../admin.module.css";
 import { emitirNotaAction } from "../../actions";
 import { impostosVeiculoUsado } from "@/lib/fiscal/impostos";
-import { textoInformacoesComplementares } from "@/lib/fiscal/payload";
+import { textoInformacoesComplementares, textoParaNota } from "@/lib/fiscal/payload";
 import { destinatarioDoCliente } from "@/lib/clientes/prefill";
 import { formataDoc } from "@/lib/clientes/doc";
 
@@ -60,6 +60,12 @@ export default function EmitirClient({
   // está aqui, e aí o número vem do papel.
   const [notaEntrada, setNotaEntrada] = useState(numeroNotaEntrada || "");
   const [presencial, setPresencial] = useState(true);
+  // Informações complementares em texto livre. `null` = a operadora não mexeu:
+  // o campo acompanha o texto padrão (que muda com o valor de aquisição e o nº
+  // da nota de entrada) e o servidor monta o padrão sozinho. Mexeu, o texto é
+  // dela — carro 0 km financiado não pode sair com "VEICULO USADO", e o cliente
+  // não precisa ver o valor de aquisição (Mayra, 11/11/2026).
+  const [obsEditada, setObsEditada] = useState(null);
 
   function setCampo(k, v) {
     setDest((p) => ({ ...p, [k]: v }));
@@ -191,6 +197,7 @@ export default function EmitirClient({
         clienteId: clienteIdSel || undefined,
         numeroNotaEntrada: fd.get("numeroNotaEntrada"),
         vendaPresencial: presencial,
+        informacoesComplementares: obsEditada ?? undefined,
       });
       if (r?.error) setErr(r.error);
       else if (r?.ok) setResultado(r);
@@ -287,7 +294,7 @@ export default function EmitirClient({
                 />
                 <p style={{ fontSize: "0.78rem", color: "#666", margin: 0 }}>
                   {custoOrigem === "financeiro"
-                    ? "vindo do financeiro — é a base do imposto e vai impresso na nota"
+                    ? "vindo do financeiro — é a base do imposto"
                     : "este veículo não tem compra lançada no financeiro — informe o valor pago"}
                 </p>
               </div>
@@ -307,21 +314,55 @@ export default function EmitirClient({
               </div>
             </div>
 
-            <div
-              style={{
-                marginTop: 16, padding: "10px 12px", background: "#F7F7F8",
-                borderRadius: 6, fontSize: "0.8rem", color: "#555",
-              }}
-            >
-              <strong style={{ display: "block", marginBottom: 4 }}>
-                Informações complementares da nota
-              </strong>
-              <span style={{ fontFamily: "monospace", wordBreak: "break-word" }}>
-                {custoPreenchido
-                  ? textoComplementar
-                  : "preencha o valor de aquisição para ver o texto que vai na nota"}
-              </span>
-            </div>
+          </div>
+
+          {/* Informações complementares — texto livre */}
+          <div className={styles.card} style={{ marginBottom: 24 }}>
+            <h3 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: 8 }}>
+              Informações complementares da nota
+            </h3>
+            <p style={{ fontSize: "0.85rem", color: "#666", marginTop: 0 }}>
+              É o texto que sai impresso na nota. Já vem com o texto padrão; edite à vontade —
+              por exemplo, num carro 0 km, apague o &quot;veículo usado&quot; e o valor de
+              aquisição e escreva cor, versão, Renavam, ano de fabricação/modelo.
+            </p>
+            <textarea
+              name="informacoesComplementares"
+              className={styles.formTextarea}
+              style={{ width: "100%", boxSizing: "border-box" }}
+              rows={5}
+              maxLength={5000}
+              value={obsEditada ?? (custoPreenchido ? textoComplementar : "")}
+              placeholder="preencha o valor de aquisição para ver o texto padrão"
+              onChange={(e) => setObsEditada(e.target.value)}
+              required
+            />
+            <p style={{ fontSize: "0.78rem", color: "#666", margin: "6px 0 0" }}>
+              A nota não aceita quebra de linha: cada linha nova vira um espaço.
+            </p>
+            {obsEditada !== null && (
+              <>
+                <div
+                  style={{
+                    marginTop: 12, padding: "10px 12px", background: "#F7F7F8",
+                    borderRadius: 6, fontSize: "0.8rem", color: "#555",
+                  }}
+                >
+                  <strong style={{ display: "block", marginBottom: 4 }}>Vai na nota assim:</strong>
+                  <span style={{ fontFamily: "monospace", wordBreak: "break-word" }}>
+                    {textoParaNota(obsEditada) || "— em branco: a nota não sai sem este texto —"}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className={styles.btnSecondary}
+                  style={{ marginTop: 12, minHeight: 48 }}
+                  onClick={() => setObsEditada(null)}
+                >
+                  Voltar ao texto padrão
+                </button>
+              </>
+            )}
           </div>
 
           {/* Impostos */}

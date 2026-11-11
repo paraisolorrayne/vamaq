@@ -160,6 +160,87 @@ test("o texto complementar entra no payload", () => {
   assert.match(payload.informacoes_adicionais_contribuinte, /CF NF 10/);
 });
 
+// ── Informações complementares em texto livre (Mayra, 11/11/2026) ───────────
+//
+// Carro 0 km vendido com financiamento: o banco não paga com "VEICULO USADO"
+// na nota, e o cliente que recebe a nota vê o valor de aquisição (a margem da
+// loja). A operadora escreve o texto; o padrão do contador só vale quando ela
+// não mexe.
+
+test("texto livre substitui o texto padrão — sem 'usado' e sem valor de aquisição", () => {
+  const { payload, error } = montarPayloadNfe(
+    args({ informacoesComplementares: "VEICULO 0 KM COR PRETA RENAVAM 01234567890 ANO 2025/2026" })
+  );
+  assert.equal(error, undefined, error);
+  assert.equal(
+    payload.informacoes_adicionais_contribuinte,
+    "VEICULO 0 KM COR PRETA RENAVAM 01234567890 ANO 2025/2026"
+  );
+  assert.doesNotMatch(payload.informacoes_adicionais_contribuinte, /USADO|AQUISICAO/);
+});
+
+test("sem texto livre, continua saindo o texto padrão do contador", () => {
+  const { payload } = montarPayloadNfe(args({ informacoesComplementares: undefined }));
+  assert.equal(
+    payload.informacoes_adicionais_contribuinte,
+    textoInformacoesComplementares({ config: CONFIG, custoAquisicao: 150000, numeroNotaEntrada: "10" })
+  );
+});
+
+test("texto livre apagado é recusado — a nota de venda não sai sem informações complementares", () => {
+  for (const vazio of ["", "   ", "\n\n"]) {
+    const { error, payload } = montarPayloadNfe(args({ informacoesComplementares: vazio }));
+    assert.equal(payload, undefined, JSON.stringify(vazio));
+    assert.match(error, /informações complementares/i);
+  }
+});
+
+test("texto livre acima de 5000 caracteres é recusado aqui, não pela SEFAZ", () => {
+  const { error } = montarPayloadNfe(args({ informacoesComplementares: "A".repeat(5001) }));
+  assert.match(error, /informações complementares tem 5001 caracteres/i);
+});
+
+// O schema da NF-e (TString) só aceita caracteres de U+0020 a U+00FF, sem
+// espaço nas pontas — quebra de linha, travessão e aspas curvas do teclado do
+// Mac/iPhone voltam como "Erro na validação do Schema XML".
+const TSTRING = /^[!-ÿ](?:[ -ÿ]*[!-ÿ])?$/;
+
+test("quebra de linha vira espaço — o schema da NF-e não aceita quebra", () => {
+  const { payload } = montarPayloadNfe(
+    args({ informacoesComplementares: "  COR: PRETA\r\nRENAVAM: 0123\n\n\tANO 2025/2026  " })
+  );
+  assert.equal(payload.informacoes_adicionais_contribuinte, "COR: PRETA RENAVAM: 0123 ANO 2025/2026");
+  assert.match(payload.informacoes_adicionais_contribuinte, TSTRING);
+});
+
+test("aspas curvas, travessão e reticências do teclado viram os equivalentes aceitos", () => {
+  const { payload } = montarPayloadNfe(
+    args({ informacoesComplementares: "Versão “Sport” — teto solar… cor ‘preto’" })
+  );
+  assert.equal(
+    payload.informacoes_adicionais_contribuinte,
+    "Versão \"Sport\" - teto solar... cor 'preto'"
+  );
+  assert.match(payload.informacoes_adicionais_contribuinte, TSTRING);
+});
+
+test("acento decomposto (como o macOS às vezes digita) é recomposto, não apagado", () => {
+  const decomposto = "Versa\u0303o Ame\u0301rica"; // ã e é em duas partes
+  const { payload } = montarPayloadNfe(args({ informacoesComplementares: decomposto }));
+  assert.equal(payload.informacoes_adicionais_contribuinte, "Versão América");
+});
+
+test("caractere fora do que a nota aceita (emoji) sai do texto em vez de derrubar a emissão", () => {
+  const { payload } = montarPayloadNfe(args({ informacoesComplementares: "COR PRETA 🚗 ok" }));
+  assert.equal(payload.informacoes_adicionais_contribuinte, "COR PRETA ok");
+  assert.match(payload.informacoes_adicionais_contribuinte, TSTRING);
+});
+
+test("texto que só tinha emoji conta como vazio", () => {
+  const { error } = montarPayloadNfe(args({ informacoesComplementares: "🚗🚗" }));
+  assert.match(error, /informações complementares/i);
+});
+
 test("CNPJ no destinatário vai no campo de CNPJ, não no de CPF", () => {
   const { payload } = montarPayloadNfe(
     args({ destinatario: { ...DESTINATARIO, doc: "45348469000154" } })

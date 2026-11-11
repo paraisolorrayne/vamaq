@@ -204,6 +204,18 @@ test("venda com devolução AUTORIZADA libera a nota nova do mesmo carro", async
   assert.doesNotMatch(String(res.error || ""), /já tem nota|sendo autorizada/i);
 });
 
+test("o texto livre das informações complementares é o que chega à Focus", async () => {
+  const texto = "VEICULO 0 KM COR PRETA RENAVAM 01234567890 ANO 2025/2026";
+  const res = await notas.emitirNotaVeiculo(vehicleId, {
+    destinatario: COMPRADORA, valorVenda: 300000, custoAquisicao: 160000, numeroNotaEntrada: "20",
+    informacoesComplementares: texto,
+  });
+  assert.equal(res.error, undefined, res.error);
+  const emissao = chamadas.find((c) => c.method === "POST" && /\/nfe\?ref=/.test(c.url));
+  assert.ok(emissao, "a nota não foi enviada à Focus");
+  assert.equal(JSON.parse(emissao.body).informacoes_adicionais_contribuinte, texto);
+});
+
 test("devolução ainda em processamento NÃO libera — ela pode ser recusada", async () => {
   const ref = await venda();
   await notas.devolverNota(ref);
