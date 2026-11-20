@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { getImageProps } from "next/image";
 import Link from "next/link";
 import { BUSINESS, MAPS_QUERY_URL } from "@/lib/businessInfo";
 import { getWhatsAppGenericUrl } from "@/lib/whatsapp";
@@ -11,22 +11,38 @@ import styles from "./CenaBoutique.module.css";
  * tiradas à mão, e o par "faróis apagados / acesos" fundido duplicava o 911
  * (testado em 24/10/2026) — por isso o apagado nem entrou.
  *
+ * No celular (tela em pé) as fachadas horizontais mostravam ~30% da largura;
+ * desde 19/11/2026 as duas primeiras batidas trocam por fotos em pé
+ * (`movel`, via <picture> — "art direction" da doc do next/image). Mesmo
+ * breakpoint do CSS e do CinematicaMotion: 900px.
+ *
  * Os textos são os que o site já usa (home e /sobre); nada novo afirmado.
  */
+const CELULAR = "(max-width: 899.98px)";
+
 const BATIDAS = [
   {
     src: "/images/loja/fachada-anoitecer.webp",
-    alt: "Fachada da Vamaq Motors ao anoitecer, com o letreiro aceso e carros na frente",
-    // No celular (tela em pé) cabe ~30% da largura: o letreiro principal.
+    // O <img> é um só: o alt tem que valer para as duas fotos.
+    alt: "Fachada da Vamaq Motors com o letreiro aceso e carros na frente",
     posicao: "57% 50%",
-    posicaoMovel: "71% 50%",
+    // Os dois 911 diante do totem com o letreiro (18/11/2026).
+    movel: {
+      src: "/images/loja/totem-911.webp",
+      // Parada (quadro 3:4) a altura importa: 20% guarda o letreiro do totem.
+      posicao: "50% 20%",
+    },
   },
   {
     src: "/images/loja/fachada-farois.webp",
-    alt: "Frente da Vamaq Motors com os faróis dos carros acesos",
-    // No celular, a 320i e o 911 de faróis acesos — o motivo desta foto.
+    alt: "Porsche 911 selecionados pela Vamaq Motors",
     posicao: "62% 55%",
-    posicaoMovel: "92% 60%",
+    // Rodas de dois 911 frente a frente — "Não é volume. É seleção."
+    movel: {
+      src: "/images/loja/rodas-911.webp",
+      // 40%: o muro iluminado ao fundo fica no quadro.
+      posicao: "50% 40%",
+    },
   },
   {
     src: "/images/loja/salao.webp",
@@ -35,6 +51,34 @@ const BATIDAS = [
     posicaoMovel: "84% 60%",
   },
 ];
+
+// Variáveis, não objectPosition: estilo inline venceria a regra de celular
+// do CSS. `--pos-movel` vale só abaixo de 900px (ver o .module.css).
+function Foto({ batida: b }) {
+  const comum = { alt: b.alt, fill: true, sizes: "100vw" };
+  const posMovel = b.movel?.posicao ?? b.posicaoMovel;
+  const {
+    props: { srcSet: desktop, ...img },
+  } = getImageProps({
+    ...comum,
+    src: b.src,
+    style: { "--pos": b.posicao, "--pos-movel": posMovel },
+  });
+  const props = { ...img, srcSet: desktop, className: styles.img, "data-b": "img" };
+  // <img> cru de propósito: as props já saíram otimizadas do getImageProps.
+  // eslint-disable-next-line @next/next/no-img-element
+  if (!b.movel) return <img {...props} alt={b.alt} />;
+
+  const {
+    props: { srcSet: celular },
+  } = getImageProps({ ...comum, src: b.movel.src });
+  return (
+    <picture>
+      <source media={CELULAR} srcSet={celular} sizes="100vw" />
+      <img {...props} alt={b.alt} />
+    </picture>
+  );
+}
 
 export default function CenaBoutique() {
   const whatsapp = getWhatsAppGenericUrl(
@@ -47,18 +91,8 @@ export default function CenaBoutique() {
       <div className={styles.palco}>
         {BATIDAS.map((b, i) => (
           <div key={b.src} className={styles.batida} data-b="batida">
-            <figure className={styles.quadro}>
-              <Image
-                src={b.src}
-                alt={b.alt}
-                className={styles.img}
-                data-b="img"
-                // Variáveis, não objectPosition: estilo inline venceria a
-                // regra de celular do CSS.
-                style={{ "--pos": b.posicao, "--pos-movel": b.posicaoMovel }}
-                fill
-                sizes="100vw"
-              />
+            <figure className={styles.quadro} data-em-pe={b.movel ? "" : undefined}>
+              <Foto batida={b} />
             </figure>
 
             <div className={styles.legenda} data-b="legenda">
