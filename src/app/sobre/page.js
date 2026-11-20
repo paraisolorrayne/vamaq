@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WhatsAppFloat from "@/components/WhatsAppFloat";
@@ -117,19 +118,21 @@ export default function SobrePage() {
             </div>
             <div className={styles.spaceGallery}>
               <figure className={styles.spacePhoto}>
-                <img
-                  src="/images/loja/fachada.jpg"
+                <Image
+                  src="/images/loja/fachada-angulo.webp"
                   alt="Fachada da loja Vamaq Motors na Av. Francisco Galassi, em Uberlândia"
                   className={styles.spacePhotoImg}
-                  loading="lazy"
+                  fill
+                  sizes="(min-width: 1240px) 600px, (min-width: 768px) 50vw, 100vw"
                 />
               </figure>
               <figure className={styles.spacePhoto}>
-                <img
-                  src="/images/loja/showroom.jpg"
+                <Image
+                  src="/images/loja/salao.webp"
                   alt="Showroom interno da Vamaq Motors com veículos premium em exposição"
                   className={styles.spacePhotoImg}
-                  loading="lazy"
+                  fill
+                  sizes="(min-width: 1240px) 600px, (min-width: 768px) 50vw, 100vw"
                 />
               </figure>
             </div>
