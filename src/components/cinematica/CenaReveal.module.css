@@ -1,6 +1,9 @@
 /* ============================================
    Cena 1 — Reveal do destaque
 
+   Desde 24/11/2026 abre com a foto das rodas dos 911 e o texto da marca
+   (ver CenaReveal.js), não mais com o destaque do estoque.
+
    Sem movimento (sem JS, movimento reduzido, botão desligado) é o herói de
    sempre: foto cobrindo a tela no computador, foto inteira em cima e texto
    embaixo no celular. Com movimento (`html[data-cine="on"]`, ver
@@ -45,9 +48,11 @@
   inset: 0;
 }
 
+/* A foto é em pé (941 × 1672) e o quadro é deitado: 48% guarda as duas
+   rodas inteiras na faixa do meio. */
 .img {
   object-fit: cover;
-  object-position: center 55%;
+  object-position: center 48%;
 }
 
 /* A mesma foto, desfocada, atrás da faixa nítida da cortina: em vez de
@@ -59,7 +64,7 @@
 
 .desfoqueImg {
   object-fit: cover;
-  object-position: center 55%;
+  object-position: center 48%;
   filter: blur(18px) saturate(1.05);
   /* Um pouco maior que a nítida: o desfoque clareia a borda da imagem, e a
      sobra joga essa borda para fora do quadro. 4% não desalinha o carro. */
@@ -92,16 +97,6 @@
 
 .textos {
   max-width: min(600px, 100%);
-  /* Referência de largura para o título (ver .modelo). */
-  container-type: inline-size;
-}
-
-.contexto,
-.marcaCarro {
-  font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
-  font-weight: var(--fw-bold);
-  text-transform: uppercase;
-  letter-spacing: 0.18em;
 }
 
 .contexto {
@@ -109,8 +104,12 @@
   align-items: center;
   gap: 12px;
   margin-bottom: 14px;
-  /* Não laranja: sobre a foto o laranja some em carro amarelo ou vermelho
-     (o 911 da vitrine). Só o traço continua laranja. */
+  font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
+  font-weight: var(--fw-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  /* Não laranja: sobre a foto o laranja some no carro vermelho. Só o traço
+     continua laranja. */
   color: var(--tinta-suave);
   font-size: var(--text-xs);
 }
@@ -122,51 +121,22 @@
   background: var(--color-accent);
 }
 
-.marcaCarro {
-  margin-bottom: 6px;
-  color: var(--tinta-suave);
-  font-size: clamp(1rem, 1.5vw, 1.25rem);
-}
-
-.modelo {
+.titulo {
+  max-width: 12ch;
   font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
-  /* Mesma conta do herói da home (lib/maiorPalavra.js): o menor entre o
-     tamanho de sempre e o que faz a palavra mais longa caber na coluna. */
-  font-size: min(clamp(2.6rem, 6vw, 6rem), calc(100cqi / (var(--letras, 8) * 0.6)));
+  font-size: clamp(2.6rem, 5.4vw, 5.4rem);
   font-weight: var(--fw-bold);
   line-height: 0.9;
   text-transform: uppercase;
   text-wrap: balance;
 }
 
-.fatos {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 18px;
+.texto {
+  max-width: 46ch;
   margin-top: 16px;
   color: var(--tinta-suave);
-  font-size: var(--text-sm);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.fatos span:not(:last-child)::after {
-  content: "";
-  display: inline-block;
-  width: 4px;
-  height: 4px;
-  margin-left: 18px;
-  border-radius: 50%;
-  background: var(--color-accent);
-  vertical-align: middle;
-}
-
-.preco {
-  margin-top: 12px;
-  font-family: var(--font-heading, 'Rajdhani', 'Inter', sans-serif);
-  font-size: clamp(1.6rem, 2.6vw, 2.25rem);
-  font-weight: var(--fw-bold);
-  letter-spacing: 0.02em;
+  font-size: var(--text-md);
+  line-height: 1.6;
 }
 
 .acoes {

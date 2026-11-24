@@ -12,8 +12,10 @@ import styles from "./CenaBoutique.module.css";
  * (testado em 24/10/2026) — por isso o apagado nem entrou.
  *
  * No celular (tela em pé) as fachadas horizontais mostravam ~30% da largura;
- * desde 19/11/2026 as duas primeiras batidas trocam por fotos em pé
- * (`movel`, via <picture> — "art direction" da doc do next/image). Mesmo
+ * desde 19/11/2026 a primeira batida troca por uma foto em pé
+ * (`movel`, via <picture> — "art direction" da doc do next/image). A
+ * segunda também trocava (rodas dos 911) até a foto virar a abertura da
+ * home, em 24/11/2026. Mesmo
  * breakpoint do CSS e do CinematicaMotion: 900px.
  *
  * Os textos são os que o site já usa (home e /sobre); nada novo afirmado.
@@ -35,14 +37,12 @@ const BATIDAS = [
   },
   {
     src: "/images/loja/fachada-farois.webp",
-    alt: "Porsche 911 selecionados pela Vamaq Motors",
+    alt: "Frente da Vamaq Motors com os faróis dos carros acesos",
+    // A foto das rodas que ficava aqui no celular virou a abertura da home
+    // em 24/11/2026; repetida, aparecia duas vezes na mesma página. No
+    // celular: a 320i e o 911 de faróis acesos.
     posicao: "62% 55%",
-    // Rodas de dois 911 frente a frente — "Não é volume. É seleção."
-    movel: {
-      src: "/images/loja/rodas-911.webp",
-      // 40%: o muro iluminado ao fundo fica no quadro.
-      posicao: "50% 40%",
-    },
+    posicaoMovel: "92% 60%",
   },
   {
     src: "/images/loja/salao.webp",
