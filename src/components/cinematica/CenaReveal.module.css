@@ -1,7 +1,7 @@
 /* ============================================
    Cena 1 — Reveal do destaque
 
-   Desde 24/11/2026 abre com a foto das rodas dos 911 e o texto da marca
+   Desde 24/11/2026 abre com a panorâmica dos quatro 911 e o texto da marca
    (ver CenaReveal.js), não mais com o destaque do estoque.
 
    Sem movimento (sem JS, movimento reduzido, botão desligado) é o herói de
@@ -43,16 +43,22 @@
   align-items: flex-end;
 }
 
+/* Segura a foto nítida e a desfocada juntas (ver CenaReveal.js). */
+.quadro {
+  position: absolute;
+  inset: 0;
+}
+
 .foto {
   position: absolute;
   inset: 0;
 }
 
-/* A foto é em pé (941 × 1672) e o quadro é deitado: 48% guarda as duas
-   rodas inteiras na faixa do meio. */
+/* Panorâmica 3:1: no quadro deitado do computador cortam as pontas, e o
+   meio (os dois 911 de frente) fica. */
 .img {
   object-fit: cover;
-  object-position: center 48%;
+  object-position: center 55%;
 }
 
 /* A mesma foto, desfocada, atrás da faixa nítida da cortina: em vez de
@@ -64,7 +70,7 @@
 
 .desfoqueImg {
   object-fit: cover;
-  object-position: center 48%;
+  object-position: center 55%;
   filter: blur(18px) saturate(1.05);
   /* Um pouco maior que a nítida: o desfoque clareia a borda da imagem, e a
      sobra joga essa borda para fora do quadro. 4% não desalinha o carro. */
@@ -179,8 +185,8 @@
   border-color: var(--tinta);
 }
 
-/* Celular sem movimento: a foto inteira em cima, texto embaixo. Cobrindo a
-   tela em pé, a foto 4:3 mostrava só a porta do carro. */
+/* Celular sem movimento: a foto em cima, texto embaixo. A foto é
+   panorâmica: 16:9 mostra os quatro carros (4:3 cortava os das pontas). */
 @media (max-width: 899.98px) {
   .palco {
     flex-direction: column;
@@ -189,10 +195,10 @@
     padding-top: 80px;
   }
 
-  .foto {
+  .quadro {
     position: relative;
     inset: auto;
-    aspect-ratio: 4 / 3;
+    aspect-ratio: 16 / 9;
   }
 
   .sombra {
@@ -375,19 +381,25 @@
    Celular
    ============================================ */
 
-/* A foto ocupa a largura toda e termina INTEIRA (aproximar mais cortava a
-   frente e a traseira do carro); o desfoque da cortina ocupa o mesmo quadro.
-   Em cima, o atalho; embaixo, o texto, acima da faixa do WhatsApp flutuante
-   e do botão de pausar. */
+/* Tudo em coluna e no fluxo: atalho em cima, a foto, o texto, e embaixo a
+   faixa do WhatsApp flutuante e do botão de pausar. A foto tem a largura
+   toda e altura de 16:9, mas ENCOLHE quando o texto precisa do espaço
+   (é panorâmica, então mais baixa ela ainda mostra os carros). Antes ela
+   ficava presa a 36% da tela por posição absoluta, e o texto, também
+   absoluto, subia por cima dela quando ficava mais alto (24/11/2026). */
 @media (max-width: 899.98px) {
-  :global(html[data-cine="on"]) .foto,
-  :global(html[data-cine="on"]) .desfoque {
+  :global(html[data-cine="on"]) .palco {
+    flex-direction: column;
+    align-items: stretch;
+    padding-top: 140px;
+  }
+
+  :global(html[data-cine="on"]) .quadro {
+    position: relative;
     inset: auto;
-    left: 50%;
-    top: 36%;
-    width: 100vw;
-    aspect-ratio: 4 / 3;
-    translate: -50% -50%;
+    flex: 0 1 auto;
+    height: 56.25vw;
+    min-height: 96px;
   }
 
   :global(html[data-cine="on"]) .atalho {
@@ -399,6 +411,16 @@
   }
 
   :global(html[data-cine="on"]) .info {
+    position: relative;
+    margin-top: auto;
+    padding-top: 20px;
     padding-bottom: 88px;
+  }
+
+  /* Numa tela só não cabem foto, título, parágrafo e botões: com o
+     parágrafo a foto encolhia até virar uma tira. Ele continua no celular
+     sem movimento, onde a página rola normalmente. */
+  :global(html[data-cine="on"]) .texto {
+    display: none;
   }
 }
