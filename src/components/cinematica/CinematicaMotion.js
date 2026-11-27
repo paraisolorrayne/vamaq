@@ -74,28 +74,20 @@ const trilha = (trigger, extra = {}) => ({
 });
 const entrada = { autoAlpha: 1, y: 0, duration: 0.28, ease: 'power2.out' };
 
-// Cena 1. A cortina começa a abrir sozinha ao entrar (CSS) e a rolagem
-// continua de onde a entrada parou: a faixa abre até a tela cheia e a câmera
-// recua — só recorte e escala, a foto fica nítida o tempo todo. Por último
-// entram preço e botões.
+// Cena 1. A foto e o texto já abrem na tela (a entrada é CSS); aqui só a
+// saída: a foto desce mais devagar que a página e o texto sobe e some.
+// Até 26/11/2026 era uma cortina sobre a foto desfocada, com o texto só no
+// fim de uma trilha longa, e parado no topo o site parecia quebrado.
 function montarReveal(gsap) {
   const cena = document.querySelector('[data-cena="reveal"]');
   if (!cena) return;
-  const um = (s) => cena.querySelector(s);
-  // A escala vai na <img>, não no quadro: o quadro carrega o recorte (e, no
-  // celular, a centralização do CSS, que o GSAP não deve tocar). A foto
-  // desfocada de trás recua junto, para o carro fora de foco continuar
-  // alinhado com o da faixa nítida.
-  const camadas = [um('[data-r="img"]'), um('[data-r="desfoque"]')].filter(Boolean);
-
-  gsap
-    .timeline({ defaults: { ease: 'none' }, scrollTrigger: trilha(cena) })
-    .fromTo(um('[data-r="dica"]'), { autoAlpha: 1 }, { autoAlpha: 0, duration: 0.08 }, 0)
-    .fromTo(um('[data-r="foto"]'), { '--fenda': '32%' }, { '--fenda': '0%', duration: 0.55, ease: 'power2.inOut' }, 0)
-    .fromTo(camadas, { scale: 1.16 }, { scale: 1, duration: 0.72, ease: 'power1.out' }, 0)
-    .fromTo(um('[data-r="info"]'), { autoAlpha: 0, y: 48 }, { ...entrada, duration: 0.18 }, 0.56)
-    // Segura o quadro final antes de a página seguir.
-    .to({}, { duration: 0.2 });
+  const quadro = cena.querySelector('[data-r="quadro"]');
+  const info = cena.querySelector('[data-r="info"]');
+  const saida = { trigger: cena, start: 'top top', end: 'bottom top', scrub: 0.6, invalidateOnRefresh: true };
+  if (quadro) gsap.fromTo(quadro, { yPercent: 0 }, { yPercent: 20, ease: 'none', scrollTrigger: saida });
+  if (info) {
+    gsap.fromTo(info, { autoAlpha: 1, y: 0 }, { autoAlpha: 0, y: -60, ease: 'none', scrollTrigger: { ...saida, end: '70% top' } });
+  }
 }
 
 // Cena 2: cada placa entra cobrindo a anterior de baixo para cima; dentro
@@ -273,9 +265,11 @@ function montarBoutique(gsap) {
       .to(veu, { opacity: 0, duration: 0.25, ease: 'power1.out' }, em + 0.2);
   };
 
-  tl.fromTo(img(0), { '--exp': 0 }, { '--exp': 1, duration: 1, ease: 'power1.inOut' }, 0)
-    .fromTo(img(0), { scale: 1.12 }, { scale: 1, duration: 1.5 }, 0)
-    .fromTo(legenda(0), { autoAlpha: 0, y: 40 }, entrada, 0.65);
+  // A fachada abria quase preta e "acendia" com a rolagem (--exp). Saiu em
+  // 26/11/2026: parada no começo da cena, parecia foto quebrada. Hoje ela
+  // já entra acesa e só a câmera recua.
+  tl.fromTo(img(0), { scale: 1.12 }, { scale: 1, duration: 1.5 }, 0)
+    .fromTo(legenda(0), { autoAlpha: 0, y: 40 }, entrada, 0.3);
   corte(0, 1, 1.5);
   tl.fromTo(img(1), { scale: 1 }, { scale: 1.12, duration: 1.3 }, 1.7)
     .fromTo(legenda(1), { autoAlpha: 0, y: 40 }, entrada, 1.85);

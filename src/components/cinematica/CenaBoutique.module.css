@@ -2,8 +2,8 @@
    Cena 4 — Boutique
 
    Sem movimento: as três fotos da loja em sequência, texto abaixo de cada
-   uma. Com movimento: palco fixo; a fachada "acende" (exposição sobe, ver
-   .img), corta pelo branco (`.veu`) para a frente com os faróis acesos,
+   uma. Com movimento: palco fixo; a fachada (já acesa: o "acender" saiu em
+   26/11/2026, parecia foto quebrada), corta pelo branco (`.veu`) para a frente com os faróis acesos,
    corta de novo para o salão, onde ficam os botões.
    ============================================ */
 
@@ -157,14 +157,6 @@
   inset: 0;
   aspect-ratio: auto;
   max-height: none;
-}
-
-/* Mesma exposição da cena 1: só a primeira batida a usa (a loja "acende");
-   nas outras --exp fica em 1 e o filtro é neutro. */
-:global(html[data-cine="on"]) .img {
-  --exp: 1;
-  filter: contrast(calc(3 - 2 * var(--exp))) brightness(calc(0.3 + 0.7 * var(--exp)))
-    saturate(calc(0.4 + 0.6 * var(--exp)));
 }
 
 :global(html[data-cine="on"]) .legenda {

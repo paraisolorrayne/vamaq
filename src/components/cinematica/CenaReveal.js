@@ -12,19 +12,13 @@ import styles from "./CenaReveal.module.css";
  * outros carros, o nome e o preço do destaque contariam ao cliente uma coisa
  * que a foto não mostra. Por isso os textos são os que o site já usa (layout
  * e rodapé), nada novo afirmado. A foto é a panorâmica dos quatro 911 na
- * chuva (2172 × 724, editada pela Lorrayne), que entrou no lugar das rodas
- * no mesmo dia.
+ * chuva (2172 × 724, editada pela Lorrayne).
  *
- * `.quadro` segura a foto nítida e a desfocada juntas. No computador ele
- * cobre o palco; no celular com movimento ele entra no fluxo, entre o atalho
- * e o texto, e encolhe quando falta altura. Antes a foto ficava presa a 36%
- * da tela, e um texto mais alto subia por cima dela (relato do Mateus,
- * 24/11/2026).
- *
- * Abertura em cortina: a foto aparece NÍTIDA por uma faixa de cinema que
- * abre, sozinha ao entrar e até a tela cheia com a rolagem, enquanto a
- * câmera recua. Fora da faixa fica a mesma foto desfocada: os carros
- * "entram em foco".
+ * Abre com a foto NÍTIDA e o texto já na tela. Até 26/11/2026 era uma
+ * cortina: uma faixa nítida no meio da mesma foto desfocada, com o texto só
+ * no fim de uma trilha longa de rolagem. Parado no topo, o site parecia
+ * "uma foto borrada e quebrada" (Lorrayne). Agora o movimento é só a foto
+ * recuando ao abrir e descendo mais devagar que a página ao sair.
  */
 const FOTO = "/images/loja/quatro-911.webp";
 
@@ -34,49 +28,20 @@ export default function CenaReveal() {
   );
 
   return (
-    <section
-      className={styles.cena}
-      data-cena="reveal"
-      aria-labelledby="reveal-titulo"
-    >
+    <section className={styles.cena} data-cena="reveal" aria-labelledby="reveal-titulo">
       <div className={styles.palco}>
-        <div className={styles.quadro}>
-          <div className={styles.desfoque} aria-hidden="true">
-            {/* Foto pequena de propósito: desfocada, 384 px bastam. Mas é
-              ELA o maior elemento ao abrir (a nítida está recortada na
-              faixa), então é o LCP: sai na frente, não adiada. */}
-            <Image
-              src={FOTO}
-              alt=""
-              className={styles.desfoqueImg}
-              data-r="desfoque"
-              fill
-              sizes="25vw"
-              loading="eager"
-              fetchPriority="high"
-            />
-          </div>
-          <div className={styles.foto} data-r="foto">
-            <Image
-              src={FOTO}
-              alt="Quatro Porsche 911, vermelhos e azuis, num pátio molhado de chuva"
-              className={styles.img}
-              data-r="img"
-              fill
-              sizes="100vw"
-              loading="eager"
-              fetchPriority="high"
-            />
-          </div>
+        <div className={styles.quadro} data-r="quadro">
+          <Image
+            src={FOTO}
+            alt="Quatro Porsche 911, vermelhos e azuis, num pátio molhado de chuva"
+            className={styles.img}
+            fill
+            sizes="100vw"
+            loading="eager"
+            fetchPriority="high"
+          />
         </div>
         <div className={styles.sombra} aria-hidden="true" />
-
-        <p className={styles.dica} data-r="dica" aria-hidden="true">
-          Role para revelar
-        </p>
-        <Link href="/acervo" className={styles.atalho}>
-          Ir direto ao showroom
-        </Link>
 
         <div className={styles.info} data-r="info">
           <div className={styles.textos}>
