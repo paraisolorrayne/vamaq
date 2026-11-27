@@ -14,7 +14,10 @@
  */
 // A escolha feita no botão da página (localStorage) vale mais que a do
 // sistema. A mesma regra está em lerPreferencia(), no CinematicaMotion.
-const SCRIPT = `(function(){var r=matchMedia("(prefers-reduced-motion: reduce)").matches;try{var p=localStorage.getItem("vamaq-movimento");if(p)r=p==="reduzido"}catch(e){}document.documentElement.dataset.cine=r?"off":"on"})()`;
+// Celular (< 900px) fica SEMPRE parado, com ou sem escolha salva: com
+// movimento a home quebrava no celular (foto em tira, texto por cima das
+// fotos da vitrine, loja escura). Pedido de 26/11/2026.
+const SCRIPT = `(function(){var r=matchMedia("(prefers-reduced-motion: reduce)").matches;try{var p=localStorage.getItem("vamaq-movimento");if(p)r=p==="reduzido"}catch(e){}if(matchMedia("(max-width: 899.98px)").matches)r=true;document.documentElement.dataset.cine=r?"off":"on"})()`;
 
 export default function MovimentoFlag() {
   return <script id="vamaq-movimento" dangerouslySetInnerHTML={{ __html: SCRIPT }} />;

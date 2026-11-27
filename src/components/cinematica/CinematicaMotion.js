@@ -24,9 +24,14 @@ const EVENTO = 'vamaq-movimento';
 // exemplo), a escolha vale enquanto a página estiver aberta.
 let memoria = null;
 
+// Abaixo de 900px não há movimento (ver MovimentoFlag): a página fica na
+// versão parada e o botão some (CSS).
+const ESTREITO = '(max-width: 899.98px)';
+
 // Mesma regra do script inline (MovimentoFlag): a escolha feita no botão vale
-// mais que a do sistema.
+// mais que a do sistema, e o celular é sempre parado.
 function lerPreferencia() {
+  if (matchMedia(ESTREITO).matches) return 'reduzido';
   let salva = memoria;
   try {
     salva = localStorage.getItem(CHAVE) || memoria;
@@ -37,11 +42,14 @@ function lerPreferencia() {
 
 function assinar(avisar) {
   const sistema = matchMedia('(prefers-reduced-motion: reduce)');
+  const estreito = matchMedia(ESTREITO);
   sistema.addEventListener('change', avisar);
+  estreito.addEventListener('change', avisar);
   window.addEventListener('storage', avisar);
   window.addEventListener(EVENTO, avisar);
   return () => {
     sistema.removeEventListener('change', avisar);
+    estreito.removeEventListener('change', avisar);
     window.removeEventListener('storage', avisar);
     window.removeEventListener(EVENTO, avisar);
   };
