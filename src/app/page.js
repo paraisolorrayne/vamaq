@@ -9,7 +9,7 @@ import CenaBoutique from "@/components/cinematica/CenaBoutique";
 import { getFeaturedVehicles, getAllVehicles } from "@/lib/repositories/vehicles";
 import { escolherCenas } from "@/lib/home/cinematica";
 
-// Home cinematográfica (25/10/2026): o destaque revelado pela cortina, a
+// Home cinematográfica (25/10/2026): a abertura revelada pela cortina, a
 // vitrine em camadas e a loja. Cada cena é HTML do servidor que já funciona
 // parado; o movimento é do CinematicaMotion (components/cinematica).
 // Render dinâmico: as cenas leem o estoque direto do Postgres, então o cache
@@ -28,14 +28,18 @@ export default async function HomePage() {
     getAllVehicles(),
   ]);
   // Nenhum carro aparece em duas cenas — ver src/lib/home/cinematica.js.
-  const { hero, vitrine } = escolherCenas(destaques, estoque);
+  // Desde 24/11/2026 a abertura é a foto das rodas (CenaReveal), não um
+  // carro, mas o 1º destaque continua FORA da vitrine de propósito: o 911
+  // amarelo "já teve destaque demais" (Lorrayne). Quem estiver em 1º no
+  // admin some da home; para ele voltar, tire o destaque dele no admin.
+  const { vitrine } = escolherCenas(destaques, estoque);
 
   return (
     <>
       <MovimentoFlag />
       <Header />
       <main id="main-content">
-        <CenaReveal vehicle={hero} />
+        <CenaReveal />
         <CenaVitrine veiculos={vitrine} totalEstoque={estoque.length} />
         <CenaBoutique />
         <CinematicaMotion />
